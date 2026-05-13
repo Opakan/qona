@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  authId    String   @unique
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workflows    Workflow[]
+  apiKeys      ApiKey[]
+
+  @@map("users")
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String   @default("")
+  definition  Json
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions WorkflowVersion[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model WorkflowVersion {
+  id         String   @id @default(cuid())
+  workflowId String
+  version    Int
+  definition Json
+  changelog  String   @default("")
+  createdAt  DateTime @default(now())
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, version])
+  @@index([workflowId])
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  userId     String
+  keyHash    String   @unique
+  name       String
+  lastUsedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
