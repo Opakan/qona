@@ -1,22 +1,15 @@
 import { useAuth } from '../context/AuthContext';
-import { Navigate, Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 
 export default function AuthCallback() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      window.location.href = '/sign-in';
-    }
-  }, [isLoading, isAuthenticated]);
-
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0A0A0A]">
+      <div className="flex h-screen items-center justify-center bg-white">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-          <p className="text-white/40">Completing sign in...</p>
+          <div className="mx-auto mb-4 h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600" />
+          <p className="text-sm text-gray-500">Signing in...</p>
         </div>
       </div>
     );
@@ -26,5 +19,5 @@ export default function AuthCallback() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return null;
+  return <Navigate to="/sign-in" replace />;
 }

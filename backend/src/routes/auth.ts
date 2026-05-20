@@ -2,27 +2,30 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { UpdateUserProfileSchema } from '@qona/shared';
-import { getPrisma } from '../lib/prisma.js';
+import { db } from '../services/db.js';
 
 export const authRouter = Router();
 
+const userSelect = {
+  id: true,
+  authId: true,
+  email: true,
+  name: true,
+  avatarUrl: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 authRouter.get('/me', requireAuth, async (req, res, next) => {
   try {
-    const prisma = getPrisma();
-
-    let user = await prisma.user.findUnique({
-      where: { authId: req.user!.authId },
-      select: { id: true, authId: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true, updatedAt: true },
-    });
+    let user = await db.user.findByAuthId(req.user!.authId);
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          authId: req.user!.authId,
-          email: req.user!.email,
-          name: req.user!.name,
-        },
-        select: { id: true, authId: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true, updatedAt: true },
+      user = await db.user.upsertByAuthId({
+        authId: req.user!.authId,
+        email: req.user!.email,
+        name: req.user!.name,
       });
     }
 
@@ -34,13 +37,7 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
 
 authRouter.put('/me', requireAuth, validate(UpdateUserProfileSchema), async (req, res, next) => {
   try {
-    const prisma = getPrisma();
-    const user = await prisma.user.update({
-      where: { authId: req.user!.authId },
-      data: { name: req.body.name },
-      select: { id: true, authId: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true, updatedAt: true },
-    });
-
+    const user = await db.user.updateByAuthId(req.user!.authId, { name: req.body.name });
     res.json({ user });
   } catch (error) {
     next(error);

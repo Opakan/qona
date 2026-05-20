@@ -5,7 +5,8 @@
   "workspaces": [
     "shared",
     "backend",
-    "frontend"
+    "frontend",
+    "e2e"
   ],
   "scripts": {
     "dev": "concurrently -n api,web \"npm run dev -w backend\" \"npm run dev -w frontend\"",

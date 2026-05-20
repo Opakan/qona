@@ -1,50 +1,61 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import Layout from './components/layout/Layout';
 import Landing from './pages/Landing';
+import Pricing from './pages/Pricing';
+import Product from './pages/Product';
+import WorkflowBuilder from './pages/WorkflowBuilder';
+import Integrations from './pages/Integrations';
+import Api from './pages/Api';
+import Resources from './pages/Resources';
+import Documentation from './pages/Documentation';
+import Tutorials from './pages/Tutorials';
+import Blog from './pages/Blog';
+import Community from './pages/Community';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Press from './pages/Press';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import CookiePolicy from './pages/CookiePolicy';
+import GDPR from './pages/GDPR';
 import SignIn from './pages/SignIn';
 import Dashboard from './pages/Dashboard';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import Chat from './pages/Chat';
 import AuthCallback from './pages/AuthCallback';
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#0A0A0A]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-}
+import AuthGuard from './components/auth/AuthGuard';
+import GuestGuard from './components/auth/GuestGuard';
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route
-        path="/sign-in"
-        element={
-          <PublicRoute>
-            <SignIn />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/auth/callback" element={<AuthCallback />} />
+      {/* Public layout routes */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/product" element={<Product />} />
+        <Route path="/workflow-builder" element={<WorkflowBuilder />} />
+        <Route path="/integrations" element={<Integrations />} />
+        <Route path="/api" element={<Api />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/resources" element={<Resources />} />
+        <Route path="/documentation" element={<Documentation />} />
+        <Route path="/tutorials" element={<Tutorials />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/community" element={<Community />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/press" element={<Press />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/cookie-policy" element={<CookiePolicy />} />
+        <Route path="/gdpr" element={<GDPR />} />
+      </Route>
+
+      {/* Auth pages (no layout) */}
+      <Route path="/sign-in" element={<AuthProvider><GuestGuard><SignIn /></GuestGuard></AuthProvider>} />
+      <Route path="/dashboard" element={<AuthProvider><AuthGuard><Dashboard /></AuthGuard></AuthProvider>} />
+      <Route path="/chat" element={<AuthProvider><AuthGuard><Chat /></AuthGuard></AuthProvider>} />
+      <Route path="/auth/callback" element={<AuthProvider><AuthCallback /></AuthProvider>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

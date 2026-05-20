@@ -17,8 +17,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workflows    Workflow[]
-  apiKeys      ApiKey[]
+  workflows        Workflow[]
+  conversations    Conversation[]
+  exportHistory    ExportHistory[]
+  apiKeys          ApiKey[]
 
   @@map("users")
 }
@@ -33,11 +35,14 @@ model Workflow {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  versions WorkflowVersion[]
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions      WorkflowVersion[]
+  conversations Conversation[]
+  exportHistory ExportHistory[]
 
   @@index([userId])
   @@index([status])
+  @@index([updatedAt])
 }
 
 model WorkflowVersion {
@@ -52,6 +57,56 @@ model WorkflowVersion {
 
   @@unique([workflowId, version])
   @@index([workflowId])
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  userId     String
+  workflowId String?
+  title      String
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow Workflow?             @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  messages ConversationMessage[]
+
+  @@index([userId])
+  @@index([workflowId])
+  @@index([status])
+}
+
+model ConversationMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model ExportHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  workflowId   String
+  platform     String
+  format       String   @default("json")
+  status       String   @default("SUCCESS")
+  fileUrl      String?
+  metadata     Json     @default("{}")
+  exportedAt   DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workflowId])
+  @@index([exportedAt])
 }
 
 model ApiKey {

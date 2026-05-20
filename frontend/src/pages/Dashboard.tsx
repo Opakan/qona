@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Workflow, BarChart3, LayoutDashboard, Plus } from 'lucide-react';
+import { LogOut, Workflow, BarChart3, Plus, History } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -12,59 +12,78 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0A0A0A] text-white">
-      <header className="flex items-center justify-between border-b border-white/5 px-6 py-4">
-        <Link to="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-purple-600 text-xs font-bold text-white">Q</div>
-          <span>Qona</span>
+    <div className="flex min-h-screen flex-col bg-white text-gray-900 antialiased">
+      <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <Link to="/" className="flex items-center gap-2">
+          <Workflow className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium tracking-tight text-gray-900">Qona</span>
         </Link>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-white/50">
+          <span className="text-sm text-gray-500">
             {user?.user_metadata?.full_name ?? user?.email ?? 'User'}
           </span>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/40 transition-colors hover:bg-white/5 hover:text-white/70"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             Sign out
           </button>
         </div>
       </header>
 
-      <main className="flex-1 p-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-10">
-            <h2 className="text-3xl font-bold tracking-tight">
-              Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''}
+      <main className="flex-1">
+        <div className="mx-auto max-w-6xl px-6 py-12">
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
+              Good afternoon{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : ''}
             </h2>
-            <p className="mt-2 text-white/40">Manage your workflows and automations</p>
+            <p className="mt-1.5 text-sm text-gray-500">Create and manage your AI-powered workflows.</p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Link
+              to="/chat"
+              className="group flex flex-col rounded-xl border border-gray-200 p-6 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+            >
+              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                <Plus className="h-4 w-4 text-gray-500" />
+              </div>
+              <span className="text-sm font-medium text-gray-900">New workflow</span>
+              <span className="mt-1 text-sm text-gray-500">Start from a prompt</span>
+            </Link>
             <Link
               to="/dashboard"
-              className="group rounded-2xl border border-white/5 bg-white/[0.01] p-6 transition-all hover:border-violet-500/20 hover:bg-violet-500/[0.02]"
+              className="group flex flex-col rounded-xl border border-gray-200 p-6 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 ring-1 ring-violet-500/20">
-                <Plus className="h-6 w-6 text-violet-400" />
+              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                <History className="h-4 w-4 text-gray-500" />
               </div>
-              <h3 className="font-semibold">New Workflow</h3>
-              <p className="mt-1 text-sm text-white/40">Create an AI-powered workflow from a prompt</p>
+              <span className="text-sm font-medium text-gray-900">Recent workflows</span>
+              <span className="mt-1 text-sm text-gray-500">Continue where you left off</span>
             </Link>
-            <div className="rounded-2xl border border-white/5 bg-white/[0.01] p-6 transition-all hover:border-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 ring-1 ring-violet-500/20">
-                <Workflow className="h-6 w-6 text-violet-400" />
+            <button className="group flex flex-col rounded-xl border border-gray-200 p-6 text-left transition-colors hover:border-gray-300 hover:bg-gray-50">
+              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                <BarChart3 className="h-4 w-4 text-gray-500" />
               </div>
-              <h3 className="font-semibold">Workflows</h3>
-              <p className="mt-1 text-sm text-white/40">View and manage your saved workflows</p>
-            </div>
-            <div className="rounded-2xl border border-white/5 bg-white/[0.01] p-6 transition-all hover:border-white/10">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 ring-1 ring-purple-500/20">
-                <BarChart3 className="h-6 w-6 text-purple-400" />
-              </div>
-              <h3 className="font-semibold">Analytics</h3>
-              <p className="mt-1 text-sm text-white/40">Monitor workflow execution and performance</p>
+              <span className="text-sm font-medium text-gray-900">Analytics</span>
+              <span className="mt-1 text-sm text-gray-500">Track performance</span>
+            </button>
+          </div>
+
+          <div className="mt-16">
+            <h3 className="text-xs font-medium text-gray-400">OVERVIEW</h3>
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {[
+                { value: '0', label: 'Workflows' },
+                { value: '0', label: 'Exports this month' },
+                { value: '—', label: 'Success rate' },
+              ].map((stat, i) => (
+                <div key={i} className="rounded-xl border border-gray-200 p-4">
+                  <div className="text-xl font-semibold tracking-tight text-gray-900">{stat.value}</div>
+                  <div className="mt-1 text-xs text-gray-400">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
