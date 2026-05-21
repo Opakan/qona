@@ -10,4 +10,12 @@ export const config = {
 
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? '',
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
+
+  PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY ?? '',
+  PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY ?? '',
+
+  FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY ?? '',
+  FLUTTERWAVE_PUBLIC_KEY: process.env.FLUTTERWAVE_PUBLIC_KEY ?? '',
+
+  APP_URL: process.env.APP_URL ?? 'http://localhost:5173',
 } as const;

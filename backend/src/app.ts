@@ -8,6 +8,7 @@ import { healthRouter } from './routes/health.js';
 import { workflowsRouter } from './routes/workflows.js';
 import { authRouter } from './routes/auth.js';
 import { conversationsRouter } from './routes/conversations.js';
+import { paymentsRouter } from './routes/payments.js';
 
 export function createApp() {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp() {
     }),
   );
 
+  app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json({ limit: '5mb' }));
 
   if (config.NODE_ENV !== 'test') {
@@ -31,6 +33,7 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/workflows', workflowsRouter);
   app.use('/api/conversations', conversationsRouter);
+  app.use('/api/payments', paymentsRouter);
 
   app.use(errorHandler);
 

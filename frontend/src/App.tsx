@@ -22,6 +22,8 @@ import GDPR from './pages/GDPR';
 import SignIn from './pages/SignIn';
 import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
+import Billing from './pages/Billing';
+import PaymentSuccess from './pages/PaymentSuccess';
 import AuthCallback from './pages/AuthCallback';
 import AuthGuard from './components/auth/AuthGuard';
 import GuestGuard from './components/auth/GuestGuard';
@@ -55,6 +57,8 @@ export default function App() {
       <Route path="/sign-in" element={<AuthProvider><GuestGuard><SignIn /></GuestGuard></AuthProvider>} />
       <Route path="/dashboard" element={<AuthProvider><AuthGuard><Dashboard /></AuthGuard></AuthProvider>} />
       <Route path="/chat" element={<AuthProvider><AuthGuard><Chat /></AuthGuard></AuthProvider>} />
+      <Route path="/billing" element={<AuthProvider><AuthGuard><Billing /></AuthGuard></AuthProvider>} />
+      <Route path="/payment/success" element={<AuthProvider><AuthGuard><PaymentSuccess /></AuthGuard></AuthProvider>} />
       <Route path="/auth/callback" element={<AuthProvider><AuthCallback /></AuthProvider>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
