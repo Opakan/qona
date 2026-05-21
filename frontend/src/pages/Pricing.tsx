@@ -7,7 +7,7 @@ import apiClient from '../api/client';
 const plans = [
   {
     name: 'Free',
-    price: '0',
+    price: '$0',
     period: '',
     slug: 'free',
     features: ['3 workflow exports', 'Basic AI generation', 'n8n format', 'Community support'],
@@ -15,7 +15,7 @@ const plans = [
   },
   {
     name: 'Starter',
-    price: '30,000',
+    price: '$29',
     period: '/mo',
     slug: 'starter',
     features: ['50 workflow exports', 'Advanced AI generation', 'All platform exports', 'Version history', 'Priority support'],
@@ -23,7 +23,7 @@ const plans = [
   },
   {
     name: 'Pro',
-    price: '99,000',
+    price: '$99',
     period: '/mo',
     slug: 'pro',
     features: ['200 workflow exports', 'Custom AI training', 'All platform exports', 'Unlimited versions', 'API access', 'Dedicated support'],
@@ -43,7 +43,7 @@ export default function PricingPage() {
     setLoading(planSlug);
 
     try {
-      const { data } = await apiClient.post('/payments/initialize', { plan: planSlug, provider: 'paystack' });
+      const { data } = await apiClient.post('/payments/initialize', { plan: planSlug });
       window.location.href = data.authorizationUrl;
     } catch {
       alert('Payment initialization failed. Please try again.');
@@ -56,7 +56,7 @@ export default function PricingPage() {
     <div className="mx-auto max-w-5xl px-4 py-16 lg:px-6 lg:py-24">
       <div className="text-center">
         <h1 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">Simple pricing</h1>
-        <p className="mt-3 text-base text-gray-500">Start free. Upgrade when you need more. Pay with Paystack or Flutterwave.</p>
+        <p className="mt-3 text-base text-gray-500">Start free. Upgrade when you need more. Pay with Flutterwave.</p>
       </div>
       <div className="mt-12 grid gap-4 sm:grid-cols-3">
         {plans.map((plan) => (
@@ -69,7 +69,7 @@ export default function PricingPage() {
             <div className={`text-sm ${plan.dark ? 'text-gray-400' : 'text-gray-500'}`}>{plan.name}</div>
             <div className="mt-2 flex items-baseline gap-0.5">
               <span className={`text-4xl font-semibold tracking-tight ${plan.dark ? 'text-white' : 'text-black'}`}>
-                ₦{plan.price}
+                {plan.price}
               </span>
               <span className="text-sm text-gray-400">{plan.period}</span>
             </div>
@@ -87,14 +87,12 @@ export default function PricingPage() {
               className={`mt-6 block w-full rounded-lg py-2.5 text-center text-sm font-medium transition-colors ${
                 plan.dark
                   ? 'bg-white text-black hover:bg-gray-100'
-                  : plan.price === '0'
-                    ? 'bg-gray-900 text-white hover:bg-gray-800'
-                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'bg-gray-900 text-white hover:bg-gray-800'
               }`}
             >
               {loading === plan.slug ? (
                 <Loader2 className="mx-auto h-4 w-4 animate-spin" />
-              ) : plan.price === '0' ? (
+              ) : plan.slug === 'free' ? (
                 'Get started'
               ) : (
                 'Subscribe'
@@ -103,11 +101,6 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
-      {isAuthenticated && (
-        <p className="mt-8 text-center text-xs text-gray-400">
-          Payments processed securely via Paystack. We accept all major Nigerian cards and bank transfers.
-        </p>
-      )}
     </div>
   );
 }

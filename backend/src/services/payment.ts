@@ -3,10 +3,9 @@ import type { Prisma } from '@prisma/client';
 import { config } from '../config.js';
 import { getPrisma } from '../lib/prisma.js';
 
-const PAYSTACK_BASE = 'https://api.paystack.co';
 const FLUTTERWAVE_BASE = 'https://api.flutterwave.com/v3';
 
-export type PaymentProvider = 'paystack' | 'flutterwave';
+export type PaymentProvider = 'flutterwave';
 
 interface InitPaymentParams {
   email: string;
@@ -23,42 +22,6 @@ interface PaymentResult {
 }
 
 export const paymentService = {
-  async initPaystack(params: InitPaymentParams): Promise<PaymentResult> {
-    const ref = `QONA-PS-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-    const { data } = await axios.post(
-      `${PAYSTACK_BASE}/transaction/initialize`,
-      {
-        email: params.email,
-        amount: params.amount * 100,
-        reference: ref,
-        metadata: {
-          userId: params.userId,
-          plan: params.planSlug,
-          ...params.metadata,
-        },
-        callback_url: `${config.APP_URL}/payment/success?provider=paystack&plan=${params.planSlug}`,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${config.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    if (!data.status) throw new Error(`Paystack: ${data.message}`);
-
-    return { provider: 'paystack', authorizationUrl: data.data.authorization_url, reference: ref };
-  },
-
-  async verifyPaystack(reference: string) {
-    const { data } = await axios.get(`${PAYSTACK_BASE}/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${config.PAYSTACK_SECRET_KEY}` },
-    });
-    return data;
-  },
-
   async initFlutterwave(params: InitPaymentParams): Promise<PaymentResult> {
     const ref = `QONA-FLW-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -67,11 +30,11 @@ export const paymentService = {
       {
         tx_ref: ref,
         amount: params.amount,
-        currency: 'NGN',
+        currency: 'USD',
         redirect_url: `${config.APP_URL}/payment/success?provider=flutterwave&plan=${params.planSlug}`,
         customer: {
           email: params.email,
-          name: params.metadata?.name as string ?? params.email,
+          name: (params.metadata?.name as string) ?? params.email,
         },
         meta: {
           userId: params.userId,
@@ -124,14 +87,7 @@ export const paymentService = {
     else if (plan.interval === 'year') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
     return prisma.subscription.create({
-      data: {
-        userId,
-        planId: plan.id,
-        provider,
-        providerRef,
-        status: 'ACTIVE',
-        expiresAt,
-      },
+      data: { userId, planId: plan.id, provider, providerRef, status: 'ACTIVE', expiresAt },
     });
   },
 
@@ -152,33 +108,11 @@ export const paymentService = {
         provider: data.provider,
         providerRef: data.providerRef,
         amount: data.amount,
-        currency: 'NGN',
+        currency: 'USD',
         status: data.status ?? 'PENDING',
         metadata: (data.metadata ?? {}) as Prisma.InputJsonValue,
       },
     });
-  },
-
-  async handlePaystackWebhook(payload: any) {
-    if (payload.event === 'charge.success') {
-      const ref = payload.data.reference;
-      const metadata = payload.data.metadata;
-      const userId = metadata?.userId as string;
-      const planSlug = metadata?.plan as string;
-
-      if (!userId || !planSlug) throw new Error('Missing metadata');
-
-      const subscription = await this.createSubscription(userId, planSlug, 'paystack', ref);
-      await this.createInvoice({
-        userId,
-        subscriptionId: subscription.id,
-        provider: 'paystack',
-        providerRef: ref,
-        amount: payload.data.amount / 100,
-        status: 'PAID',
-        metadata: { plan: planSlug, email: payload.data.customer?.email },
-      });
-    }
   },
 
   async handleFlutterwaveWebhook(payload: any) {

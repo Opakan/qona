@@ -3,22 +3,18 @@ import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { UpdateUserProfileSchema } from '@qona/shared';
 import { db } from '../services/db.js';
+import { DISPOSABLE_EMAIL_DOMAINS } from '@qona/shared';
+import { AppError } from '../middleware/errorHandler.js';
 
 export const authRouter = Router();
 
-const userSelect = {
-  id: true,
-  authId: true,
-  email: true,
-  name: true,
-  avatarUrl: true,
-  role: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
-
 authRouter.get('/me', requireAuth, async (req, res, next) => {
   try {
+    const emailDomain = req.user!.email.split('@')[1]?.toLowerCase();
+    if (emailDomain && DISPOSABLE_EMAIL_DOMAINS.includes(emailDomain as typeof DISPOSABLE_EMAIL_DOMAINS[number])) {
+      throw new AppError('Disposable email addresses are not allowed. Please use a permanent email address.', 403);
+    }
+
     let user = await db.user.findByAuthId(req.user!.authId);
 
     if (!user) {

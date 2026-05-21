@@ -20,23 +20,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const timeout = setTimeout(() => {
-      if (cancelled) return;
-      setIsLoading(false);
-    }, 5000);
 
     supabase.auth
       .getSession()
       .then(({ data: { session: initialSession } }) => {
         if (cancelled) return;
-        clearTimeout(timeout);
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         setIsLoading(false);
       })
       .catch(() => {
         if (cancelled) return;
-        clearTimeout(timeout);
         setIsLoading(false);
       });
 
@@ -44,15 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (cancelled) return;
-      clearTimeout(timeout);
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      setIsLoading(false);
+      if (newSession) setIsLoading(false);
     });
 
     return () => {
       cancelled = true;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -72,14 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        session,
-        isLoading,
-        isAuthenticated: !!user,
-        signInWithGoogle,
-        signOut,
-      }}
+      value={{ user, session, isLoading, isAuthenticated: !!user, signInWithGoogle, signOut }}
     >
       {children}
     </AuthContext.Provider>
@@ -88,8 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }

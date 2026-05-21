@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, MessageSquare, Trash2, Send, ArrowUp, Sparkles, Workflow } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow, LogOut } from 'lucide-react';
 import apiClient from '../api/client';
 import ExportButton from '../components/chat/ExportButton';
+import { useAuth } from '../context/AuthContext';
 
 interface ConversationItem {
   id: string;
@@ -19,6 +20,7 @@ interface Message {
 }
 
 export default function ChatPage() {
+  const { signOut } = useAuth();
   const navigate = useNavigate();
 
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -164,12 +166,19 @@ export default function ChatPage() {
           )}
         </div>
 
-        <div className="border-t border-gray-200 px-4 py-3">
+        <div className="border-t border-gray-200 px-4 py-3 space-y-1">
           <button
             onClick={() => setSidebarOpen(false)}
             className="w-full rounded-lg px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-200"
           >
             Close sidebar
+          </button>
+          <button
+            onClick={async () => { await signOut(); navigate('/sign-in'); }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-200"
+          >
+            <LogOut className="h-3 w-3" />
+            Sign out
           </button>
         </div>
       </aside>
