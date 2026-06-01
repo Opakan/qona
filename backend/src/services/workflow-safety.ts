@@ -1,6 +1,5 @@
 import { validateInternalGraph } from '@qona/shared';
 import type { InternalGraph, PlanningMissingField } from '@qona/shared';
-import { compileInternalGraph } from './n8n-compiler.js';
 
 export interface SafetyResult {
   safe: boolean;
@@ -16,7 +15,6 @@ export function checkWorkflowCompleteness(opts: {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const answered = opts.missingFields.filter(f => f.answered);
   const unanswered = opts.missingFields.filter(f => !f.answered);
   if (unanswered.length > 0) {
     errors.push('Unanswered fields: ' + unanswered.map(f => f.question).join(', '));
@@ -31,7 +29,6 @@ export function checkWorkflowCompleteness(opts: {
     errors.push('Draft has no nodes');
     return { safe: false, errors, warnings, shouldGoBackToClarifying: true };
   }
-
   const validation = validateInternalGraph(opts.draft, 'complete');
   if (!validation.valid) {
     errors.push('Graph validation failed');
@@ -39,15 +36,20 @@ export function checkWorkflowCompleteness(opts: {
     return { safe: false, errors, warnings, shouldGoBackToClarifying: true };
   }
 
-  const compiled = compileInternalGraph(opts.draft);
-  if (!compiled.success) {
-    errors.push('Workflow cannot be compiled');
-    for (const e of compiled.errors) errors.push(e.message);
-    return { safe: false, errors, warnings, shouldGoBackToClarifying: true };
-  }
-
-  if (compiled.warnings.length > 0) warnings.push(...compiled.warnings);
+  const answered = opts.missingFields.filter(f => f.answered);
   if (answered.length < 2) warnings.push('Very few questions answered');
+
+  return { safe: true, errors, warnings, shouldGoBackToClarifying: false };
+}
+
+export function checkCompileReadiness(graph: InternalGraph): SafetyResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!graph.nodes || graph.nodes.length === 0) {
+    errors.push('No nodes to compile');
+    return { safe: false, errors, warnings, shouldGoBackToClarifying: false };
+  }
 
   return { safe: true, errors, warnings, shouldGoBackToClarifying: false };
 }
