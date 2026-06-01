@@ -38,7 +38,7 @@ export default function App() {
         <Route path="/workflow-builder" element={<WorkflowBuilder />} />
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/api" element={<Api />} />
-        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/pricing" element={<AuthProvider><Pricing /></AuthProvider>} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/documentation" element={<Documentation />} />
         <Route path="/tutorials" element={<Tutorials />} />

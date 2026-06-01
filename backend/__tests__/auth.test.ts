@@ -21,7 +21,7 @@ describe('GET /api/auth/me', () => {
   it('should return 401 when no auth header is provided', async () => {
     const res = await request(app).get('/api/auth/me');
     expect(res.status).toBe(401);
-    expect(res.body.error.message).toContain('Missing or invalid authorization header');
+    expect(res.body.error).toBeDefined(); expect(res.body.error).toContain('Missing or invalid authorization header');
   });
 
   it('should return 401 when token verification fails', async () => {
@@ -34,7 +34,7 @@ describe('GET /api/auth/me', () => {
       .set('Authorization', 'Bearer invalid-token');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.message).toBe('Authentication failed');
+    expect(res.body.error).toBe('Authentication failed');
   });
 
   it('should return 401 with malformed header', async () => {

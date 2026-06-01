@@ -14,9 +14,9 @@
     "sourceMap": true,
     "outDir": "dist",
     "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
     "paths": {
-      "@qona/shared": ["packages/shared/src"],
-      "@qona/ai-engine": ["packages/ai-engine/src"]
+      "@qona/shared": ["shared/src"]
     }
   },
   "exclude": ["node_modules", "dist"]

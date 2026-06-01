@@ -6,7 +6,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "composite": true
+    "composite": true,
+    "ignoreDeprecations": "5.0"
   },
   "include": ["src"]
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, Outlet } from 'react-router-dom';
-import { Menu, X, Github, Twitter } from 'lucide-react';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Menu, X, Github, Twitter, LogOut } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
   { label: 'Product', href: '/product' },
@@ -18,12 +20,34 @@ const footerSections = {
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setChecking(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    navigate('/');
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-white antialiased">
@@ -43,15 +67,30 @@ export default function Layout() {
                 {l.label}
               </Link>
             ))}
-            <Link to="/sign-in" className="transition-colors hover:text-gray-900">
-              Sign in
-            </Link>
-            <Link
-              to="/sign-in"
-              className="rounded-lg bg-gray-900 px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-            >
-              Try Qona
-            </Link>
+            {!checking && user ? (
+              <>
+                <Link to="/dashboard" className="transition-colors hover:text-gray-900">Dashboard</Link>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:text-gray-900"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/sign-in" className="transition-colors hover:text-gray-900">
+                  Sign in
+                </Link>
+                <Link
+                  to="/sign-in"
+                  className="rounded-lg bg-gray-900 px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                >
+                  Try Qona
+                </Link>
+              </>
+            )}
           </div>
 
           <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
@@ -67,8 +106,17 @@ export default function Layout() {
                   {l.label}
                 </Link>
               ))}
-              <Link to="/sign-in" className="text-gray-600" onClick={() => setMenuOpen(false)}>Sign in</Link>
-              <Link to="/sign-in" className="rounded-lg bg-gray-900 px-4 py-2 text-center text-white" onClick={() => setMenuOpen(false)}>Try Qona</Link>
+              {user ? (
+                <>
+                  <Link to="/dashboard" className="text-gray-600" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                  <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="rounded-lg bg-gray-900 px-4 py-2 text-center text-white">Sign out</button>
+                </>
+              ) : (
+                <>
+                  <Link to="/sign-in" className="text-gray-600" onClick={() => setMenuOpen(false)}>Sign in</Link>
+                  <Link to="/sign-in" className="rounded-lg bg-gray-900 px-4 py-2 text-center text-white" onClick={() => setMenuOpen(false)}>Try Qona</Link>
+                </>
+              )}
             </div>
           </div>
         )}

@@ -20,6 +20,8 @@ model User {
   workflows        Workflow[]
   conversations    Conversation[]
   exportHistory    ExportHistory[]
+  internalGraphs   InternalGraph[]
+  planningSessions WorkflowPlanningSession[]
   apiKeys          ApiKey[]
   subscriptions    Subscription[]
   invoices         Invoice[]
@@ -182,4 +184,48 @@ model ApiKey {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model InternalGraph {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String   @default("")
+  version     Int      @default(1)
+  nodes       Json
+  edges       Json
+  metadata    Json     @default("{}")
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planningSessions WorkflowPlanningSession[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("internal_graphs")
+}
+
+model WorkflowPlanningSession {
+  id                String   @id @default(cuid())
+  userId            String
+  state             String   @default("collecting_intent")
+  collectedAnswers  Json     @default("{}")
+  missingFields     Json     @default("[]")
+  extractedIntent   Json?
+  workflowDraft     Json?
+  internalGraphId   String?
+  conversationId    String?
+  stage             Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  graph       InternalGraph? @relation(fields: [internalGraphId], references: [id])
+
+  @@index([userId])
+  @@index([state])
+  @@map("workflow_planning_sessions")
 }

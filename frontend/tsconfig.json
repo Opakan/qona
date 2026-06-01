@@ -8,6 +8,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@qona/shared": ["../shared/src"],
       "@/*": ["./src/*"]

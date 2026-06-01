@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow, LogOut } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow,
+  LogOut, History, ChevronRight, Loader2, LayoutDashboard
+} from 'lucide-react';
 import apiClient from '../api/client';
-import ExportButton from '../components/chat/ExportButton';
+import WorkflowGraph from '../components/chat/WorkflowGraph';
 import { useAuth } from '../context/AuthContext';
 
 interface ConversationItem {
@@ -28,9 +31,14 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [typing, setTyping] = useState(false);
+  const [currentWorkflow, setCurrentWorkflow] = useState<Record<string, unknown> | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [leftTab, setLeftTab] = useState<'conversations' | 'history'>('conversations');
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,40 +48,51 @@ export default function ChatPage() {
     try {
       const { data } = await apiClient.get<{ conversations: ConversationItem[] }>('/conversations');
       setConversations(data.conversations);
-    } catch {
-      /* ignore - auth will redirect */
-    }
+    } catch { /* ignore */ }
   }, []);
 
   const fetchMessages = useCallback(async (id: string) => {
     try {
       const { data } = await apiClient.get(`/conversations/${id}`);
       const conv = data.conversation;
-      setMessages(conv?.messages ?? []);
+      const msgs: Message[] = conv?.messages ?? [];
+      setMessages(msgs);
+
+      for (const msg of msgs) {
+        const meta = msg.metadata as Record<string, unknown> | undefined;
+        if (meta?.sessionId) setSessionId(meta.sessionId as string);
+        if (meta?.graph) { setCurrentWorkflow(meta.graph as Record<string, unknown>); return; }
+      }
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
+  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+  useEffect(() => { if (activeId) fetchMessages(activeId); }, [activeId, fetchMessages]);
 
+  // Live graph sync
   useEffect(() => {
-    if (activeId) fetchMessages(activeId);
-  }, [activeId, fetchMessages]);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (!sessionId) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const { data } = await apiClient.get(`/sessions/${sessionId}/draft`);
+        if (data.draft) setCurrentWorkflow(data.draft as Record<string, unknown>);
+      } catch { /* */ }
+    }, 2000);
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, [sessionId]);
 
   const sendMessage = async (text: string) => {
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+    setTyping(true);
 
     try {
       let convId = activeId;
-
       if (!convId) {
-        const { data } = await apiClient.post<{ conversation: { id: string } }>('/conversations', {
-          title: text.slice(0, 80) || 'New conversation',
-        });
+        const { data } = await apiClient.post<{ conversation: { id: string } }>('/conversations', { title: text.slice(0, 80) || 'New conversation' });
         convId = data.conversation.id;
         setActiveId(convId);
         fetchConversations();
@@ -81,168 +100,119 @@ export default function ChatPage() {
 
       const { data } = await apiClient.post(`/conversations/${convId}/messages`, { content: text });
 
-      const role = data.type === 'error' ? 'assistant' : 'assistant';
-      const reply: Message = {
-        id: `a-${Date.now()}`,
-        role,
-        content: data.explanation ?? data.error ?? 'Workflow generated.',
-        metadata: data.type === 'clarification' ? { questions: data.questions } : undefined,
-      };
+      const meta: Record<string, unknown> = {};
+      if (data.sessionId) { meta.sessionId = data.sessionId; setSessionId(data.sessionId as string); }
+      if (data.type === 'clarification' && data.questions) meta.questions = data.questions;
+      if (data.type === 'workflow' && data.graph) {
+        meta.graph = data.graph;
+        setCurrentWorkflow(data.graph as Record<string, unknown>);
+      }
 
+      setTyping(false);
+      const reply: Message = {
+        id: `a-${Date.now()}`, role: 'assistant',
+        content: data.explanation ?? data.error ?? data.singleQuestion?.question ?? 'Workflow generated.',
+        metadata: Object.keys(meta).length > 0 ? meta : undefined,
+      };
       setMessages((prev) => [...prev, reply]);
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-      setMessages((prev) => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: errorMsg }]);
+      setTyping(false);
+      setMessages((prev) => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: err instanceof Error ? err.message : 'Something went wrong.' }]);
     } finally {
       setLoading(false);
       fetchConversations();
     }
   };
 
-  const handleSubmit = () => {
-    const text = input.trim();
-    if (!text || loading) return;
-    sendMessage(text);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
-  };
-
-  const newConversation = () => {
-    setActiveId(null);
-    setMessages([]);
-  };
-
+  const handleSubmit = () => { const t = input.trim(); if (t && !loading) sendMessage(t); };
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
+  const newConversation = () => { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); };
   const deleteConversation = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
       await apiClient.delete(`/conversations/${id}`);
-      if (activeId === id) { setActiveId(null); setMessages([]); }
+      if (activeId === id) { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); }
       fetchConversations();
-    } catch { /* ignore */ }
+    } catch { /* */ }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
-      {/* Sidebar */}
-      <aside
-        className={`flex flex-col border-r border-gray-200 bg-gray-50 transition-all ${
-          sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
-        }`}
-      >
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <button
-            onClick={newConversation}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
-          >
-            <Plus className="h-4 w-4" />
-            New chat
-          </button>
-          <button onClick={() => navigate('/dashboard')} className="text-xs text-gray-400 hover:text-gray-600">
-            Dashboard
-          </button>
+    <div className="flex h-screen overflow-hidden bg-white text-gray-900 antialiased">
+      {/* ═════ LEFT COLUMN ═════ */}
+      <div className="flex w-64 flex-shrink-0 flex-col border-r border-gray-200 bg-gray-50">
+        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
+          <Link to="/" className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4 text-gray-400" /><span className="text-sm font-medium">Qona</span></Link>
         </div>
-
-        <div className="flex-1 overflow-y-auto py-2">
-          {conversations.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); }}
-              className={`group flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors ${
-                activeId === conv.id ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <MessageSquare className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-              <span className="flex-1 truncate">{conv.title}</span>
-              <Trash2
-                onClick={(e) => deleteConversation(e, conv.id)}
-                className="h-3.5 w-3.5 flex-shrink-0 text-gray-300 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100"
-              />
+        <div className="flex border-b border-gray-200">
+          {(['conversations', 'history'] as const).map((tab) => (
+            <button key={tab} onClick={() => setLeftTab(tab)} className={`flex-1 py-2.5 text-xs font-medium transition-colors ${leftTab === tab ? 'border-b-2 border-gray-900 text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+              {tab === 'conversations' ? 'Chats' : 'Workflows'}
             </button>
           ))}
-          {conversations.length === 0 && (
-            <p className="px-4 py-8 text-center text-xs text-gray-400">No conversations yet</p>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {leftTab === 'conversations' ? (
+            <>
+              <div className="px-3 py-2">
+                <button onClick={newConversation} className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100">
+                  <Plus className="h-3.5 w-3.5" /> New chat
+                </button>
+              </div>
+              {conversations.map((conv) => (
+                <button key={conv.id} onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); }} className={`group flex w-full items-center gap-2 px-4 py-2 text-left text-xs transition-colors ${activeId === conv.id ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-100'}`}>
+                  <MessageSquare className="h-3 w-3 flex-shrink-0" />
+                  <span className="flex-1 truncate">{conv.title}</span>
+                  <Trash2 onClick={(e) => deleteConversation(e, conv.id)} className="h-3 w-3 flex-shrink-0 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100" />
+                </button>
+              ))}
+            </>
+          ) : (
+            <div className="p-4 text-center text-xs text-gray-400">
+              <History className="mx-auto mb-2 h-5 w-5 opacity-30" />
+              <p>Workflow history coming soon</p>
+            </div>
           )}
         </div>
-
-        <div className="border-t border-gray-200 px-4 py-3 space-y-1">
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="w-full rounded-lg px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-200"
-          >
-            Close sidebar
-          </button>
-          <button
-            onClick={async () => { await signOut(); navigate('/sign-in'); }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-200"
-          >
-            <LogOut className="h-3 w-3" />
-            Sign out
+        <div className="border-t border-gray-200 px-4 py-3">
+          <button onClick={async () => { await signOut(); navigate('/sign-in'); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-200">
+            <LogOut className="h-3 w-3" /> Sign out
           </button>
         </div>
-      </aside>
+      </div>
 
-      {/* Main */}
-      <div className="flex flex-1 flex-col">
-        {/* Top bar */}
-        <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-lg px-3 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-100"
-          >
-            {!sidebarOpen ? 'Open sidebar' : ''}
-          </button>
-          <button
-            onClick={newConversation}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            New
-          </button>
+      {/* ═════ CENTER COLUMN ═════ */}
+      <div className="flex flex-1 flex-col min-w-0">
+        <header className="flex items-center justify-between border-b border-gray-200 px-5 py-2.5">
+          <span className="text-xs font-medium text-gray-400">Conversation</span>
+          <button onClick={newConversation} className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-100"><Sparkles className="h-3 w-3" /> New</button>
         </header>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 px-4">
-              <div className="flex items-center gap-2">
-                <Workflow className="h-5 w-5 text-gray-400" />
-                <span className="text-sm font-medium text-gray-900">Qona</span>
-              </div>
-              <h2 className="text-lg font-medium text-gray-900">What would you like to automate?</h2>
-              <p className="max-w-md text-center text-sm text-gray-500">
-                Describe your automation in plain English and Qona will generate a workflow you can export to n8n, Zapier, or Make.com.
-              </p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6">
+              <div className="flex items-center gap-2"><Workflow className="h-5 w-5 text-gray-300" /><span className="text-lg font-semibold">Qona</span></div>
+              <p className="max-w-sm text-center text-sm text-gray-400">Describe the automation you want — I'll ask questions to build it step by step.</p>
             </div>
           ) : (
-            <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-              {messages.map((msg) => {
-                const meta = msg.metadata as Record<string, unknown> | undefined;
-                const wfId = meta?.workflowId as string | undefined;
-                return (
-                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div>
-                    <div
-                      className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                        msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {msg.content}
-                      {wfId && msg.role === 'assistant' && (
-                        <ExportButton workflowId={wfId} workflowName={msg.content.slice(0, 60)} />
-                      )}
-                    </div>
+            <div className="mx-auto max-w-2xl space-y-4 px-5 py-6">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs ${msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    {msg.role === 'user' ? 'U' : 'Q'}
+                  </div>
+                  <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[80%] ${msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                    {msg.content}
                   </div>
                 </div>
-              )})}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-400">
+              ))}
+              {typing && (
+                <div className="flex gap-3">
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">Q</div>
+                  <div className="flex items-center gap-1.5 rounded-2xl bg-gray-100 px-4 py-2.5">
                     <div className="flex gap-1">
-                      <span className="animate-pulse">.</span>
-                      <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>.</span>
-                      <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>.</span>
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.15s' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.3s' }} />
                     </div>
                   </div>
                 </div>
@@ -252,30 +222,37 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Input */}
-        <div className="border-t border-gray-200 bg-white px-4 py-4">
-          <div className="mx-auto max-w-3xl">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Describe your automation..."
-                rows={1}
-                className="min-h-[52px] w-full resize-none bg-transparent px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"
-              />
-              <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
-                <span className="text-xs text-gray-400">Shift + Enter for new line</span>
-                <button
-                  onClick={handleSubmit}
-                  disabled={!input.trim() || loading}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white transition-opacity disabled:opacity-30 hover:opacity-90"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </button>
-              </div>
+        <div className="border-t border-gray-200 px-5 py-3">
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
+            <textarea ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Describe your automation..." rows={1}
+              className="min-h-[48px] w-full resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-gray-400" />
+            <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
+              <span className="text-xs text-gray-350">Shift + Enter for new line</span>
+              <button onClick={handleSubmit} disabled={!input.trim() || loading}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-900 text-white transition-opacity disabled:opacity-25 hover:opacity-90">
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ═════ RIGHT COLUMN ═════ */}
+      <div className="flex w-[420px] flex-shrink-0 flex-col border-l border-gray-200">
+        <div className="flex items-center gap-2 border-b border-gray-200 px-5 py-2.5">
+          <Workflow className="h-3.5 w-3.5 text-gray-400" />
+          <span className="text-xs font-medium text-gray-500">WORKFLOW PREVIEW</span>
+          <span className="ml-auto text-xs text-gray-300">{sessionId ? 'live' : ''}</span>
+        </div>
+        <div className="flex-1 bg-gray-50">
+          {currentWorkflow ? (
+            <WorkflowGraph graph={currentWorkflow} className="h-full" />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+              <Workflow className="h-8 w-8 text-gray-200" />
+              <p className="text-xs text-gray-400">Your workflow will appear here as it's built.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
