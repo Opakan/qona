@@ -33,7 +33,7 @@ conversationsRouter.post(
   async (req, res, next) => {
     try {
       const conversation = await conversationService.create({
-        userId: req.user!.authId,
+        authId: req.user!.authId, email: req.user!.email, name: req.user!.name,
         title: req.body.title,
         workflowId: req.body.workflowId,
       });

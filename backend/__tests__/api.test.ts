@@ -9,7 +9,7 @@ vi.mock('jose', () => ({
 
 vi.mock('../src/lib/prisma.js', () => ({
   getPrisma: () => ({
-    user: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn() },
+    user: { findUnique: vi.fn(), create: vi.fn().mockReturnValue({id: 'prisma-id-123'}), upsert: vi.fn(), update: vi.fn() },
     workflow: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), count: vi.fn() },
     workflowVersion: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn() },
     conversation: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
