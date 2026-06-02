@@ -22,8 +22,10 @@ import type { Prisma } from '@prisma/client';
 
 const LOG_PREFIX = '[Qona AI]';
 
+let _traceId: string | undefined;
 function log(level: 'info' | 'warn' | 'error', message: string, data?: Record<string, unknown>) {
   const ts = new Date().toISOString();
+  if (_traceId) (data ??= {})[`traceId`] = _traceId;
   const line = `${LOG_PREFIX} ${level.toUpperCase()} [${ts}] ${message}`;
   const logger = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
   logger(line, data ? JSON.stringify(truncateLogData(data)) : '');
@@ -47,6 +49,7 @@ function truncateLogData(data: Record<string, unknown>): Record<string, unknown>
 
 export interface AIResponse {
   type: 'question' | 'clarification' | 'workflow' | 'complete' | 'error';
+  traceId?: string;
   questions?: Array<{ id: string; question: string; field?: string; options?: string[]; required: boolean }>;
   singleQuestion?: { id: string; question: string; field: string; options?: string[]; required: boolean };
   graph?: InternalGraph;
@@ -99,7 +102,9 @@ export const conversationEngine = {
     conversationId: string,
     userId: string,
     userMessage: string,
+    traceId?: string,
   ): Promise<AIResponse> {
+    _traceId = traceId;
     const conversation = await conversationService.getById(conversationId);
     if (!conversation) throw new Error('Conversation not found');
 

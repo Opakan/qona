@@ -69,6 +69,7 @@ conversationsRouter.post(
         id,
         req.user!.authId,
         req.body.content,
+        req.traceId,
       );
 
       res.json(result);

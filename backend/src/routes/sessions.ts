@@ -31,7 +31,7 @@ function buildBlockedResponse(session: { id: string; state: string; stage: numbe
 sessionsRouter.get('/api/sessions', requireAuth, async (req, res, next) => {
   try {
     const sv = await planningSessionService.getByUserId(req.user!.authId);
-    res.json({ sessions: sv });
+    res.json({ traceId: req.traceId, sessions: sv });
   } catch (err) { next(err); }
 });
 sessionsRouter.get('/api/sessions/:id/draft', requireAuth, async (req, res, next) => {
