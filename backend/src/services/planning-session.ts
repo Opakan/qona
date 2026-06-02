@@ -1,5 +1,16 @@
 import { getPrisma } from '../lib/prisma.js';
 import { PLANNING_STATES, PlanningStateSchema } from '@qona/shared';
+
+const LOG_PREFIX = '[Planning]';
+
+async function resolveUserId(authId: string, email?: string, name?: string): Promise<string> {
+  const p = getPrisma();
+  let u = await p.user.findUnique({ where: { authId } });
+  if (!u) { u = await p.user.create({ data: { authId, email: email ?? authId+'@unknown', name: name ?? email ?? authId.slice(0,8) } }); console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'created' }); }
+  else { console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'resolved' }); }
+  return u.id;
+}
+
 import type { Prisma } from '@prisma/client';
 import type {
   PlanningState,
@@ -30,11 +41,11 @@ function isValidTransition(from: PlanningState, to: string): to is PlanningState
 // ═══════════════════════════════════════════════════════════
 
 export const planningSessionService = {
-  async create(userId: string, conversationId?: string) {
+  async create(authId: string, conversationId?: string, email?: string, name?: string) {
     const prisma = getPrisma();
     return prisma.workflowPlanningSession.create({
       data: {
-        userId,
+        userId: await resolveUserId(authId, email, name),
         conversationId,
         state: PLANNING_STATES.COLLECTING_INTENT,
         collectedAnswers: [] as unknown as Prisma.InputJsonValue,
@@ -52,19 +63,19 @@ export const planningSessionService = {
     });
   },
 
-  async getByUserId(userId: string, options?: { state?: string }) {
+  async getByUserId(authId: string, options?: { state?: string }) {
     const prisma = getPrisma();
     return prisma.workflowPlanningSession.findMany({
-      where: { userId, ...(options?.state ? { state: options.state } : {}) },
+      where: { userId: await resolveUserId(authId), ...(options?.state ? { state: options.state } : {}) },
       orderBy: { updatedAt: 'desc' },
       take: 20,
     });
   },
 
-  async getActiveForUser(userId: string) {
+  async getActiveForUser(authId: string) {
     const prisma = getPrisma();
     return prisma.workflowPlanningSession.findFirst({
-      where: { userId, state: { not: PLANNING_STATES.COMPLETED } },
+      where: { userId: await resolveUserId(authId), state: { not: PLANNING_STATES.COMPLETED } },
       orderBy: { updatedAt: 'desc' },
     });
   },
