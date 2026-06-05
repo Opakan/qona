@@ -118,7 +118,7 @@ export const conversationEngine = {
     }
 
     const state = session.state;
-    log('info', 'Processing message with planning session', { sessionId: session.id, state, stage: session.stage });
+    log('info', 'CONVERSATION RECEIVED', { sessionId: session.id, state, stage: session.stage });
 
     // ── Route based on current state ──
     switch (state) {
@@ -294,7 +294,7 @@ export const conversationEngine = {
       };
     }
 
-    log('info', 'Starting workflow finalization', { sessionId });
+    log('info', 'GRAPH GENERATION STARTED', { sessionId });
 
     const session = await planningSessionService.getById(sessionId);
     if (!session) throw new Error('Session not found');
@@ -331,7 +331,7 @@ export const conversationEngine = {
 
     const safety = checkWorkflowCompleteness({ draft, missingFields });
     if (!safety.safe) {
-      log('warn', 'Final workflow validation failed', { errors: safety.errors });
+      log('warn', 'GRAPH GENERATION FAILED', { errors: safety.errors });
       await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
@@ -363,7 +363,7 @@ export const conversationEngine = {
     await planningSessionService.linkGraph(sessionId, saved.id);
     await planningSessionService.transition(sessionId, PLANNING_STATES.COMPLETED);
 
-    log('info', 'Workflow finalized and saved', { graphId: saved.id, nodeCount: draft.nodes.length });
+    log('info', 'GRAPH GENERATION COMPLETED', { graphId: saved.id, nodeCount: draft.nodes.length });
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',

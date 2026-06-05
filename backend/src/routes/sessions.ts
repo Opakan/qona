@@ -60,7 +60,7 @@ const g = sess.workflowDraft as InternalGraph | null;
       res.status(422).json({ compiled: false, error: 'Compilation failed', errors: r.errors, warnings: r.warnings, sessionId: id, state: sess.state });
       return;
     }
-log('info', 'Workflow compiled successfully', { sessionId: id, nodeCount: r.workflow.nodes.length });
+log('info', 'COMPILATION COMPLETED', { sessionId: id, authId: req.user!.authId, nodeCount: r.workflow.nodes.length });
     res.json({ compiled: true, state: sess.state, sessionId: id, n8n: r.workflow, warnings: r.warnings, metadata: { workflowName: g.metadata.name || 'Untitled', nodeCount: r.workflow.nodes.length, compiledAt: new Date().toISOString() } });
   } catch (err) { next(err); }
 });
@@ -82,6 +82,7 @@ const block = guardCompileState(sess);
 const fn = (g.metadata.name || 'workflow').replace(/\\s+/g, '_') + '_n8n.json';
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename="' + fn + '"');
+    log('info', 'EXPORT GENERATION COMPLETED', { sessionId: id, authId: req.user!.authId });
     res.send(JSON.stringify(r.workflow, null, 2));
   } catch (err) { next(err); }
 });
