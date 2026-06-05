@@ -73,7 +73,20 @@ export const planningSessionService = {
     });
   },
 
+  async scanAndRecover() {
+    const prisma = getPrisma();
+    const stuck = await prisma.workflowPlanningSession.findMany({
+      where: { state: 'compiling' },
+      take: 10,
+    });
+    for (const s of stuck) {
+      console.log(LOG_PREFIX, { sessionId: s.id, recovery: 'auto→', internalGraphId: s.internalGraphId });
+      await this.recoverSession(s.id);
+    }
+  },
+
   async getActiveForUser(authId: string) {
+    await this.scanAndRecover();
     const prisma = getPrisma();
     return prisma.workflowPlanningSession.findFirst({
       where: { userId: await resolveUserId(authId), state: { notIn: [PLANNING_STATES.COMPLETED, PLANNING_STATES.FAILED] } },
@@ -163,6 +176,20 @@ export const planningSessionService = {
 
   async complete(sessionId: string): Promise<void> {
     await this.transition(sessionId, PLANNING_STATES.COMPLETED);
+  },
+
+  async recoverSession(sessionId: string): Promise<'compiled' | 'failed' | null> {
+    const prisma = getPrisma();
+    const s = await prisma.workflowPlanningSession.findUnique({ where: { id: sessionId } });
+    if (!s || s.state !== 'compiling') return null;
+    if (s.internalGraphId) {
+      console.log(LOG_PREFIX, { sessionId, recovery: 'compiling→completed', action: 'recovered' });
+      await this.transition(sessionId, 'completed');
+      return 'compiled';
+    }
+    console.log(LOG_PREFIX, { sessionId, recovery: 'compiling→failed', action: 'recovered' });
+    await this.transition(sessionId, 'failed');
+    return 'failed';
   },
 
   async getState(sessionId: string): Promise<PlanningState> {
