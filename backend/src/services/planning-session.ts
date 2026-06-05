@@ -26,8 +26,9 @@ const VALID_TRANSITIONS: Record<PlanningState, PlanningState[]> = {
   collecting_intent:   ['clarifying', 'generating_graph', 'completed'],
   clarifying:          ['clarifying', 'generating_graph', 'collecting_intent'],
   generating_graph:    ['compiling', 'clarifying', 'collecting_intent'],
-  compiling:           ['completed', 'generating_graph', 'clarifying'],
+  compiling:           ['completed', 'failed'],
   completed:           ['collecting_intent'],
+  failed:             ['collecting_intent'],
 };
 
 function isValidTransition(from: PlanningState, to: string): to is PlanningState {
@@ -75,7 +76,7 @@ export const planningSessionService = {
   async getActiveForUser(authId: string) {
     const prisma = getPrisma();
     return prisma.workflowPlanningSession.findFirst({
-      where: { userId: await resolveUserId(authId), state: { not: PLANNING_STATES.COMPLETED } },
+      where: { userId: await resolveUserId(authId), state: { notIn: [PLANNING_STATES.COMPLETED, PLANNING_STATES.FAILED] } },
       orderBy: { updatedAt: 'desc' },
     });
   },

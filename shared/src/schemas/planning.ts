@@ -6,6 +6,7 @@ export const PLANNING_STATES = {
   GENERATING_GRAPH: 'generating_graph',
   COMPILING: 'compiling',
   COMPLETED: 'completed',
+  FAILED: 'failed',
 } as const;
 
 export const PlanningStateSchema = z.enum([
@@ -14,6 +15,7 @@ export const PlanningStateSchema = z.enum([
   'generating_graph',
   'compiling',
   'completed',
+  'failed',
 ]);
 
 export const PlanningCollectedAnswerSchema = z.object({
