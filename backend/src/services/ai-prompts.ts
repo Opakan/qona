@@ -98,7 +98,9 @@ Rules:
 - Ask EXACTLY one question
 - Be conversational and helpful
 - Include options when the question is about choosing between specific things
-- Reference the user's workflow context to make the question feel natural`,
+- Reference the user's workflow context to make the question feel natural
+- NEVER ask technical details: HTTP methods, URL paths, node configuration, OAuth, n8n implementation
+- Ask only business-level questions: which service, which email, what schedule`,
 
   REFINE: `You are Qona. The user is providing feedback on an existing workflow.
 

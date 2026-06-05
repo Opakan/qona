@@ -6,36 +6,42 @@ let qCounter = 0;
 function nextId(): string { return `q${++qCounter}`; }
 
 const TRIGGER_REQUIRED: Record<string, string[]> = {
-  webhook: ['method', 'path'],
-  schedule: [],
-  cron: ['cronExpression'],
+  webhook: [],
+  schedule: ['schedule_time'],
+  cron: ['schedule_time'],
   manual: [],
-  form_submission: [],
-  email_received: [],
+  form_submission: ['form_provider'],
+  email_received: ['email_account'],
   payment_received: [],
 };
 
 const TRIGGER_RECOMMENDED: Record<string, Record<string, { question: string; options?: string[]; default?: string }>> = {
-  webhook: {
-    method: { question: 'Which HTTP method should the webhook accept?', options: ['GET', 'POST'], default: 'POST' },
-    path: { question: 'What URL path should the webhook listen on?', default: '/webhook' },
+  webhook: {},
+  schedule: {
+    schedule_time: { question: 'When should this run? (e.g. daily at 9am, every hour)', default: 'Every day at 9am' },
   },
   cron: {
-    cronExpression: { question: 'What cron expression should be used for the schedule?', default: '0 9 * * *' },
+    schedule_time: { question: 'When should this run?', default: 'Every day at 9am' },
+  },
+  form_submission: {
+    form_provider: { question: 'Which form provider are you using?', options: ['Typeform', 'Google Forms', 'JotForm', 'Wufoo'] },
+  },
+  email_received: {
+    email_account: { question: 'Which email account should be monitored?' },
   },
 };
 
 const ACTION_REQUIRED: Record<string, string[]> = {
   send_email: ['to', 'subject'],
-  http_request: ['url', 'method'],
+  http_request: ['api_service'],
   transform_data: [],
-  filter: ['expression'],
-  delay: ['durationMs'],
-  create_record: ['target'],
-  update_record: ['target'],
-  send_notification: ['channel'],
-  run_code: ['code'],
-  google_sheets: ['spreadsheetId'],
+  filter: ['filter_condition'],
+  delay: ['delay_time'],
+  create_record: ['crm_provider'],
+  update_record: ['crm_provider'],
+  send_notification: ['notification_service'],
+  run_code: [],
+  google_sheets: ['sheet_name'],
 };
 
 const ACTION_RECOMMENDED: Record<string, Record<string, { question: string; options?: string[]; default?: string }>> = {

@@ -500,8 +500,8 @@ export const conversationEngine = {
       return {
         type: 'clarification',
         questions: [
-          { id: 'q1', question: 'What should trigger this workflow? For example: a webhook, a schedule, or a manual action?', required: true },
-          { id: 'q2', question: 'What action should the workflow perform? For example: send an email, call an API, update a spreadsheet?', required: true },
+          { id: 'q1', question: 'What should trigger this workflow?', required: true },
+          { id: 'q2', question: 'What is the main action this workflow should perform?', required: true },
         ],
       };
     }

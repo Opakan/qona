@@ -65,13 +65,19 @@ function isTriggerNode(type: string): boolean {
 function compileNode(node: GraphNode, index: number, totalNodes: number): N8nNode {
   const n8nType = mapNodeType(node.type);
 
+  const params: Record<string, unknown> = { ...(node.config ?? {}) };
+  if (n8nType.includes('webhook')) { params.method = params.method || 'POST'; params.path = params.path || '/webhook'; }
+  if (n8nType.includes('httpRequest')) { params.method = params.method || 'GET'; params.authentication = 'genericCredentialType'; }
+  if (n8nType.includes('googleSheets') && !params.spreadsheetId) { params.spreadsheetId = 'auto-generated-' + Date.now(); }
+  if (n8nType.includes('wait') && !params.amount) { params.amount = 1; params.unit = 'minutes'; }
+  if (n8nType.includes('emailSend')) { params.fromEmail = params.fromEmail || 'qona@notifications.ai'; }
   const compiled: N8nNode = {
     id: node.id,
     name: node.label,
     type: n8nType,
     typeVersion: 1,
     position: [node.position.x, node.position.y],
-    parameters: { ...(node.config ?? {}) },
+    parameters: params,
   };
 
   if (isTriggerNode(node.type) && n8nType.includes('webhook')) {
