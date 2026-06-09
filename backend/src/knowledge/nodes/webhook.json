@@ -1,0 +1,62 @@
+{
+  "nodeType": "webhook",
+  "displayName": "Webhook",
+  "description": "Receives HTTP requests from external services. Used as a trigger to start workflows when data is posted to a URL.",
+  "category": "trigger",
+  "requiredFields": [],
+  "optionalFields": [
+    {
+      "field": "method",
+      "label": "HTTP Method",
+      "type": "select",
+      "description": "The HTTP method this webhook listens for",
+      "options": ["GET", "POST", "PUT", "DELETE"],
+      "defaultValue": "POST"
+    },
+    {
+      "field": "path",
+      "label": "URL Path",
+      "type": "string",
+      "description": "The URL path for this webhook endpoint",
+      "placeholder": "/my-webhook-path"
+    },
+    {
+      "field": "authentication",
+      "label": "Authentication",
+      "type": "select",
+      "description": "Authentication method for the webhook",
+      "options": ["none", "basic", "bearer", "api_key"],
+      "defaultValue": "none"
+    },
+    {
+      "field": "responseMode",
+      "label": "Response Mode",
+      "type": "select",
+      "description": "When to send the response back",
+      "options": ["immediate", "lastNode"],
+      "defaultValue": "lastNode"
+    }
+  ],
+  "outputs": [
+    {
+      "field": "body",
+      "label": "Request Body",
+      "type": "object",
+      "description": "The parsed body of the incoming request"
+    },
+    {
+      "field": "headers",
+      "label": "Request Headers",
+      "type": "object",
+      "description": "Headers from the incoming request"
+    },
+    {
+      "field": "query",
+      "label": "Query Parameters",
+      "type": "object",
+      "description": "URL query string parameters"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.webhook",
+  "keywords": ["webhook", "http", "endpoint", "callback", "hook", "incoming", "receive"]
+}

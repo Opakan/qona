@@ -1,0 +1,64 @@
+{
+  "nodeType": "google_sheets",
+  "displayName": "Google Sheets",
+  "description": "Reads from or writes to Google Sheets spreadsheets. Can append rows, update cells, or read sheet data.",
+  "category": "action",
+  "requiredFields": [
+    {
+      "field": "spreadsheetId",
+      "label": "Spreadsheet ID",
+      "type": "string",
+      "description": "The ID of the Google Sheets spreadsheet (found in the URL)",
+      "required": true,
+      "placeholder": "1BxiMVs0XRA5nFMdKvBdBZjgm..."
+    }
+  ],
+  "optionalFields": [
+    {
+      "field": "sheetName",
+      "label": "Sheet Name",
+      "type": "string",
+      "description": "The name of the specific sheet/tab within the spreadsheet",
+      "defaultValue": "Sheet1"
+    },
+    {
+      "field": "operation",
+      "label": "Operation",
+      "type": "select",
+      "description": "What operation to perform on the sheet",
+      "options": ["append", "read", "update", "clear"],
+      "defaultValue": "append"
+    },
+    {
+      "field": "range",
+      "label": "Range",
+      "type": "string",
+      "description": "The cell range to read/write (e.g. A1:C10)",
+      "placeholder": "A1:C10"
+    },
+    {
+      "field": "dataMode",
+      "label": "Data Input Mode",
+      "type": "select",
+      "description": "How to map incoming data to sheet columns",
+      "options": ["autoMap", "defineEach", "raw"],
+      "defaultValue": "autoMap"
+    }
+  ],
+  "outputs": [
+    {
+      "field": "updatedRange",
+      "label": "Updated Range",
+      "type": "string",
+      "description": "The range that was updated"
+    },
+    {
+      "field": "rows",
+      "label": "Rows",
+      "type": "array",
+      "description": "The data rows read or written"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.googleSheets",
+  "keywords": ["google sheets", "spreadsheet", "sheet", "google", "table", "rows", "excel"]
+}

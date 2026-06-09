@@ -12,7 +12,11 @@ export const ExtractedTriggerSchema = z.object({
 });
 
 export const ExtractedActionSchema = z.object({
-  type: z.enum(['send_email', 'http_request', 'transform_data', 'filter', 'delay', 'create_record', 'update_record', 'send_notification', 'run_code', 'google_sheets']),
+  type: z.enum([
+    'send_email', 'http_request', 'transform_data', 'filter', 'delay',
+    'create_record', 'update_record', 'send_notification', 'run_code', 'google_sheets',
+    'gmail', 'slack', 'telegram', 'supabase',
+  ]),
   label: z.string(),
   description: z.string().default(''),
   order: z.number().int().positive().default(1),

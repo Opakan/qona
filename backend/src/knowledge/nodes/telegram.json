@@ -1,0 +1,63 @@
+{
+  "nodeType": "telegram",
+  "displayName": "Telegram",
+  "description": "Sends messages, photos, or documents to Telegram chats or channels via a bot.",
+  "category": "action",
+  "requiredFields": [
+    {
+      "field": "chatId",
+      "label": "Chat ID",
+      "type": "string",
+      "description": "The Telegram chat or channel ID to send the message to",
+      "required": true,
+      "placeholder": "-1001234567890"
+    }
+  ],
+  "optionalFields": [
+    {
+      "field": "text",
+      "label": "Message Text",
+      "type": "text",
+      "description": "The message text to send (supports Markdown)",
+      "placeholder": "Hello from Qona!"
+    },
+    {
+      "field": "parseMode",
+      "label": "Parse Mode",
+      "type": "select",
+      "description": "How to parse the message text",
+      "options": ["HTML", "MarkdownV2", "Markdown", "plain"],
+      "defaultValue": "Markdown"
+    },
+    {
+      "field": "disableNotification",
+      "label": "Disable Notification",
+      "type": "boolean",
+      "description": "Send the message silently without notification",
+      "defaultValue": "false"
+    },
+    {
+      "field": "photo",
+      "label": "Photo URL",
+      "type": "url",
+      "description": "URL of a photo to attach to the message",
+      "placeholder": "https://example.com/image.jpg"
+    }
+  ],
+  "outputs": [
+    {
+      "field": "messageId",
+      "label": "Message ID",
+      "type": "number",
+      "description": "The Telegram message ID"
+    },
+    {
+      "field": "chat",
+      "label": "Chat Object",
+      "type": "object",
+      "description": "The Telegram chat object where the message was sent"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.telegram",
+  "keywords": ["telegram", "chat", "bot", "message", "send telegram", "notify telegram"]
+}

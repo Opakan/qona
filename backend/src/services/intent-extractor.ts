@@ -1,81 +1,73 @@
 import { chatCompletion } from './deepseek.js';
-import { IntentExtractionResultSchema } from '@qona/shared';
+import { IntentExtractionResultSchema, CREDENTIAL_GUARD_PROMPT } from '@qona/shared';
 import type { IntentExtractionResult } from '@qona/shared';
+import { nodeRegistry } from './node-registry.js';
+import { workflowMemory } from './workflow-memory.js';
 
-const INTENT_EXTRACTION_PROMPT = `You are Qona's intent extraction engine. Your job is to parse a user's automation request and extract structured information.
+function buildPrompt(memoryContext?: string): string {
+  const registryCtx = nodeRegistry.buildRegistryContext();
+  const memoryBlock = memoryContext ?? '';
+  return `You are Qona's intent extraction engine. Your job is to parse a user's automation request and extract structured information.
 
 Analyze the user's prompt and return a JSON object in this EXACT format:
 
 {
   "trigger": {
-    "type": "webhook",
-    "label": "Incoming Webhook",
-    "description": "Receives POST requests from external services",
+    "type": "<triggerNodeType>",
+    "label": "Human-readable name",
+    "description": "What this trigger does",
     "config": {
-      "method": "POST"
+      "<field>": "<value>"
     }
   },
   "actions": [
     {
-      "type": "send_email",
-      "label": "Send Welcome Email",
-      "description": "Sends a welcome email to the new user",
+      "type": "<actionNodeType>",
+      "label": "Human-readable name",
+      "description": "What this action does",
       "order": 1,
       "config": {
-        "to": "{{user.email}}",
-        "subject": "Welcome to our platform!"
+        "<field>": "<value>"
       }
     }
   ],
   "integrations": [
     {
-      "name": "Gmail",
-      "type": "email",
-      "purpose": "Sending outgoing emails"
+      "name": "Service Name",
+      "type": "email|crm|sheets|slack|api|database|payment|storage|custom",
+      "purpose": "How this integration is used"
     }
   ],
   "confidence": 0.85,
   "missingDetails": []
 }
 
-Trigger types you can detect:
-- "webhook" — external service calls this endpoint
-- "schedule" — runs on a time schedule
-- "cron" — runs on a cron expression
-- "manual" — user triggers manually
-- "form_submission" — triggered by a form
-- "email_received" — triggered by incoming email
-- "payment_received" — triggered by payment
+${registryCtx}
 
-Action types you can detect:
-- "send_email" — sends an email
-- "http_request" — makes an API call
-- "transform_data" — transforms/processes data
-- "filter" — filters data by condition
-- "delay" — waits before continuing
-- "create_record" — creates a database/CRM record
-- "update_record" — updates a record
-- "send_notification" — sends a Slack/Teams notification
-- "run_code" — runs custom JavaScript/Python
-- "google_sheets" — reads/writes Google Sheets
-
-Integration types you can detect:
+Integration type labels (for the integrations array, not node types):
 - "email" — Gmail, Outlook, SMTP
-- "crm" — HubSpot, Salesforce, etc.
+- "crm" — HubSpot, Salesforce
 - "sheets" — Google Sheets, Excel
-- "slack" — Slack, Microsoft Teams
-- "api" — external REST/SOAP API
-- "database" — PostgreSQL, MySQL, etc.
-- "payment" — Stripe, Paystack, etc.
+- "slack" — Slack, MS Teams
+- "api" — external REST/SOAP APIs
+- "database" — PostgreSQL, MySQL, Supabase
+- "payment" — Stripe, Paystack
 - "storage" — Google Drive, Dropbox, S3
-- "custom" — unspecified integration
+- "custom" — unspecified
 
 Rules:
-- Always include exactly one trigger
+- EXACTLY one trigger node
+- trigger.type MUST be one of the registered trigger nodeType values above
+- action.type MUST be one of the registered action nodeType values above
+- DO NOT invent new node types — use ONLY those listed above
 - Order actions by execution sequence
 - Set confidence based on how clear the prompt is (0-1)
-- List any genuinely missing details in "missingDetails"
-- If the prompt is too vague, set confidence below 0.5 and list what's unclear`;
+- List genuinely missing details in "missingDetails"
+- If the prompt is too vague, set confidence below 0.5 and list what's unclear
+
+${CREDENTIAL_GUARD_PROMPT}
+
+${memoryBlock}`;}
 
 export class IntentExtractionError extends Error {
   constructor(message: string, public readonly rawResponse?: string) {
@@ -93,9 +85,19 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
     throw new IntentExtractionError('Prompt exceeds maximum length of 5000 characters');
   }
 
+  // Fetch similar successful workflows from memory
+  const memoryCtx = await workflowMemory.buildMemoryContext({
+    goal: prompt.trim(),
+    triggerType: '',
+    actionTypes: [],
+    integrationTypes: [],
+  });
+
+  const systemPrompt = buildPrompt(memoryCtx);
+
   const raw = await chatCompletion(
     [
-      { role: 'system', content: INTENT_EXTRACTION_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt.trim() },
     ],
     { temperature: 0.2, max_tokens: 3000, retries: 2 },

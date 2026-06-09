@@ -1,0 +1,85 @@
+{
+  "nodeType": "http_request",
+  "displayName": "HTTP Request",
+  "description": "Makes HTTP requests to external APIs and services. Supports all standard methods with custom headers, authentication, and body.",
+  "category": "action",
+  "requiredFields": [
+    {
+      "field": "url",
+      "label": "URL",
+      "type": "url",
+      "description": "The full URL of the API endpoint to call",
+      "required": true,
+      "placeholder": "https://api.example.com/v1/resource"
+    }
+  ],
+  "optionalFields": [
+    {
+      "field": "method",
+      "label": "HTTP Method",
+      "type": "select",
+      "description": "The HTTP method for the request",
+      "options": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+      "defaultValue": "GET"
+    },
+    {
+      "field": "headers",
+      "label": "Headers",
+      "type": "json",
+      "description": "Custom HTTP headers as key-value pairs",
+      "placeholder": "{\"Authorization\": \"Bearer token\", \"Content-Type\": \"application/json\"}"
+    },
+    {
+      "field": "body",
+      "label": "Request Body",
+      "type": "json",
+      "description": "The request body to send (for POST, PUT, PATCH)",
+      "placeholder": "{\"name\": \"John\"}"
+    },
+    {
+      "field": "authentication",
+      "label": "Authentication Type",
+      "type": "select",
+      "description": "The authentication method for the API",
+      "options": ["none", "basic", "bearer", "api_key", "oauth2"],
+      "defaultValue": "none"
+    },
+    {
+      "field": "queryParameters",
+      "label": "Query Parameters",
+      "type": "json",
+      "description": "URL query parameters as key-value pairs",
+      "placeholder": "{\"page\": \"1\", \"limit\": \"50\"}"
+    },
+    {
+      "field": "responseFormat",
+      "label": "Response Format",
+      "type": "select",
+      "description": "Expected format of the response",
+      "options": ["auto", "json", "text", "binary"],
+      "defaultValue": "auto"
+    }
+  ],
+  "outputs": [
+    {
+      "field": "statusCode",
+      "label": "Status Code",
+      "type": "number",
+      "description": "The HTTP status code of the response"
+    },
+    {
+      "field": "body",
+      "label": "Response Body",
+      "type": "object",
+      "description": "The response body from the API"
+    },
+    {
+      "field": "headers",
+      "label": "Response Headers",
+      "type": "object",
+      "description": "Headers from the API response"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.httpRequest",
+  "keywords": ["http request", "api", "fetch", "rest", "call api", "request", "endpoint", "curl"]
+}

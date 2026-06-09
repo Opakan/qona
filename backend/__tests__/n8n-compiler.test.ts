@@ -67,10 +67,10 @@ describe('compileInternalGraph', () => {
     const result = compileInternalGraph({
       metadata: { name: 'Unknown Types' },
       nodes: [
-        { id: 'n1', type: 'webhook', label: 'WH', position: { x: 200, y: 300 } },
-        { id: 'n2', type: 'unknown_service', label: 'Unknown', position: { x: 500, y: 300 } },
+        { id: 'n1', type: 'webhook', label: 'WH', position: { x: 200, y: 300 }, config: {}, connections: [] },
+        { id: 'n2', type: 'unknown_service', label: 'Unknown', position: { x: 500, y: 300 }, config: {}, connections: [] },
       ],
-      edges: [],
+      edges: [{ id: 'e1', source: 'n1', target: 'n2', type: 'direct', label: '', conditions: [] }],
     });
 
     expect(result.warnings.some((w) => w.includes('Unmapped'))).toBe(true);
@@ -80,12 +80,13 @@ describe('compileInternalGraph', () => {
     const result = compileInternalGraph({
       metadata: { name: 'No Trigger' },
       nodes: [
-        { id: 'n1', type: 'send_email', label: 'Email', position: { x: 200, y: 300 }, config: { to: 'x', subject: 'y' } },
+        { id: 'n1', type: 'send_email', label: 'Email', position: { x: 200, y: 300 }, config: { to: 'x', subject: 'y' }, connections: [] },
       ],
       edges: [],
     });
 
-    expect(result.errors.some((e) => e.message.includes('no trigger'))).toBe(true);
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.message.toLowerCase().includes('trigger'))).toBe(true);
   });
 
   it('errors on broken edge references', () => {
@@ -108,15 +109,22 @@ describe('compileInternalGraph', () => {
     const result = compileInternalGraph({
       metadata: { name: 'All Types' },
       nodes: [
-        { id: 'n1', type: 'webhook', label: 'W', position: { x: 0, y: 0 } },
-        { id: 'n2', type: 'schedule', label: 'S', position: { x: 200, y: 0 } },
-        { id: 'n3', type: 'cron', label: 'C', position: { x: 400, y: 0 } },
-        { id: 'n4', type: 'send_email', label: 'E', position: { x: 600, y: 0 }, config: { to: 'x', subject: 'y' } },
-        { id: 'n5', type: 'http_request', label: 'H', position: { x: 800, y: 0 }, config: { url: 'a', method: 'GET' } },
-        { id: 'n6', type: 'filter', label: 'F', position: { x: 1000, y: 0 }, config: { expression: 'x' } },
-        { id: 'n7', type: 'delay', label: 'D', position: { x: 1200, y: 0 }, config: { durationMs: 1000 } },
+        { id: 'n1', type: 'webhook', label: 'W', position: { x: 0, y: 0 }, config: {}, connections: [] },
+        { id: 'n2', type: 'schedule', label: 'S', position: { x: 200, y: 0 }, config: {}, connections: [] },
+        { id: 'n3', type: 'cron', label: 'C', position: { x: 400, y: 0 }, config: {}, connections: [] },
+        { id: 'n4', type: 'send_email', label: 'E', position: { x: 600, y: 0 }, config: { to: 'x', subject: 'y' }, connections: [] },
+        { id: 'n5', type: 'http_request', label: 'H', position: { x: 800, y: 0 }, config: { url: 'a', method: 'GET' }, connections: [] },
+        { id: 'n6', type: 'filter', label: 'F', position: { x: 1000, y: 0 }, config: { expression: 'x' }, connections: [] },
+        { id: 'n7', type: 'delay', label: 'D', position: { x: 1200, y: 0 }, config: { durationMs: 1000 }, connections: [] },
       ],
-      edges: [],
+      edges: [
+        { id: 'e1', source: 'n1', target: 'n4', type: 'direct', label: '', conditions: [] },
+        { id: 'e2', source: 'n2', target: 'n4', type: 'direct', label: '', conditions: [] },
+        { id: 'e3', source: 'n3', target: 'n4', type: 'direct', label: '', conditions: [] },
+        { id: 'e4', source: 'n4', target: 'n5', type: 'direct', label: '', conditions: [] },
+        { id: 'e5', source: 'n5', target: 'n6', type: 'direct', label: '', conditions: [] },
+        { id: 'e6', source: 'n6', target: 'n7', type: 'direct', label: '', conditions: [] },
+      ],
     });
 
     const types = result.workflow!.nodes.map((n) => n.type);

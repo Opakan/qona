@@ -2,18 +2,23 @@ import { chatCompletion } from './deepseek.js';
 import { AI_PROMPTS } from './ai-prompts.js';
 import { conversationService } from './conversation.service.js';
 import { planningSessionService } from './planning-session.js';
-import { draftBuilderService } from './draft-builder.js';
 import { checkWorkflowCompleteness } from './workflow-safety.js';
 import { extractIntent } from './intent-extractor.js';
-import { detectMissingInfo } from './missing-info-detector.js';
+import { buildInitialPlan, collectAnswer, generateAIQuestion, detectMissingRequirements } from './requirement-collector.js';
+import { buildInternalGraph, validatePlanForGraphBuild } from './internal-graph-builder.js';
 import { getPrisma } from '../lib/prisma.js';
+import { validateGraph, validateGraphForCompilation, formatValidationSummary } from './graph-validator.js';
+import { nodeRegistry } from './node-registry.js';
+import { workflowMemory } from './workflow-memory.js';
 import {
   AIClarificationResponseSchema,
   InternalGraphSchema,
   validateInternalGraph,
   PLANNING_STATES,
+  WorkflowPlanSchema,
+  MAX_QUESTIONS_PER_SESSION,
 } from '@qona/shared';
-import type { InternalGraph, PlanningMissingField } from '@qona/shared';
+import type { InternalGraph, PlanningMissingField, WorkflowPlan } from '@qona/shared';
 import type { Prisma } from '@prisma/client';
 
 // ═══════════════════════════════════════════════════════
@@ -94,13 +99,55 @@ async function parseAIResponse(rawContent: string | null | undefined, userMessag
 }
 
 // ═══════════════════════════════════════════════════════
+// Plan helpers: serialize/deserialize workflow plan
+// ═══════════════════════════════════════════════════════
+
+function readPlan(session: { workflowDraft: unknown } | null): WorkflowPlan | null {
+  if (!session?.workflowDraft) return null;
+  const parsed = WorkflowPlanSchema.safeParse(session.workflowDraft);
+  if (!parsed.success) return null;
+  return parsed.data;
+}
+
+async function writePlan(sessionId: string, plan: WorkflowPlan): Promise<void> {
+  await planningSessionService.setWorkflowDraft(sessionId, plan);
+}
+
+function planQuestionToSingleQuestion(
+  q: { id: string; question: string; field: string; severity: 'required' | 'recommended'; options?: string[] },
+): { id: string; question: string; field: string; options?: string[]; required: boolean } {
+  return {
+    id: q.id,
+    question: q.question,
+    field: q.field,
+    options: q.options,
+    required: q.severity === 'required',
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// Prisma userId resolver (used for FK safety)
+// ═══════════════════════════════════════════════════════
+
+async function resolvePrismaUserId(authId: string, email?: string, name?: string): Promise<string> {
+  const prisma = getPrisma();
+  let user = await prisma.user.findUnique({ where: { authId } });
+  if (!user) {
+    user = await prisma.user.create({
+      data: { authId, email: email ?? authId + '@unknown', name: name ?? email ?? authId.slice(0, 8) },
+    });
+  }
+  return user.id;
+}
+
+// ═══════════════════════════════════════════════════════
 // Conversation Engine
 // ═══════════════════════════════════════════════════════
 
 export const conversationEngine = {
   async processMessage(
     conversationId: string,
-    userId: string,
+    authId: string,
     userMessage: string,
     traceId?: string,
   ): Promise<AIResponse> {
@@ -111,9 +158,9 @@ export const conversationEngine = {
     await conversationService.addMessage(conversationId, { role: 'user', content: userMessage });
 
     // ── Get or create planning session ──
-    let session = await planningSessionService.getActiveForUser(userId);
+    let session = await planningSessionService.getActiveForUser(authId);
     if (!session) {
-      session = await planningSessionService.create(userId, conversationId);
+      session = await planningSessionService.create(authId, conversationId);
       log('info', 'Created new planning session', { sessionId: session.id });
     }
 
@@ -126,10 +173,10 @@ export const conversationEngine = {
         return await this.handleCollectingIntent(session.id, userMessage, conversationId);
 
       case PLANNING_STATES.CLARIFYING:
-        return await this.handleClarifying(session.id, userMessage, conversationId, userId);
+        return await this.handleClarifying(session.id, userMessage, conversationId, authId);
 
       case PLANNING_STATES.GENERATING_GRAPH:
-        return await this.handleGeneratingGraph(session.id, userMessage, conversationId, userId);
+        return await this.handleGeneratingGraph(session.id, userMessage, conversationId, authId);
 
       default:
         return {
@@ -142,7 +189,7 @@ export const conversationEngine = {
   },
 
   // ═══════════════════════════════════════════════════════
-  // State handlers
+  // STAGE 1: COLLECTING_INTENT → Extract intent → Build plan
   // ═══════════════════════════════════════════════════════
 
   async handleCollectingIntent(
@@ -150,42 +197,60 @@ export const conversationEngine = {
     userMessage: string,
     conversationId: string,
   ): Promise<AIResponse> {
-    log('info', 'Extracting intent from initial prompt');
+    log('info', 'STAGE: Extracting intent from user prompt');
+
+    let intent;
+    let plan: WorkflowPlan;
 
     try {
-      const intent = await extractIntent(userMessage);
-      await planningSessionService.setExtractedIntent(sessionId, intent);
-    } catch {
-      log('warn', 'Intent extraction failed, using fallback');
+      intent = await extractIntent(userMessage);
+      log('info', 'Intent extracted', { trigger: intent.trigger.type, actions: intent.actions.length, confidence: intent.confidence });
+    } catch (err) {
+      log('warn', 'Intent extraction failed, using fallback', { error: (err as Error).message });
+      intent = {
+        trigger: { type: 'webhook' as const, label: 'Webhook Trigger', description: 'Receives external requests' },
+        actions: [{ type: 'send_email' as const, label: 'Send Email', description: 'Sends an email', order: 1 }],
+        integrations: [],
+        confidence: 0.3,
+        missingDetails: ['Could not parse intent from prompt'],
+      };
     }
 
-    const gaps = detectMissingInfo({
-      trigger: { type: 'webhook', label: 'Webhook', description: 'Receives external requests' },
-      actions: [{ type: 'send_email', label: 'Action', description: 'Processes data', order: 1 }],
-      integrations: [],
-      confidence: 0.5,
-      missingDetails: [],
+    await planningSessionService.setExtractedIntent(sessionId, intent);
+
+    // ── Build the WorkflowPlan from extracted intent ──
+    plan = buildInitialPlan(intent, userMessage);
+
+    log('info', 'Plan built', {
+      trigger: plan.trigger?.type,
+      actionCount: plan.actions.length,
+      requirementCount: plan.requirements.length,
+      missingCount: detectMissingRequirements(plan.requirements).length,
     });
 
-    const fields: PlanningMissingField[] = gaps.questions.map((q) => ({
-      field: q.field,
-      question: q.question,
-      severity: q.severity,
-      answered: false,
-    }));
-
-    if (fields.length === 0) {
-      fields.push(
-        { field: 'trigger_type', question: 'What should trigger this workflow?', severity: 'required', answered: false },
-        { field: 'action_0', question: 'What action should the workflow perform?', severity: 'required', answered: false },
-      );
-    }
-
-    await planningSessionService.setMissingFields(sessionId, fields);
+    await writePlan(sessionId, plan);
     await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
 
-    const firstField = fields[0];
-    const question = await this.askNextQuestion(sessionId, firstField, userMessage);
+    // ── Ask the first question ──
+    const missing = detectMissingRequirements(plan.requirements);
+    if (missing.length === 0) {
+      // All requirements are auto-filled → go straight to generating
+      await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
+      await conversationService.addMessage(conversationId, {
+        role: 'assistant',
+        content: "I understand your workflow. Let me ask: would you like to add any details, or shall I generate it now? Say 'generate' when you're ready.",
+        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
+      });
+      return {
+        type: 'complete',
+        sessionId,
+        sessionState: PLANNING_STATES.GENERATING_GRAPH,
+        explanation: 'Intent collected. Ready to proceed.',
+      };
+    }
+
+    const firstReq = missing[0];
+    const question = await generateAIQuestion(plan, firstReq);
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
@@ -195,67 +260,112 @@ export const conversationEngine = {
 
     return {
       type: 'question',
-      singleQuestion: question,
+      singleQuestion: planQuestionToSingleQuestion(question),
       sessionId,
       sessionState: PLANNING_STATES.CLARIFYING,
     };
   },
+
+  // ═══════════════════════════════════════════════════════
+  // STAGE 2: CLARIFYING → Collect requirements one at a time
+  // ═══════════════════════════════════════════════════════
 
   async handleClarifying(
     sessionId: string,
     userMessage: string,
     conversationId: string,
-    userId: string,
+    authId: string,
   ): Promise<AIResponse> {
     const session = await planningSessionService.getById(sessionId);
     if (!session) throw new Error('Session not found');
 
-    const missingFields = (session.missingFields as PlanningMissingField[]) ?? [];
-    const currentField = missingFields.find((f) => !f.answered);
+    let plan = readPlan(session);
+    if (!plan) {
+      log('error', 'No WorkflowPlan found in session, reconstructing');
+      const intent = session.extractedIntent as Parameters<typeof buildInitialPlan>[0] | null;
+      plan = buildInitialPlan(
+        intent ?? {
+          trigger: { type: 'webhook', label: 'Webhook', description: '' },
+          actions: [{ type: 'send_email', label: 'Action', description: '', order: 1 }],
+          integrations: [],
+          confidence: 0.3,
+          missingDetails: [],
+        },
+        'Rebuilt from session',
+      );
+    }
 
-    if (!currentField) {
+    // ── Find the first unanswered requirement ──
+    const missing = detectMissingRequirements(plan.requirements);
+    if (missing.length === 0) {
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: "I have everything I need. Let me stop here — I'll generate the workflow when you're ready.",
+        content: "I have everything I need. Say 'generate' when you're ready to build your workflow.",
         metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
       });
       return {
         type: 'complete',
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'All information collected. Ready to generate the workflow.',
+        explanation: 'All requirements collected.',
       };
     }
 
+    const currentReq = missing[0];
+
+    // ── Collect the user's answer ──
+    plan = collectAnswer(plan, currentReq.field, userMessage);
+
+    // Also store in legacy format for backward compat
     await planningSessionService.addAnswer(sessionId, {
-      questionId: currentField.field,
-      field: currentField.field,
+      questionId: currentReq.field,
+      field: currentReq.field,
       value: userMessage,
     });
 
-    await draftBuilderService.buildDraft(sessionId);
+    await writePlan(sessionId, plan);
 
-    const refreshed = await planningSessionService.getById(sessionId);
-    const refreshedFields = (refreshed!.missingFields as PlanningMissingField[]) ?? [];
-    const nextField = refreshedFields.find((f) => !f.answered);
+    log('info', 'Requirement collected', { field: currentReq.field, remaining: missing.length - 1 });
 
-    if (!nextField) {
+    // ── Check if more requirements remain ──
+    const stillMissing = detectMissingRequirements(plan.requirements);
+    if (stillMissing.length === 0) {
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: "I have everything I need. Your workflow is ready to generate.",
+        content: "All details collected. Say 'generate' to build your workflow.",
         metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
       });
       return {
         type: 'complete',
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'All questions answered. Ready to proceed.',
+        explanation: 'All requirements collected. Ready to generate.',
       };
     }
 
-    const question = await this.askNextQuestion(sessionId, nextField, userMessage);
+    // ── Enforce max questions ──
+    const collectedCount = plan.requirements.filter((r) => r.collected).length;
+    if (collectedCount >= MAX_QUESTIONS_PER_SESSION) {
+      log('info', 'Max questions reached', { collectedCount, max: MAX_QUESTIONS_PER_SESSION });
+      await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
+      await conversationService.addMessage(conversationId, {
+        role: 'assistant',
+        content: `I've gathered enough details (${collectedCount} requirements). Ready to generate your workflow. Say 'generate' to proceed.`,
+        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
+      });
+      return {
+        type: 'complete',
+        sessionId,
+        sessionState: PLANNING_STATES.GENERATING_GRAPH,
+        explanation: 'Max question limit reached. Proceeding to graph generation.',
+      };
+    }
+
+    // ── Ask next question ──
+    const nextReq = stillMissing[0];
+    const question = await generateAIQuestion(plan, nextReq);
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
@@ -265,17 +375,21 @@ export const conversationEngine = {
 
     return {
       type: 'question',
-      singleQuestion: question,
+      singleQuestion: planQuestionToSingleQuestion(question),
       sessionId,
       sessionState: PLANNING_STATES.CLARIFYING,
     };
   },
 
+  // ═══════════════════════════════════════════════════════
+  // STAGE 3: GENERATING_GRAPH → Build graph → Save → Complete
+  // ═══════════════════════════════════════════════════════
+
   async handleGeneratingGraph(
     sessionId: string,
     userMessage: string,
     conversationId: string,
-    userId: string,
+    authId: string,
   ): Promise<AIResponse> {
     const triggerWords = ['generate', 'proceed', 'yes', 'go ahead', "let's go", 'create it', 'build it', 'finalize', 'do it', 'go', 'ok', 'okay'];
     const shouldGenerate = triggerWords.some((w) => userMessage.toLowerCase().includes(w));
@@ -294,68 +408,103 @@ export const conversationEngine = {
       };
     }
 
-    log('info', 'GRAPH GENERATION STARTED', { sessionId });
+    log('info', 'STAGE: Building internal graph');
+    await planningSessionService.transition(sessionId, PLANNING_STATES.COMPILING);
 
     const session = await planningSessionService.getById(sessionId);
     if (!session) throw new Error('Session not found');
 
-    const missingFields = (session.missingFields as PlanningMissingField[]) ?? [];
-    const unanswered = missingFields.filter((f) => !f.answered);
+    let plan = readPlan(session);
+    if (!plan) {
+      throw new Error('No workflow plan found — cannot generate');
+    }
 
-    if (unanswered.length > 0) {
-      log('warn', 'Attempted to generate with unanswered fields', { unanswered: unanswered.map((f) => f.field) });
+    // ── Check for unanswered required questions ──
+    const stillMissing = detectMissingRequirements(plan.requirements);
+    if (stillMissing.length > 0) {
+      log('warn', 'Still have missing requirements', { count: stillMissing.length });
       await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: `Before I can generate the workflow, I still need to know about: ${unanswered.map((f) => f.question).join(', ')}.`,
+        content: `I still need a few more details before building. Let me ask again.`,
         metadata: { sessionId, sessionState: PLANNING_STATES.CLARIFYING },
       });
-      const nextField = unanswered[0];
-      const question = await this.askNextQuestion(sessionId, nextField, userMessage);
+      const nextReq = stillMissing[0];
+      const question = await generateAIQuestion(plan, nextReq);
       return {
         type: 'question',
-        singleQuestion: question,
+        singleQuestion: planQuestionToSingleQuestion(question),
         sessionId,
         sessionState: PLANNING_STATES.CLARIFYING,
       };
     }
 
-    const draft = session.workflowDraft as InternalGraph | null;
-    if (!draft || !draft.nodes || draft.nodes.length === 0) {
-      throw new Error('Workflow draft is empty — cannot generate');
-    }
-
-    log('info', 'Draft validated — generating final workflow', { nodeCount: draft.nodes.length, edgeCount: draft.edges.length });
-
-    await planningSessionService.transition(sessionId, PLANNING_STATES.COMPILING);
-
-    const safety = checkWorkflowCompleteness({ draft, missingFields });
-    if (!safety.safe) {
-      log('warn', 'GRAPH GENERATION FAILED', { errors: safety.errors });
+    // ── Validate plan before build ──
+    const buildErrors = validatePlanForGraphBuild(plan);
+    const criticalErrors = buildErrors.filter((e) => e.severity === 'error');
+    if (criticalErrors.length > 0) {
+      log('error', 'Plan validation failed', { errors: criticalErrors });
       await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: `The workflow draft has some issues: ${safety.errors.join('; ')}. Let me ask you to fix them.`,
+        content: `There are issues with the workflow plan: ${criticalErrors.map((e) => e.message).join('; ')}. Let me ask you to fix them.`,
         metadata: { sessionId, sessionState: PLANNING_STATES.CLARIFYING },
       });
       return {
         type: 'clarification',
-        questions: safety.errors.map((e, i) => ({ id: `fix-${i}`, question: e, field: e, required: true })),
+        questions: criticalErrors.map((e) => ({ id: `fix-${e.path}`, question: e.message, field: e.path, required: true })),
         sessionId,
         sessionState: PLANNING_STATES.CLARIFYING,
       };
     }
 
+    // ── Build the internal graph ──
+    const { graph, warnings } = buildInternalGraph(plan);
+
+    log('info', 'Internal graph built', { nodeCount: graph.nodes.length, edgeCount: graph.edges.length, warnings: warnings.length });
+
+    // ── VALIDATE the graph before proceeding ──
+    const registeredTypes = new Set(nodeRegistry.getNodeTypes());
+    const validation = validateGraphForCompilation(graph, { registeredTypes });
+
+    log('info', 'Graph validation complete', {
+      valid: validation.valid,
+      errors: validation.errors.length,
+      warnings: validation.warnings.length,
+      summary: validation.summary,
+    });
+
+    if (!validation.valid) {
+      const summary = formatValidationSummary(validation);
+      log('error', 'Graph validation FAILED', { summary, errors: validation.errors });
+
+      await planningSessionService.transition(sessionId, PLANNING_STATES.FAILED);
+      await conversationService.addMessage(conversationId, {
+        role: 'assistant',
+        content: `The workflow graph could not be built because:\n\n${summary}\n\nPlease describe your workflow again and I'll ask the right questions.`,
+        metadata: { sessionId, sessionState: PLANNING_STATES.FAILED, validation },
+      });
+      return {
+        type: 'error',
+        sessionId,
+        sessionState: PLANNING_STATES.FAILED,
+        error: `Graph validation failed: ${validation.errors.map((e) => e.message).join('; ')}`,
+      };
+    }
+
+    // ── Save the internal graph (FIX: use resolved Prisma userId, not authId) ──
     const prisma = getPrisma();
+    const prismaUserId = await resolvePrismaUserId(authId);
+
     const saved = await prisma.internalGraph.create({
       data: {
-        userId,
-        name: draft.metadata.name,
-        description: draft.metadata.description,
-        version: draft.metadata.version,
-        nodes: draft.nodes as Prisma.InputJsonValue,
-        edges: draft.edges as Prisma.InputJsonValue,
-        metadata: draft.metadata as Prisma.InputJsonValue,
+        userId: prismaUserId,
+        name: graph.metadata.name,
+        description: graph.metadata.description,
+        version: graph.metadata.version,
+        nodes: graph.nodes as Prisma.InputJsonValue,
+        edges: graph.edges as Prisma.InputJsonValue,
+        metadata: graph.metadata as Prisma.InputJsonValue,
         status: 'DRAFT',
       },
     });
@@ -363,26 +512,46 @@ export const conversationEngine = {
     await planningSessionService.linkGraph(sessionId, saved.id);
     await planningSessionService.transition(sessionId, PLANNING_STATES.COMPLETED);
 
-    log('info', 'GRAPH GENERATION COMPLETED', { graphId: saved.id, nodeCount: draft.nodes.length });
+    // ── Record in workflow memory ──
+    const triggerNode = graph.nodes.find((n) => nodeRegistry.getTriggerTypes().includes(n.type)
+      || ['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'].includes(n.type));
+    const actionNodes = graph.nodes.filter((n) =>
+      !nodeRegistry.getTriggerTypes().includes(n.type)
+      && !['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'].includes(n.type),
+    );
+
+    await workflowMemory.storePattern({
+      userId: prismaUserId,
+      goal: plan.goal,
+      triggerType: triggerNode?.type ?? 'webhook',
+      triggerLabel: triggerNode?.label ?? '',
+      actionTypes: actionNodes.map((n) => n.type),
+      integrationTypes: (plan.integrations ?? []).map((i) => i.type),
+      graph,
+      confidence: plan.confidence ?? 0.8,
+      success: true,
+    }).catch((err) => log('warn', 'Failed to store workflow pattern', { error: (err as Error).message }));
+
+    log('info', 'GRAPH GENERATION COMPLETED', { graphId: saved.id, nodeCount: graph.nodes.length });
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: `Your workflow "${draft.metadata.name}" has been generated and saved. Here's what was built:`,
-      metadata: { graphId: saved.id, sessionId, sessionState: PLANNING_STATES.COMPLETED },
+      content: `Your workflow "${graph.metadata.name}" has been generated with ${graph.nodes.length} nodes and ${graph.edges.length} connections.`,
+      metadata: { graph, graphId: saved.id, sessionId, sessionState: PLANNING_STATES.COMPLETED },
     });
 
     return {
       type: 'workflow',
-      graph: draft,
+      graph,
       graphId: saved.id,
       sessionId,
       sessionState: PLANNING_STATES.COMPLETED,
-      explanation: `Workflow "${draft.metadata.name}" generated with ${draft.nodes.length} nodes and ${draft.edges.length} connections.`,
+      explanation: `Workflow "${graph.metadata.name}" generated with ${graph.nodes.length} nodes and ${graph.edges.length} connections.`,
     };
   },
 
   // ═══════════════════════════════════════════════════════
-  // Helpers
+  // Helpers (preserved for backward compat)
   // ═══════════════════════════════════════════════════════
 
   async askNextQuestion(

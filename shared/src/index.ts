@@ -8,4 +8,6 @@ export * from './schemas/internal-graph-utils.js';
 export * from './schemas/intent.js';
 export * from './schemas/missing-info.js';
 export * from './schemas/planning.js';
+export * from './schemas/workflow-plan.js';
+export * from './schemas/node-registry.js';
 export * from './constants.js';

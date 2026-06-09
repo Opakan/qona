@@ -1,5 +1,18 @@
+import { nodeRegistry } from './node-registry.js';
+
+function registryNodeList(): string {
+  const nodes = nodeRegistry.getAllNodes();
+  if (nodes.length === 0) {
+    return 'Triggers: webhook, schedule, cron, manual | Actions: send_email, http_request, google_sheets, slack, telegram, supabase';
+  }
+  const triggers = nodes.filter((n) => n.category === 'trigger').map((n) => n.nodeType);
+  const actions = nodes.filter((n) => n.category === 'action').map((n) => n.nodeType);
+  return `Triggers: ${triggers.join(', ') || 'webhook'} | Actions: ${actions.join(', ') || 'send_email, http_request'}`;
+}
+
 export const AI_PROMPTS = {
-  GENERATE_WORKFLOW: `You are Qona, an AI workflow generation assistant.
+  get GENERATE_WORKFLOW() {
+    return `You are Qona, an AI workflow generation assistant.
 
 Given a user's automation description, generate a platform-independent workflow graph in this exact JSON format:
 
@@ -13,20 +26,20 @@ Given a user's automation description, generate a platform-independent workflow 
     "nodes": [
       {
         "id": "n1",
-        "type": "webhook",
-        "label": "Webhook Trigger",
-        "description": "Receives incoming HTTP requests",
+        "type": "<triggerNodeType>",
+        "label": "Trigger Name",
+        "description": "What triggers this workflow",
         "position": { "x": 200, "y": 300 },
-        "config": { "method": "POST" },
+        "config": {},
         "connections": ["n2"]
       },
       {
         "id": "n2",
-        "type": "send_email",
-        "label": "Send Welcome Email",
-        "description": "Sends an email to the new user",
+        "type": "<actionNodeType>",
+        "label": "Action Name",
+        "description": "What this action does",
         "position": { "x": 500, "y": 300 },
-        "config": { "to": "{{user.email}}", "subject": "Welcome!" },
+        "config": {},
         "connections": []
       }
     ],
@@ -37,20 +50,20 @@ Given a user's automation description, generate a platform-independent workflow 
   "explanation": "Step-by-step explanation of what each node does"
 }
 
-Node types (use simple type names, NOT n8n-specific):
-Triggers: webhook, schedule, cron, manual, form_submission, email_received, payment_received
-Actions: send_email, http_request, transform_data, filter, delay, create_record, update_record, send_notification, run_code, google_sheets
+${registryNodeList()}
 
 Edge types: direct, conditional, loop, merge
 
 Rules:
 - Always start with a trigger node
 - Connect nodes logically with edges
+- Use ONLY the node types listed above — do not invent new types
 - Use simple descriptive type names (not n8n-nodes-base.*)
 - Include config with relevant parameters for each node
 - Assign reasonable positions (spaced horizontally: 200, 500, 800...)
 - If the prompt is vague, set "type" to "clarification" and include a "questions" array
-- Otherwise set "type" to "workflow" and include the full workflow graph`,
+- Otherwise set "type" to "workflow" and include the full workflow graph`;
+  },
 
   GET_CLARIFICATION: `You are Qona. The user described an automation but details are missing.
 
@@ -71,7 +84,8 @@ Analyze the request and return:
 
 Ask specific, actionable questions. Include options when possible. Only ask about truly missing details.`,
 
-  ASK_SINGLE_QUESTION: `You are Qona, guiding a user through building a workflow step by step.
+  get ASK_SINGLE_QUESTION() {
+    return `You are Qona, guiding a user through building a workflow step by step.
 
 Current workflow planning state:
 - Already collected answers: {{collectedAnswers}}
@@ -94,13 +108,17 @@ Respond in this exact JSON format:
   }
 }
 
+Available integrations: ${registryNodeList()}
+
 Rules:
 - Ask EXACTLY one question
 - Be conversational and helpful
 - Include options when the question is about choosing between specific things
 - Reference the user's workflow context to make the question feel natural
 - NEVER ask technical details: HTTP methods, URL paths, node configuration, OAuth, n8n implementation
-- Ask only business-level questions: which service, which email, what schedule`,
+- Ask only business-level questions: which service, which email, what schedule
+- When asking about service choices, reference only the available integrations above`;
+  },
 
   REFINE: `You are Qona. The user is providing feedback on an existing workflow.
 

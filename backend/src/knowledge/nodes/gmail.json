@@ -1,0 +1,75 @@
+{
+  "nodeType": "gmail",
+  "displayName": "Gmail",
+  "description": "Sends emails through Gmail. Can send plain text, HTML emails, or use templates.",
+  "category": "action",
+  "requiredFields": [
+    {
+      "field": "to",
+      "label": "To",
+      "type": "email",
+      "description": "The recipient email address",
+      "required": true
+    }
+  ],
+  "optionalFields": [
+    {
+      "field": "subject",
+      "label": "Subject",
+      "type": "string",
+      "description": "The email subject line",
+      "placeholder": "Your email subject"
+    },
+    {
+      "field": "body",
+      "label": "Email Body",
+      "type": "text",
+      "description": "The body content of the email (plain text or HTML)",
+      "placeholder": "Your email content"
+    },
+    {
+      "field": "cc",
+      "label": "CC",
+      "type": "email",
+      "description": "Carbon copy recipients (comma separated)",
+      "placeholder": "cc@example.com"
+    },
+    {
+      "field": "bcc",
+      "label": "BCC",
+      "type": "email",
+      "description": "Blind carbon copy recipients (comma separated)",
+      "placeholder": "bcc@example.com"
+    },
+    {
+      "field": "fromName",
+      "label": "From Name",
+      "type": "string",
+      "description": "The sender display name",
+      "placeholder": "Qona Automation"
+    },
+    {
+      "field": "attachments",
+      "label": "Attachments",
+      "type": "string",
+      "description": "File paths or URLs to attach",
+      "placeholder": ""
+    }
+  ],
+  "outputs": [
+    {
+      "field": "messageId",
+      "label": "Message ID",
+      "type": "string",
+      "description": "The Gmail message ID of the sent email"
+    },
+    {
+      "field": "threadId",
+      "label": "Thread ID",
+      "type": "string",
+      "description": "The Gmail thread ID"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.emailSend",
+  "keywords": ["gmail", "email", "send email", "mail", "smtp", "send", "notify email"]
+}

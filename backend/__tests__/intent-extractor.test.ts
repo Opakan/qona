@@ -7,6 +7,16 @@ vi.mock('../src/services/deepseek.js', async () => {
   return { ...actual, chatCompletion: vi.fn() };
 });
 
+vi.mock('../src/services/workflow-memory.js', () => ({
+  workflowMemory: {
+    buildMemoryContext: vi.fn().mockResolvedValue(''),
+    findSimilarWorkflows: vi.fn().mockResolvedValue({ matches: [], totalSearched: 0 }),
+    storePattern: vi.fn().mockResolvedValue({}),
+    logExecution: vi.fn().mockResolvedValue({}),
+    getTopSuccessPatterns: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 let mockChat: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
@@ -16,10 +26,10 @@ beforeEach(async () => {
 });
 
 describe('extractIntent', () => {
-  it('extracts webhook trigger + send_email action from simple prompt', async () => {
+  it('extracts webhook trigger + gmail action from simple prompt', async () => {
     mockChat.mockResolvedValue(JSON.stringify({
       trigger: { type: 'webhook', label: 'Webhook', description: 'Receives data' },
-      actions: [{ type: 'send_email', label: 'Send Email', order: 1, description: 'Sends email' }],
+      actions: [{ type: 'gmail', label: 'Send Email', order: 1, description: 'Sends email' }],
       integrations: [],
       confidence: 0.9,
       missingDetails: [],
@@ -28,7 +38,7 @@ describe('extractIntent', () => {
     const result = await extractIntent('Send an email when a webhook is received');
     expect(result.trigger.type).toBe('webhook');
     expect(result.actions).toHaveLength(1);
-    expect(result.actions[0].type).toBe('send_email');
+    expect(result.actions[0].type).toBe('gmail');
     expect(result.confidence).toBe(0.9);
   });
 
@@ -79,7 +89,7 @@ describe('extractIntent', () => {
   it('validates result matches schema', async () => {
     const valid = {
       trigger: { type: 'webhook', label: 'W' },
-      actions: [{ type: 'send_email', label: 'E', order: 1 }],
+      actions: [{ type: 'gmail', label: 'E', order: 1 }],
       integrations: [],
       confidence: 0.5,
       missingDetails: [],

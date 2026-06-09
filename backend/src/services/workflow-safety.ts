@@ -1,4 +1,5 @@
-import { validateInternalGraph } from '@qona/shared';
+import { validateGraph } from './graph-validator.js';
+import { nodeRegistry } from './node-registry.js';
 import type { InternalGraph, PlanningMissingField } from '@qona/shared';
 
 export interface SafetyResult {
@@ -15,9 +16,9 @@ export function checkWorkflowCompleteness(opts: {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const unanswered = opts.missingFields.filter(f => !f.answered);
+  const unanswered = opts.missingFields.filter((f) => !f.answered);
   if (unanswered.length > 0) {
-    errors.push('Unanswered fields: ' + unanswered.map(f => f.question).join(', '));
+    errors.push('Unanswered fields: ' + unanswered.map((f) => f.question).join(', '));
   }
 
   if (!opts.draft) {
@@ -29,14 +30,19 @@ export function checkWorkflowCompleteness(opts: {
     errors.push('Draft has no nodes');
     return { safe: false, errors, warnings, shouldGoBackToClarifying: true };
   }
-  const validation = validateInternalGraph(opts.draft, 'complete');
+
+  const registeredTypes = new Set(nodeRegistry.getNodeTypes());
+  const validation = validateGraph(opts.draft, { registeredTypes });
+
   if (!validation.valid) {
     errors.push('Graph validation failed');
-    for (const e of validation.errors) errors.push(e.message);
+    for (const e of validation.errors) {
+      errors.push(`[${e.type}] ${e.message}`);
+    }
     return { safe: false, errors, warnings, shouldGoBackToClarifying: true };
   }
 
-  const answered = opts.missingFields.filter(f => f.answered);
+  const answered = opts.missingFields.filter((f) => f.answered);
   if (answered.length < 2) warnings.push('Very few questions answered');
 
   return { safe: true, errors, warnings, shouldGoBackToClarifying: false };
@@ -48,6 +54,17 @@ export function checkCompileReadiness(graph: InternalGraph): SafetyResult {
 
   if (!graph.nodes || graph.nodes.length === 0) {
     errors.push('No nodes to compile');
+    return { safe: false, errors, warnings, shouldGoBackToClarifying: false };
+  }
+
+  const registeredTypes = new Set(nodeRegistry.getNodeTypes());
+  const validation = validateGraph(graph, { registeredTypes });
+
+  if (!validation.valid) {
+    errors.push('Graph is not ready for compilation');
+    for (const e of validation.errors) {
+      errors.push(`[${e.type}] ${e.message}`);
+    }
     return { safe: false, errors, warnings, shouldGoBackToClarifying: false };
   }
 

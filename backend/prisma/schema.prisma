@@ -25,6 +25,8 @@ model User {
   apiKeys          ApiKey[]
   subscriptions    Subscription[]
   invoices         Invoice[]
+  workflowPatterns WorkflowPattern[]
+  executionLogs    WorkflowExecutionLog[]
 
   @@map("users")
 }
@@ -201,7 +203,7 @@ model InternalGraph {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  planningSessions WorkflowPlanningSession[]
+  planningSessions     WorkflowPlanningSession[]
 
   @@index([userId])
   @@index([status])
@@ -228,4 +230,69 @@ model WorkflowPlanningSession {
   @@index([userId])
   @@index([state])
   @@map("workflow_planning_sessions")
+}
+
+model WorkflowPattern {
+  id              String   @id @default(cuid())
+  userId          String
+  goal            String
+  triggerType     String
+  triggerLabel    String   @default("")
+  actionTypes     Json     @default("[]")
+  integrationTypes Json    @default("[]")
+  graphSnapshot   Json
+  confidence      Float    @default(0)
+  success         Boolean  @default(false)
+  usageCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  executionLogs    WorkflowExecutionLog[]
+  successPatterns  WorkflowSuccessPattern[]
+
+  @@index([userId])
+  @@index([triggerType])
+  @@index([success])
+  @@index([createdAt])
+  @@map("workflow_patterns")
+}
+
+model WorkflowExecutionLog {
+  id             String   @id @default(cuid())
+  userId         String
+  patternId      String?
+  status         String   @default("PENDING")
+  errorMessage   String?
+  durationMs     Int?
+  metadata       Json     @default("{}")
+  executedAt     DateTime @default(now())
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pattern WorkflowPattern? @relation(fields: [patternId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([patternId])
+  @@index([status])
+  @@index([executedAt])
+  @@map("workflow_execution_logs")
+}
+
+model WorkflowSuccessPattern {
+  id              String   @id @default(cuid())
+  patternId       String?
+  triggerType     String
+  actionTypes     Json     @default("[]")
+  integrationTypes Json    @default("[]")
+  successCount    Int      @default(1)
+  avgConfidence   Float    @default(0)
+  lastUsedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  pattern WorkflowPattern? @relation(fields: [patternId], references: [id], onDelete: SetNull)
+
+  @@index([triggerType])
+  @@index([successCount])
+  @@index([lastUsedAt])
+  @@map("workflow_success_patterns")
 }

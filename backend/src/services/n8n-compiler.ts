@@ -1,5 +1,6 @@
 import { INTERNAL_TO_N8N_TYPE_MAP } from '@qona/shared';
 import type { InternalGraph, GraphNode, GraphEdge } from '@qona/shared';
+import { validateGraphForCompilation } from './graph-validator.js';
 
 // ═══════════════════════════════════════════════════════════
 // n8n Output Types
@@ -206,6 +207,20 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
 export function compileInternalGraph(graph: InternalGraph): CompilationResult {
   const errors: CompilationError[] = [];
   const warnings: string[] = [];
+
+  // ── VALIDATE graph before compilation ──
+  const validation = validateGraphForCompilation(graph);
+  if (!validation.valid) {
+    return {
+      success: false,
+      errors: validation.errors.map((e) => ({
+        path: e.nodeId ?? 'graph',
+        message: e.message,
+        severity: e.severity,
+      })),
+      warnings: validation.warnings.map((w) => w.message),
+    };
+  }
 
   if (!graph.nodes || graph.nodes.length === 0) {
     return {

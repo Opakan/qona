@@ -43,3 +43,27 @@ export const DISPOSABLE_EMAIL_DOMAINS = [
 ] as const;
 
 export type WorkflowStatus = (typeof WORKFLOW_STATUS)[keyof typeof WORKFLOW_STATUS];
+
+export const MAX_QUESTIONS_PER_SESSION = 5;
+
+export const CREDENTIAL_FIELDS = new Set([
+  'apiKey', 'api_key', 'apikey',
+  'password', 'passwd', 'pwd',
+  'token', 'accessToken', 'access_token', 'refreshToken', 'refresh_token',
+  'secret', 'secretKey', 'secret_key', 'clientSecret', 'client_secret',
+  'privateKey', 'private_key', 'privateKeyPem',
+  'oauthToken', 'oauth_token', 'bearerToken', 'bearer_token',
+  'credential', 'credentials', 'authToken', 'auth_token',
+  'jwtSecret', 'jwt_secret', 'signingKey', 'signing_key',
+  'encryptionKey', 'encryption_key',
+  'supabaseKey', 'supabase_key', 'supabaseServiceKey',
+  'deepseekKey', 'openaiKey', 'stripeKey', 'paystackKey', 'flutterwaveKey',
+]);
+
+export const CREDENTIAL_GUARD_PROMPT = `
+CREDENTIAL AND SECURITY RULES (CRITICAL):
+- NEVER ask the user for API keys, passwords, tokens, secrets, or credentials.
+- NEVER generate or suggest values for fields like: apiKey, password, token, secret, clientSecret, privateKey, bearerToken.
+- If a node requires credentials, set the field to "{{USER_CONFIGURED}}" and add a note in "missingDetails" like "requires credential setup".
+- Do NOT include real-looking tokens or keys in any config.
+- User credentials are configured in the target platform (n8n), not in Qona.`;

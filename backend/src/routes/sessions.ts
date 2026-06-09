@@ -28,13 +28,13 @@ function buildBlockedResponse(session: { id: string; state: string; stage: numbe
   const r = BLOCKED_STATES[session.state] || 'in an unexpected state: ' + session.state;
   return { compiled: false, state: session.state, stage: session.stage, sessionId: session.id, message: 'Cannot compile. The planning session is ' + r, requiredState: 'completed' };
 }
-sessionsRouter.get('/api/sessions', requireAuth, async (req, res, next) => {
+sessionsRouter.get('/sessions', requireAuth, async (req, res, next) => {
   try {
     const sv = await planningSessionService.getByUserId(req.user!.authId);
     res.json({ traceId: req.traceId, sessions: sv });
   } catch (err) { next(err); }
 });
-sessionsRouter.get('/api/sessions/:id/draft', requireAuth, async (req, res, next) => {
+sessionsRouter.get('/sessions/:id/draft', requireAuth, async (req, res, next) => {
   try {
     const id = (req.params.id as string);
     const sess = await planningSessionService.getById(id);
@@ -42,7 +42,7 @@ sessionsRouter.get('/api/sessions/:id/draft', requireAuth, async (req, res, next
     res.json({ sessionId: sess.id, state: sess.state, stage: sess.stage, draft: sess.workflowDraft, missingFields: sess.missingFields, collectedAnswers: sess.collectedAnswers });
   } catch (err) { next(err); }
 });
-sessionsRouter.post('/api/sessions/:id/compile', requireAuth, async (req, res, next) => {
+sessionsRouter.post('/sessions/:id/compile', requireAuth, async (req, res, next) => {
   try {
     const id = (req.params.id as string);
     const sess = await planningSessionService.getById(id);
@@ -64,7 +64,7 @@ log('info', 'COMPILATION COMPLETED', { sessionId: id, authId: req.user!.authId, 
     res.json({ compiled: true, state: sess.state, sessionId: id, n8n: r.workflow, warnings: r.warnings, metadata: { workflowName: g.metadata.name || 'Untitled', nodeCount: r.workflow.nodes.length, compiledAt: new Date().toISOString() } });
   } catch (err) { next(err); }
 });
-sessionsRouter.get('/api/sessions/:id/compile/download', requireAuth, async (req, res, next) => {
+sessionsRouter.get('/sessions/:id/compile/download', requireAuth, async (req, res, next) => {
   try {
     const id = (req.params.id as string);
     const sess = await planningSessionService.getById(id);
@@ -86,7 +86,7 @@ const fn = (g.metadata.name || 'workflow').replace(/\\s+/g, '_') + '_n8n.json';
     res.send(JSON.stringify(r.workflow, null, 2));
   } catch (err) { next(err); }
 });
-sessionsRouter.post('/api/sessions/:id/compile/validate', requireAuth, async (req, res, next) => {
+sessionsRouter.post('/sessions/:id/compile/validate', requireAuth, async (req, res, next) => {
   try {
     const id = (req.params.id as string);
     const sess = await planningSessionService.getById(id);

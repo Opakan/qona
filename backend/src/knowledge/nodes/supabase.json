@@ -1,0 +1,75 @@
+{
+  "nodeType": "supabase",
+  "displayName": "Supabase",
+  "description": "Interacts with a Supabase database. Can insert, update, select, or delete rows from tables.",
+  "category": "action",
+  "requiredFields": [
+    {
+      "field": "tableName",
+      "label": "Table Name",
+      "type": "string",
+      "description": "The name of the Supabase table to operate on",
+      "required": true,
+      "placeholder": "users"
+    }
+  ],
+  "optionalFields": [
+    {
+      "field": "operation",
+      "label": "Operation",
+      "type": "select",
+      "description": "The database operation to perform",
+      "options": ["select", "insert", "update", "delete"],
+      "defaultValue": "insert"
+    },
+    {
+      "field": "filters",
+      "label": "Filters",
+      "type": "json",
+      "description": "JSON object with column:value pairs for filtering, e.g. {\"status\": \"active\"}"
+    },
+    {
+      "field": "columns",
+      "label": "Columns",
+      "type": "string",
+      "description": "Comma-separated column names to select (for select operation)",
+      "placeholder": "id,name,email"
+    },
+    {
+      "field": "orderBy",
+      "label": "Order By",
+      "type": "string",
+      "description": "Column to sort results by",
+      "placeholder": "created_at"
+    },
+    {
+      "field": "limit",
+      "label": "Limit",
+      "type": "number",
+      "description": "Maximum number of rows to return",
+      "defaultValue": "100"
+    }
+  ],
+  "outputs": [
+    {
+      "field": "data",
+      "label": "Result Data",
+      "type": "array",
+      "description": "The rows returned or affected by the operation"
+    },
+    {
+      "field": "count",
+      "label": "Row Count",
+      "type": "number",
+      "description": "The number of rows returned"
+    },
+    {
+      "field": "error",
+      "label": "Error",
+      "type": "object",
+      "description": "Supabase error object if the operation failed"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.supabase",
+  "keywords": ["supabase", "database", "db", "postgres", "insert", "select", "update", "delete", "table"]
+}

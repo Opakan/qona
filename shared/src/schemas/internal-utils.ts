@@ -92,6 +92,7 @@ export const INTERNAL_TO_N8N_TYPE_MAP: Record<string, string> = {
   email_received: 'n8n-nodes-base.emailReadImap',
   payment_received: 'n8n-nodes-base.webhook',
   send_email: 'n8n-nodes-base.emailSend',
+  gmail: 'n8n-nodes-base.emailSend',
   http_request: 'n8n-nodes-base.httpRequest',
   transform_data: 'n8n-nodes-base.set',
   filter: 'n8n-nodes-base.if',
@@ -101,6 +102,9 @@ export const INTERNAL_TO_N8N_TYPE_MAP: Record<string, string> = {
   send_notification: 'n8n-nodes-base.slack',
   run_code: 'n8n-nodes-base.code',
   google_sheets: 'n8n-nodes-base.googleSheets',
+  slack: 'n8n-nodes-base.slack',
+  telegram: 'n8n-nodes-base.telegram',
+  supabase: 'n8n-nodes-base.supabase',
 };
 
 export function convertTriggerToN8nNode(trigger: InternalTrigger) {

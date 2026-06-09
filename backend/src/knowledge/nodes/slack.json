@@ -1,0 +1,60 @@
+{
+  "nodeType": "slack",
+  "displayName": "Slack",
+  "description": "Sends messages to Slack channels or users. Can send text messages, rich blocks, and files.",
+  "category": "action",
+  "requiredFields": [
+    {
+      "field": "channelId",
+      "label": "Channel",
+      "type": "string",
+      "description": "The Slack channel ID or name to post to",
+      "required": true,
+      "placeholder": "#general"
+    }
+  ],
+  "optionalFields": [
+    {
+      "field": "text",
+      "label": "Message Text",
+      "type": "text",
+      "description": "The message text to post",
+      "placeholder": "Hello from Qona!"
+    },
+    {
+      "field": "blocks",
+      "label": "Message Blocks",
+      "type": "json",
+      "description": "Slack Block Kit JSON for rich message formatting"
+    },
+    {
+      "field": "username",
+      "label": "Bot Username",
+      "type": "string",
+      "description": "Custom display name for the bot message",
+      "placeholder": "Qona Bot"
+    },
+    {
+      "field": "threadTs",
+      "label": "Thread Timestamp",
+      "type": "string",
+      "description": "Post as a reply in a thread (provide the parent message timestamp)"
+    }
+  ],
+  "outputs": [
+    {
+      "field": "ts",
+      "label": "Message Timestamp",
+      "type": "string",
+      "description": "The Slack timestamp of the posted message"
+    },
+    {
+      "field": "channel",
+      "label": "Channel ID",
+      "type": "string",
+      "description": "The channel where the message was posted"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.slack",
+  "keywords": ["slack", "chat", "message", "notify slack", "notification", "send slack"]
+}
