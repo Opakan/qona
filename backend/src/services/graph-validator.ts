@@ -1,5 +1,6 @@
 import type { InternalGraph, GraphNode, GraphEdge } from '@qona/shared';
 import { CREDENTIAL_FIELDS } from '@qona/shared';
+import { nodeRegistry } from './node-registry.js';
 
 // ═══════════════════════════════════════════════════════════
 // Validation result types
@@ -30,12 +31,17 @@ export interface GraphValidationResult {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Known trigger types (from node registry + legacy)
+// Known trigger types (node registry + well-known fallbacks)
 // ═══════════════════════════════════════════════════════════
 
-const TRIGGER_TYPES = new Set([
-  'webhook', 'schedule', 'cron', 'manual',
+const FALLBACK_TRIGGERS = new Set([
+  'schedule', 'cron', 'manual',
   'form_submission', 'email_received', 'payment_received',
+]);
+
+const TRIGGER_TYPES = new Set([
+  ...nodeRegistry.getTriggerTypes(),
+  ...FALLBACK_TRIGGERS,
 ]);
 
 function isTriggerType(type: string): boolean {
@@ -139,25 +145,27 @@ function detectCycles(
     inStack.add(nodeId);
     path.push(nodeId);
 
-    const neighbors = adj.get(nodeId) ?? [];
-    for (const neighbor of neighbors) {
-      if (!visited.has(neighbor)) {
-        if (dfs(neighbor, path)) return true;
-      } else if (inStack.has(neighbor)) {
-        const cycleStart = path.indexOf(neighbor);
-        const cycle = path.slice(cycleStart).concat(neighbor);
-        issues.push({
-          type: 'circular_dependency',
-          severity: 'error',
-          message: `Circular dependency detected: ${cycle.join(' → ')}`,
-        });
-        return true;
+    try {
+      const neighbors = adj.get(nodeId) ?? [];
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          if (dfs(neighbor, path)) return true;
+        } else if (inStack.has(neighbor)) {
+          const cycleStart = path.indexOf(neighbor);
+          const cycle = path.slice(cycleStart).concat(neighbor);
+          issues.push({
+            type: 'circular_dependency',
+            severity: 'error',
+            message: `Circular dependency detected: ${cycle.join(' → ')}`,
+          });
+          return true;
+        }
       }
+      return false;
+    } finally {
+      path.pop();
+      inStack.delete(nodeId);
     }
-
-    path.pop();
-    inStack.delete(nodeId);
-    return false;
   }
 
   const nodeIds = nodes.map((n) => n.id);

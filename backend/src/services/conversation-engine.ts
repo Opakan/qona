@@ -8,6 +8,7 @@ import { buildInitialPlan, collectAnswer, generateAIQuestion, detectMissingRequi
 import { buildInternalGraph, validatePlanForGraphBuild } from './internal-graph-builder.js';
 import { getPrisma } from '../lib/prisma.js';
 import { validateGraph, validateGraphForCompilation, formatValidationSummary } from './graph-validator.js';
+import { compileInternalGraph } from './n8n-compiler.js';
 import { nodeRegistry } from './node-registry.js';
 import { workflowMemory } from './workflow-memory.js';
 import {
@@ -63,6 +64,9 @@ export interface AIResponse {
   sessionState?: string;
   explanation?: string;
   error?: string;
+  n8nJson?: unknown;
+  workflowId?: string;
+  exportId?: string;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -206,13 +210,18 @@ export const conversationEngine = {
       intent = await extractIntent(userMessage);
       log('info', 'Intent extracted', { trigger: intent.trigger.type, actions: intent.actions.length, confidence: intent.confidence });
     } catch (err) {
-      log('warn', 'Intent extraction failed, using fallback', { error: (err as Error).message });
-      intent = {
-        trigger: { type: 'webhook' as const, label: 'Webhook Trigger', description: 'Receives external requests' },
-        actions: [{ type: 'send_email' as const, label: 'Send Email', description: 'Sends an email', order: 1 }],
-        integrations: [],
-        confidence: 0.3,
-        missingDetails: ['Could not parse intent from prompt'],
+      log('warn', 'Intent extraction failed', { error: (err as Error).message });
+      await conversationService.addMessage(conversationId, {
+        role: 'assistant',
+        content: "I couldn't understand your workflow description. Could you rephrase it? Include what should trigger the workflow and what actions it should perform.",
+        metadata: { sessionId, sessionState: 'collecting_intent', error: (err as Error).message },
+      });
+      return {
+        type: 'error',
+        sessionId,
+        sessionState: 'collecting_intent',
+        error: `Could not parse intent: ${(err as Error).message}`,
+        explanation: 'Please rephrase your workflow description with a clear trigger and action.',
       };
     }
 
@@ -392,7 +401,14 @@ export const conversationEngine = {
     authId: string,
   ): Promise<AIResponse> {
     const triggerWords = ['generate', 'proceed', 'yes', 'go ahead', "let's go", 'create it', 'build it', 'finalize', 'do it', 'go', 'ok', 'okay'];
-    const shouldGenerate = triggerWords.some((w) => userMessage.toLowerCase().includes(w));
+    const msg = userMessage.toLowerCase();
+    const shouldGenerate = triggerWords.some((w) => {
+      const idx = msg.indexOf(w);
+      if (idx === -1) return false;
+      const before = idx > 0 ? msg[idx - 1] : ' ';
+      const after = idx + w.length < msg.length ? msg[idx + w.length] : ' ';
+      return (/\s|[.,!?;]/.test(before)) && (/\s|[.,!?;]/.test(after));
+    });
 
     if (!shouldGenerate) {
       await conversationService.addMessage(conversationId, {
@@ -492,7 +508,7 @@ export const conversationEngine = {
       };
     }
 
-    // ── Save the internal graph (FIX: use resolved Prisma userId, not authId) ──
+    // ── Save the internal graph ──
     const prisma = getPrisma();
     const prismaUserId = await resolvePrismaUserId(authId);
 
@@ -510,15 +526,58 @@ export const conversationEngine = {
     });
 
     await planningSessionService.linkGraph(sessionId, saved.id);
+
+    // ── Compile InternalGraph → n8n JSON ──
+    const compileResult = compileInternalGraph(graph);
+    if (!compileResult.success || !compileResult.workflow) {
+      log('error', 'n8n compilation failed after validation passed', { errors: compileResult.errors });
+      await planningSessionService.transition(sessionId, PLANNING_STATES.FAILED);
+      await conversationService.addMessage(conversationId, {
+        role: 'assistant',
+        content: `The workflow graph was built but compilation failed. Please try again.`,
+        metadata: { sessionId, sessionState: PLANNING_STATES.FAILED },
+      });
+      return {
+        type: 'error',
+        sessionId,
+        sessionState: PLANNING_STATES.FAILED,
+        error: `Compilation failed: ${compileResult.errors.map((e) => e.message).join('; ')}`,
+      };
+    }
+
+    // ── Create Workflow draft record ──
+    const workflow = await prisma.workflow.create({
+      data: {
+        userId: prismaUserId,
+        name: graph.metadata.name,
+        description: graph.metadata.description,
+        definition: compileResult.workflow as unknown as Prisma.InputJsonValue,
+        status: 'DRAFT',
+      },
+    });
+
+    // ── Store export record ──
+    const exportRecord = await prisma.exportHistory.create({
+      data: {
+        userId: prismaUserId,
+        workflowId: workflow.id,
+        platform: 'n8n',
+        format: 'json',
+        status: 'SUCCESS',
+        metadata: {
+          nodeCount: compileResult.workflow.nodes.length,
+          compiledAt: new Date().toISOString(),
+          graphId: saved.id,
+        } as Prisma.InputJsonValue,
+      },
+    });
+
     await planningSessionService.transition(sessionId, PLANNING_STATES.COMPLETED);
 
     // ── Record in workflow memory ──
-    const triggerNode = graph.nodes.find((n) => nodeRegistry.getTriggerTypes().includes(n.type)
-      || ['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'].includes(n.type));
-    const actionNodes = graph.nodes.filter((n) =>
-      !nodeRegistry.getTriggerTypes().includes(n.type)
-      && !['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'].includes(n.type),
-    );
+    const registryTriggers = new Set(nodeRegistry.getTriggerTypes());
+    const triggerNode = graph.nodes.find((n) => registryTriggers.has(n.type));
+    const actionNodes = graph.nodes.filter((n) => !registryTriggers.has(n.type));
 
     await workflowMemory.storePattern({
       userId: prismaUserId,
@@ -532,12 +591,23 @@ export const conversationEngine = {
       success: true,
     }).catch((err) => log('warn', 'Failed to store workflow pattern', { error: (err as Error).message }));
 
-    log('info', 'GRAPH GENERATION COMPLETED', { graphId: saved.id, nodeCount: graph.nodes.length });
+    log('info', 'GRAPH GENERATION COMPLETED', {
+      graphId: saved.id,
+      workflowId: workflow.id,
+      exportId: exportRecord.id,
+      nodeCount: graph.nodes.length,
+      n8nNodeCount: ((compileResult.workflow as unknown as Record<string, unknown>).nodes
+        ? ((compileResult.workflow as unknown as Record<string, unknown>).nodes as unknown[]).length
+        : 0),
+    });
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: `Your workflow "${graph.metadata.name}" has been generated with ${graph.nodes.length} nodes and ${graph.edges.length} connections.`,
-      metadata: { graph, graphId: saved.id, sessionId, sessionState: PLANNING_STATES.COMPLETED },
+      content: `Your workflow "${graph.metadata.name}" has been generated with ${graph.nodes.length} nodes and ${graph.edges.length} connections. It's been compiled to n8n JSON and saved as a draft.`,
+      metadata: {
+        graph, graphId: saved.id, workflowId: workflow.id, exportId: exportRecord.id,
+        sessionId, sessionState: PLANNING_STATES.COMPLETED,
+      },
     });
 
     return {
@@ -546,7 +616,10 @@ export const conversationEngine = {
       graphId: saved.id,
       sessionId,
       sessionState: PLANNING_STATES.COMPLETED,
-      explanation: `Workflow "${graph.metadata.name}" generated with ${graph.nodes.length} nodes and ${graph.edges.length} connections.`,
+      n8nJson: compileResult.workflow,
+      workflowId: workflow.id,
+      exportId: exportRecord.id,
+      explanation: `Workflow "${graph.metadata.name}" generated, compiled to n8n JSON, and saved as draft.`,
     };
   },
 
