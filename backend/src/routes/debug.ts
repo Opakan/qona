@@ -12,6 +12,7 @@ import {
   formatValidationSummary,
 } from '../services/graph-validator.js';
 import { compileInternalGraph } from '../services/n8n-compiler.js';
+import { planWorkflow } from '../services/workflow-planner.js';
 import { nodeRegistry } from '../services/node-registry.js';
 import { WorkflowPlanSchema, InternalGraphSchema } from '@qona/shared';
 
@@ -212,6 +213,33 @@ debugRouter.post('/debug/compile', async (req, res, next) => {
         errors: result.errors,
         warnings: result.warnings,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// POST /api/debug/planner
+// Input: { "prompt": "..." }
+// Output: PlannerResult from workflow-planner.ts
+// ═══════════════════════════════════════════════════════════
+
+debugRouter.post('/debug/planner', async (req, res, next) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      res.status(400).json({ error: 'prompt is required and must be a non-empty string' });
+      return;
+    }
+
+    const result = await planWorkflow(prompt.trim());
+
+    res.json({
+      debug: 'workflow-planner',
+      prompt: prompt.trim(),
+      output: result,
     });
   } catch (err) {
     next(err);

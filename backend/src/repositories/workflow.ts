@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient, Prisma, WorkflowStatus } from '@prisma/client';
 import { BaseRepository } from './base.js';
 
 export class WorkflowRepository extends BaseRepository {
@@ -9,7 +9,7 @@ export class WorkflowRepository extends BaseRepository {
     });
   }
 
-  async findByUserId(userId: string, options?: { status?: string; skip?: number; take?: number }) {
+  async findByUserId(userId: string, options?: { status?: WorkflowStatus; skip?: number; take?: number }) {
     return this.prisma.workflow.findMany({
       where: { userId, ...(options?.status ? { status: options.status } : {}) },
       orderBy: { updatedAt: 'desc' },
@@ -27,7 +27,7 @@ export class WorkflowRepository extends BaseRepository {
     name: string;
     description?: string;
     definition: Record<string, unknown>;
-    status?: string;
+    status?: WorkflowStatus;
   }) {
     return this.prisma.workflow.create({
       data: {
@@ -44,7 +44,7 @@ export class WorkflowRepository extends BaseRepository {
     name?: string;
     description?: string;
     definition?: Record<string, unknown>;
-    status?: string;
+    status?: WorkflowStatus;
   }) {
     return this.prisma.workflow.update({
       where: { id },

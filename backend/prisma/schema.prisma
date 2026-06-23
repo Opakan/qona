@@ -38,6 +38,7 @@ model User {
   invoices         Invoice[]
   workflowPatterns WorkflowPattern[]
   executionLogs    WorkflowExecutionLog[]
+  workflowDrafts   WorkflowDraft[]
 
   @@map("users")
 }
@@ -306,4 +307,20 @@ model WorkflowSuccessPattern {
   @@index([successCount])
   @@index([lastUsedAt])
   @@map("workflow_success_patterns")
+}
+
+model WorkflowDraft {
+  id            String   @id @default(cuid())
+  userId        String
+  goal          String
+  requirements  Json     @default("{}")
+  internalGraph Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("workflow_drafts")
 }

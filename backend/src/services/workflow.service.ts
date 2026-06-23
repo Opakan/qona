@@ -1,8 +1,8 @@
 import { db } from './db.js';
-import type { Workflow } from '@prisma/client';
+import type { Workflow, WorkflowStatus } from '@prisma/client';
 
 export const workflowService = {
-  async list(userId: string, options?: { status?: string; skip?: number; take?: number }) {
+  async list(userId: string, options?: { status?: WorkflowStatus; skip?: number; take?: number }) {
     const [workflows, total] = await Promise.all([
       db.workflow.findByUserId(userId, options),
       db.workflow.countByUserId(userId),
@@ -29,7 +29,7 @@ export const workflowService = {
     name?: string;
     description?: string;
     definition?: Record<string, unknown>;
-    status?: string;
+    status?: WorkflowStatus;
   }) {
     const workflow = await db.workflow.update(id, params);
 

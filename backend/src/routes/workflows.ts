@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { WorkflowStatus } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { z } from 'zod';
@@ -18,14 +19,14 @@ const UpdateWorkflowSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional(),
   definition: z.record(z.unknown()).optional(),
-  status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
 });
 
 workflowsRouter.get('/', requireAuth, async (req, res, next) => {
   try {
     const { status, skip, take } = req.query;
     const result = await workflowService.list(req.user!.authId, {
-      status: status as string,
+      status: status as WorkflowStatus | undefined,
       skip: skip ? parseInt(skip as string) : undefined,
       take: take ? parseInt(take as string) : undefined,
     });

@@ -12,6 +12,7 @@ import { conversationsRouter } from './routes/conversations.js';
 import { paymentsRouter } from './routes/payments.js';
 import { sessionsRouter } from './routes/sessions.js';
 import { debugRouter } from './routes/debug.js';
+import { plannerRouter } from './routes/planner.js';
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp() {
   app.use('/api/payments', paymentsRouter);
   app.use('/api', sessionsRouter);
   app.use('/api', debugRouter);
+  app.use('/api', plannerRouter);
   app.use(errorHandler);
   return app;
 }
