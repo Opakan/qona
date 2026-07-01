@@ -66,6 +66,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
     next();
   } catch (error) {
+    console.error('[requireAuth] Authentication check failed:', error);
     if (error instanceof AppError) {
       next(error);
     } else {

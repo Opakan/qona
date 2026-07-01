@@ -38,17 +38,87 @@ interface WorkflowGraphProps {
 
 const TRIGGER_TYPES = ['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'];
 
-function getNodeStyle(nodeType: string): { border: string; bg: string } {
-  const isTrigger = TRIGGER_TYPES.some((t) => nodeType === t);
-  if (isTrigger) return { border: 'border-orange-300', bg: 'bg-orange-50' };
-  if (nodeType === 'send_email') return { border: 'border-blue-300', bg: 'bg-blue-50' };
-  if (nodeType === 'http_request') return { border: 'border-blue-300', bg: 'bg-blue-50' };
-  if (nodeType === 'filter' || nodeType === 'if') return { border: 'border-yellow-300', bg: 'bg-yellow-50' };
-  if (nodeType === 'transform_data' || nodeType === 'set') return { border: 'border-purple-300', bg: 'bg-purple-50' };
-  if (nodeType === 'delay' || nodeType === 'wait') return { border: 'border-gray-300', bg: 'bg-gray-50' };
-  if (nodeType === 'run_code' || nodeType === 'code') return { border: 'border-pink-300', bg: 'bg-pink-50' };
-  if (nodeType === 'google_sheets') return { border: 'border-green-300', bg: 'bg-green-50' };
-  return { border: 'border-blue-300', bg: 'bg-blue-50' };
+function getNodeStyle(nodeType: string): { border: string; bg: string; dot: string } {
+  const cleanType = nodeType.startsWith('n8n-nodes-base.') ? nodeType.replace('n8n-nodes-base.', '') : nodeType;
+  const lower = cleanType.toLowerCase();
+
+  const isTrigger = TRIGGER_TYPES.some((t) => lower.includes(t)) || lower.includes('trigger') || lower.includes('webhook') || lower.includes('cron') || lower.includes('schedule');
+
+  if (isTrigger) {
+    return {
+      border: 'border border-amber-300 ring-2 ring-amber-50/30',
+      bg: 'bg-gradient-to-br from-amber-50/90 to-amber-100/40 backdrop-blur-sm',
+      dot: 'bg-amber-500',
+    };
+  }
+  if (lower.includes('email') || lower.includes('gmail')) {
+    return {
+      border: 'border border-sky-300 ring-2 ring-sky-50/30',
+      bg: 'bg-gradient-to-br from-sky-50/90 to-sky-100/40 backdrop-blur-sm',
+      dot: 'bg-sky-500',
+    };
+  }
+  if (lower.includes('http') || lower.includes('request')) {
+    return {
+      border: 'border border-indigo-300 ring-2 ring-indigo-50/30',
+      bg: 'bg-gradient-to-br from-indigo-50/90 to-indigo-100/40 backdrop-blur-sm',
+      dot: 'bg-indigo-500',
+    };
+  }
+  if (lower.includes('filter') || lower.includes('if')) {
+    return {
+      border: 'border border-teal-300 ring-2 ring-teal-50/30',
+      bg: 'bg-gradient-to-br from-teal-50/90 to-teal-100/40 backdrop-blur-sm',
+      dot: 'bg-teal-500',
+    };
+  }
+  if (lower.includes('transform') || lower.includes('set') || lower.includes('merge')) {
+    return {
+      border: 'border border-violet-300 ring-2 ring-violet-50/30',
+      bg: 'bg-gradient-to-br from-violet-50/90 to-violet-100/40 backdrop-blur-sm',
+      dot: 'bg-violet-500',
+    };
+  }
+  if (lower.includes('delay') || lower.includes('wait')) {
+    return {
+      border: 'border border-gray-300 ring-2 ring-gray-50/30',
+      bg: 'bg-gradient-to-br from-gray-50/90 to-gray-100/40 backdrop-blur-sm',
+      dot: 'bg-gray-450',
+    };
+  }
+  if (lower.includes('code') || lower.includes('js') || lower.includes('run')) {
+    return {
+      border: 'border border-fuchsia-300 ring-2 ring-fuchsia-50/30',
+      bg: 'bg-gradient-to-br from-fuchsia-50/90 to-fuchsia-100/40 backdrop-blur-sm',
+      dot: 'bg-fuchsia-500',
+    };
+  }
+  if (lower.includes('sheet') || lower.includes('google')) {
+    return {
+      border: 'border border-emerald-300 ring-2 ring-emerald-50/30',
+      bg: 'bg-gradient-to-br from-emerald-50/90 to-emerald-100/40 backdrop-blur-sm',
+      dot: 'bg-emerald-500',
+    };
+  }
+  if (lower.includes('slack') || lower.includes('telegram') || lower.includes('discord')) {
+    return {
+      border: 'border border-purple-300 ring-2 ring-purple-50/30',
+      bg: 'bg-gradient-to-br from-purple-50/90 to-purple-100/40 backdrop-blur-sm',
+      dot: 'bg-purple-500',
+    };
+  }
+  if (lower.includes('supabase') || lower.includes('database') || lower.includes('postgres') || lower.includes('sql')) {
+    return {
+      border: 'border border-emerald-400 ring-2 ring-emerald-50/30',
+      bg: 'bg-gradient-to-br from-emerald-50/90 to-emerald-100/40 backdrop-blur-sm',
+      dot: 'bg-emerald-600',
+    };
+  }
+  return {
+    border: 'border border-blue-300 ring-2 ring-blue-50/30',
+    bg: 'bg-gradient-to-br from-blue-50/90 to-blue-100/40 backdrop-blur-sm',
+    dot: 'bg-blue-500',
+  };
 }
 
 export default function WorkflowGraph({ graph, className }: WorkflowGraphProps) {
@@ -60,25 +130,45 @@ export default function WorkflowGraph({ graph, className }: WorkflowGraphProps) 
 
     for (const wfNode of nodeList) {
       const style = getNodeStyle(wfNode.type);
+      const cleanType = wfNode.type.startsWith('n8n-nodes-base.')
+        ? wfNode.type.replace('n8n-nodes-base.', '')
+        : wfNode.type;
+
       rfNodes.push({
         id: wfNode.id,
         type: 'default',
         position: { x: wfNode.position.x, y: wfNode.position.y },
-        style: { borderWidth: 1, borderRadius: 8, fontSize: 12, minWidth: 160, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
+        style: {
+          borderWidth: 0,
+          background: 'transparent',
+          padding: 0,
+          fontSize: 12,
+          minWidth: 190,
+          boxShadow: 'none',
+        },
         data: {
           label: (
-            <div className="p-3">
-              <div className="text-xs font-medium text-gray-400 uppercase">{wfNode.type}</div>
-              <div className="mt-0.5 text-sm font-medium text-gray-900">{wfNode.label}</div>
+            <div className={`p-4 rounded-xl shadow-md ${style.border} ${style.bg} transition-all duration-350 hover:shadow-lg hover:scale-[1.02]`}>
+              <div className="flex items-center gap-1.5">
+                <span className={`h-2 w-2 rounded-full ${style.dot} animate-pulse`} />
+                <span className="text-[10px] font-semibold text-gray-500 tracking-wider uppercase truncate max-w-[130px]">
+                  {cleanType}
+                </span>
+              </div>
+              <div className="mt-1 text-xs font-semibold text-gray-900 truncate">
+                {wfNode.label}
+              </div>
               {wfNode.config && Object.keys(wfNode.config).length > 0 && (
-                <div className="mt-1.5 space-y-0.5">
+                <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-1">
                   {Object.entries(wfNode.config)
                     .filter(([, v]) => v !== undefined && v !== null && v !== '' && !(typeof v === 'object' && Object.keys(v).length === 0))
                     .slice(0, 3)
                     .map(([k, v]) => (
-                      <div key={k} className="text-xs text-gray-500 truncate">
-                        <span className="font-medium">{k}:</span>{' '}
-                        {typeof v === 'object' ? JSON.stringify(v).slice(0, 30) : String(v).slice(0, 30)}
+                      <div key={k} className="flex flex-col text-[10px] leading-tight text-gray-600">
+                        <span className="font-semibold text-gray-400 uppercase tracking-wide text-[8px]">{k}</span>
+                        <span className="truncate font-medium mt-0.5 bg-white/60 px-1 py-0.5 rounded border border-gray-100/50">
+                          {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                        </span>
                       </div>
                     ))}
                 </div>
@@ -96,7 +186,7 @@ export default function WorkflowGraph({ graph, className }: WorkflowGraphProps) 
         target: edge.target,
         type: 'smoothstep',
         animated: true,
-        style: { stroke: '#d1d5db', strokeWidth: 2 },
+        style: { stroke: '#9ca3af', strokeWidth: 2 },
         label: edge.label || undefined,
       });
     }

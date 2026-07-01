@@ -10,6 +10,14 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
+  try {
+    const guestToken = localStorage.getItem('qona-guest-token');
+    if (guestToken) {
+      config.headers.Authorization = `Bearer ${guestToken}`;
+      return config;
+    }
+  } catch { /* ignore */ }
+
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;

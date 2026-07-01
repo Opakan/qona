@@ -45,7 +45,9 @@ const TRIGGER_TYPES = new Set([
 ]);
 
 function isTriggerType(type: string): boolean {
-  return TRIGGER_TYPES.has(type);
+  if (TRIGGER_TYPES.has(type)) return true;
+  const lower = type.toLowerCase();
+  return lower.includes('trigger') || lower.includes('webhook') || lower.includes('cron') || lower.includes('schedule');
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -6,9 +6,9 @@ let qCounter = 0;
 function nextId(): string { return `q${++qCounter}`; }
 
 const TRIGGER_REQUIRED: Record<string, string[]> = {
-  webhook: [],
+  webhook: ['method', 'path'],
   schedule: ['schedule_time'],
-  cron: ['schedule_time'],
+  cron: ['cronExpression'],
   manual: [],
   form_submission: ['form_provider'],
   email_received: ['email_account'],
@@ -16,12 +16,15 @@ const TRIGGER_REQUIRED: Record<string, string[]> = {
 };
 
 const TRIGGER_RECOMMENDED: Record<string, Record<string, { question: string; options?: string[]; default?: string }>> = {
-  webhook: {},
+  webhook: {
+    method: { question: 'Which HTTP method should the webhook listen for?', options: ['GET', 'POST', 'PUT', 'DELETE'], default: 'POST' },
+    path: { question: 'What URL path should the webhook listen on?', default: '/webhook' },
+  },
   schedule: {
     schedule_time: { question: 'When should this run? (e.g. daily at 9am, every hour)', default: 'Every day at 9am' },
   },
   cron: {
-    schedule_time: { question: 'When should this run?', default: 'Every day at 9am' },
+    cronExpression: { question: 'What is the cron expression for this schedule?', default: '*/15 * * * *' },
   },
   form_submission: {
     form_provider: { question: 'Which form provider are you using?', options: ['Typeform', 'Google Forms', 'JotForm', 'Wufoo'] },
@@ -33,7 +36,7 @@ const TRIGGER_RECOMMENDED: Record<string, Record<string, { question: string; opt
 
 const ACTION_REQUIRED: Record<string, string[]> = {
   send_email: ['to', 'subject'],
-  http_request: ['api_service'],
+  http_request: ['url', 'method'],
   transform_data: [],
   filter: ['filter_condition'],
   delay: ['delay_time'],

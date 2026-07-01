@@ -42,7 +42,7 @@ function buildTriggerRequirements(trigger: NonNullable<WorkflowPlan['trigger']>)
       label: `Trigger ${fieldDef.label}`,
       kind: 'trigger_config',
       required: fieldDef.required,
-      collected: !!existingValue,
+      collected: existingValue !== undefined || fieldDef.defaultValue !== undefined,
       value: existingValue ?? fieldDef.defaultValue,
     });
   }
@@ -74,7 +74,7 @@ function buildActionRequirements(actions: WorkflowPlan['actions'], index: number
       label: `Action ${index + 1} ${fieldDef.label}`,
       kind: 'action_config',
       required: fieldDef.required,
-      collected: !!existingValue,
+      collected: existingValue !== undefined || fieldDef.defaultValue !== undefined,
       value: existingValue ?? fieldDef.defaultValue,
     });
   }
@@ -136,7 +136,7 @@ function buildGeneralRequirements(goal: string): WorkflowPlanRequirement[] {
 // ═══════════════════════════════════════════════════════════
 
 export function detectMissingRequirements(requirements: WorkflowPlanRequirement[]): WorkflowPlanRequirement[] {
-  return requirements.filter((r) => !r.collected);
+  return requirements.filter((r) => r.required && !r.collected);
 }
 
 // ═══════════════════════════════════════════════════════════

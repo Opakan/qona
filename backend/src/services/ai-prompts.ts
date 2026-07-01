@@ -57,9 +57,8 @@ Edge types: direct, conditional, loop, merge
 Rules:
 - Always start with a trigger node
 - Connect nodes logically with edges
-- Use ONLY the node types listed above — do not invent new types
-- Use simple descriptive type names (not n8n-nodes-base.*)
-- Include config with relevant parameters for each node
+- If a required node/service is not in the registered list, you are FULLY allowed and encouraged to use the official n8n base node type name (prefixed with "n8n-nodes-base.", e.g., "n8n-nodes-base.postgres", "n8n-nodes-base.openAi", "n8n-nodes-base.hubspot") and define its parameters in "config".
+- Otherwise, use the registered node types listed above.
 - Assign reasonable positions (spaced horizontally: 200, 500, 800...)
 - If the prompt is vague, set "type" to "clarification" and include a "questions" array
 - Otherwise set "type" to "workflow" and include the full workflow graph`;

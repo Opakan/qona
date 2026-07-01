@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow,
-  LogOut, History, ChevronRight, Loader2, LayoutDashboard
+  LogOut, History, ChevronRight, Loader2, LayoutDashboard, Download
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -35,6 +35,33 @@ export default function ChatPage() {
   const [currentWorkflow, setCurrentWorkflow] = useState<Record<string, unknown> | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [leftTab, setLeftTab] = useState<'conversations' | 'history'>('conversations');
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportSession = async () => {
+    if (!sessionId || exporting) return;
+    setExporting(true);
+    try {
+      const { data } = await apiClient.post(`/sessions/${sessionId}/compile`);
+      if (data.compiled && data.n8n) {
+        const blob = new Blob([JSON.stringify(data.n8n, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const name = (currentWorkflow?.metadata as any)?.name || 'workflow';
+        a.download = `${name.toLowerCase().replace(/\s+/g, '_')}_n8n.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        alert(data.message || 'Cannot export workflow. Please complete the setup/clarification questions in the chat first!');
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -239,10 +266,23 @@ export default function ChatPage() {
 
       {/* ═════ RIGHT COLUMN ═════ */}
       <div className="flex w-[420px] flex-shrink-0 flex-col border-l border-gray-200">
-        <div className="flex items-center gap-2 border-b border-gray-200 px-5 py-2.5">
+        <div className="flex items-center gap-2 border-b border-gray-200 px-5 py-2.5 h-12">
           <Workflow className="h-3.5 w-3.5 text-gray-400" />
           <span className="text-xs font-medium text-gray-500">WORKFLOW PREVIEW</span>
-          <span className="ml-auto text-xs text-gray-300">{sessionId ? 'live' : ''}</span>
+          {sessionId && (
+            <button
+              onClick={handleExportSession}
+              disabled={exporting}
+              className="ml-auto inline-flex items-center gap-1 rounded bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {exporting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Download className="h-3 w-3" />
+              )}
+              {exporting ? 'Exporting...' : 'Export n8n JSON'}
+            </button>
+          )}
         </div>
         <div className="flex-1 bg-gray-50">
           {currentWorkflow ? (
