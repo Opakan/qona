@@ -361,14 +361,14 @@ export const conversationEngine = {
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: `I've gathered enough details (${collectedCount} requirements). Ready to generate your workflow. Say 'generate' to proceed.`,
+        content: `I have everything I need. Say 'generate' when you're ready to build your workflow.`,
         metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
       });
       return {
         type: 'complete',
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'Max question limit reached. Proceeding to graph generation.',
+        explanation: 'All requirements collected. Ready to generate.',
       };
     }
 

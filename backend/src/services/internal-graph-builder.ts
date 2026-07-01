@@ -28,11 +28,13 @@ const VALUE_TO_ACTION_TYPE: Record<string, string> = {
 };
 
 function inferTriggerType(value: string): string {
+  if (value.startsWith('n8n-nodes-base.')) return value;
   return VALUE_TO_TRIGGER_TYPE[value.trim().toLowerCase()] ?? 'webhook';
 }
 
-function inferActionType(value: string): string | null {
-  return VALUE_TO_ACTION_TYPE[value.trim().toLowerCase()] ?? null;
+function inferActionType(value: string): string {
+  if (value.startsWith('n8n-nodes-base.')) return value;
+  return VALUE_TO_ACTION_TYPE[value.trim().toLowerCase()] ?? value;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -228,13 +230,13 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
 
   nodes.push(...actionNodes);
 
-  // ── Build edges ──
-  for (const triggerNode of triggerNodes) {
-    for (const actionNode of actionNodes) {
+  // ── Build edges: Connect triggers to the first action node only ──
+  if (actionNodes.length > 0) {
+    for (const triggerNode of triggerNodes) {
       edges.push({
-        id: `e-${triggerNode.id}-${actionNode.id}`,
+        id: `e-${triggerNode.id}-${actionNodes[0].id}`,
         source: triggerNode.id,
-        target: actionNode.id,
+        target: actionNodes[0].id,
         type: 'direct',
         label: '',
         conditions: [],

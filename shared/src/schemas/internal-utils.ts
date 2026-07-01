@@ -92,7 +92,7 @@ export const INTERNAL_TO_N8N_TYPE_MAP: Record<string, string> = {
   email_received: 'n8n-nodes-base.emailReadImap',
   payment_received: 'n8n-nodes-base.webhook',
   send_email: 'n8n-nodes-base.emailSend',
-  gmail: 'n8n-nodes-base.emailSend',
+  gmail: 'n8n-nodes-base.gmail',
   http_request: 'n8n-nodes-base.httpRequest',
   transform_data: 'n8n-nodes-base.set',
   filter: 'n8n-nodes-base.if',

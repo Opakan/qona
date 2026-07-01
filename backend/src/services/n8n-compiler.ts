@@ -171,7 +171,7 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
   for (const node of wf.nodes) {
     if (!node.id) errors.push({ path: `nodes.${node.id}`, message: 'Node missing id', severity: 'error' });
     if (!node.type) errors.push({ path: `nodes.${node.id}`, message: 'Node missing type', severity: 'error' });
-    if (node.type && !VALID_N8N_TYPES.has(node.type)) {
+    if (node.type && !VALID_N8N_TYPES.has(node.type) && !node.type.startsWith('n8n-nodes-base.')) {
       errors.push({ path: `nodes.${node.id}.type`, message: `Unknown n8n type: ${node.type}`, severity: 'warning' });
     }
     if (!node.position || node.position.length !== 2 || isNaN(node.position[0]) || isNaN(node.position[1])) {
