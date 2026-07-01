@@ -26,9 +26,9 @@ const VALID_TRANSITIONS: Record<PlanningState, PlanningState[]> = {
   collecting_intent:   ['clarifying', 'generating_graph', 'completed'],
   clarifying:          ['clarifying', 'generating_graph', 'collecting_intent'],
   generating_graph:    ['compiling', 'clarifying', 'collecting_intent'],
-  compiling:           ['completed', 'failed'],
+  compiling:           ['completed', 'failed', 'clarifying', 'collecting_intent'],
   completed:           ['collecting_intent'],
-  failed:             ['collecting_intent'],
+  failed:              ['collecting_intent'],
 };
 
 function isValidTransition(from: PlanningState, to: string): to is PlanningState {
@@ -36,10 +36,6 @@ function isValidTransition(from: PlanningState, to: string): to is PlanningState
   if (!parsed.success) return false;
   return VALID_TRANSITIONS[from].includes(parsed.data);
 }
-
-// ═══════════════════════════════════════════════════════════
-// Service
-// ═══════════════════════════════════════════════════════════
 
 export const planningSessionService = {
   async create(authId: string, conversationId?: string, email?: string, name?: string) {
