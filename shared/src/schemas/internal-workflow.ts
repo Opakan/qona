@@ -14,9 +14,12 @@ export const INTERNAL_TRIGGER_TYPES = {
   PAYMENT_RECEIVED: 'payment_received',
 } as const;
 
-export const TriggerTypeSchema = z.enum([
-  'webhook', 'schedule', 'cron', 'manual',
-  'form_submission', 'email_received', 'payment_received',
+export const TriggerTypeSchema = z.union([
+  z.enum([
+    'webhook', 'schedule', 'cron', 'manual',
+    'form_submission', 'email_received', 'payment_received',
+  ]),
+  z.string().startsWith('n8n-nodes-base.')
 ]);
 
 export const TriggerConfigSchema = z.object({
@@ -57,10 +60,13 @@ export const INTERNAL_ACTION_TYPES = {
   GOOGLE_SHEETS: 'google_sheets',
 } as const;
 
-export const ActionTypeSchema = z.enum([
-  'send_email', 'http_request', 'transform_data', 'filter',
-  'delay', 'create_record', 'update_record', 'send_notification',
-  'run_code', 'google_sheets',
+export const ActionTypeSchema = z.union([
+  z.enum([
+    'send_email', 'http_request', 'transform_data', 'filter',
+    'delay', 'create_record', 'update_record', 'send_notification',
+    'run_code', 'google_sheets',
+  ]),
+  z.string().startsWith('n8n-nodes-base.')
 ]);
 
 export const ActionConfigSchema = z.object({

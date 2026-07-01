@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 export const ExtractedTriggerSchema = z.object({
-  type: z.enum(['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received']),
+  type: z.union([
+    z.enum(['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received']),
+    z.string().startsWith('n8n-nodes-base.')
+  ]),
   label: z.string(),
   description: z.string().default(''),
   config: z.object({
@@ -12,10 +15,13 @@ export const ExtractedTriggerSchema = z.object({
 });
 
 export const ExtractedActionSchema = z.object({
-  type: z.enum([
-    'send_email', 'http_request', 'transform_data', 'filter', 'delay',
-    'create_record', 'update_record', 'send_notification', 'run_code', 'google_sheets',
-    'gmail', 'slack', 'telegram', 'supabase',
+  type: z.union([
+    z.enum([
+      'send_email', 'http_request', 'transform_data', 'filter', 'delay',
+      'create_record', 'update_record', 'send_notification', 'run_code', 'google_sheets',
+      'gmail', 'slack', 'telegram', 'supabase',
+    ]),
+    z.string().startsWith('n8n-nodes-base.')
   ]),
   label: z.string(),
   description: z.string().default(''),

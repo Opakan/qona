@@ -44,11 +44,18 @@ export async function chatCompletion(
   const maxRetries = options?.retries ?? 2;
   let lastError: Error | null = null;
 
+  // DeepSeek requires the word 'json' to be present when response_format is 'json_object'
+  const hasJson = messages.some((m) => m.content.toLowerCase().includes('json'));
+  const finalMessages = [...messages];
+  if (!hasJson) {
+    finalMessages.push({ role: 'system', content: 'Format the response as JSON.' });
+  }
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const res = await getDeepSeekClient().post('/chat/completions', {
         model: 'deepseek-chat',
-        messages,
+        messages: finalMessages,
         temperature: options?.temperature ?? 0.3,
         max_tokens: options?.max_tokens ?? 4000,
         response_format: { type: 'json_object' },
