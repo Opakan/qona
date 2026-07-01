@@ -340,7 +340,9 @@ export function validateGraph(
   const actionNodes = nodes.filter((n) => !isTriggerType(n.type));
 
   return {
-    valid: strict ? allIssues.length === 0 : errors.length === 0,
+    valid: strict
+      ? allIssues.filter((i) => i.type !== 'unregistered_node').length === 0
+      : errors.length === 0,
     errors,
     warnings,
     summary: {

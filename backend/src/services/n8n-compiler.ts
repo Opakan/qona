@@ -56,7 +56,9 @@ function mapNodeType(internalType: string): string {
 
 function isTriggerNode(type: string): boolean {
   const triggerTypes = ['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'];
-  return triggerTypes.includes(type);
+  if (triggerTypes.includes(type)) return true;
+  const lower = type.toLowerCase();
+  return lower.includes('trigger') || lower.includes('webhook') || lower.includes('cron') || lower.includes('schedule');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -177,9 +179,10 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
     }
   }
 
-  const hasTrigger = wf.nodes.some((n) =>
-    n.type?.includes('webhook') || n.type?.includes('cron') || n.type?.includes('schedule') || n.type?.includes('manual'),
-  );
+  const hasTrigger = wf.nodes.some((n) => {
+    const lowerType = n.type?.toLowerCase() ?? '';
+    return lowerType.includes('trigger') || lowerType.includes('webhook') || lowerType.includes('cron') || lowerType.includes('schedule') || lowerType.includes('manual');
+  });
   if (!hasTrigger) {
     errors.push({ path: 'nodes', message: 'Workflow has no trigger node', severity: 'error' });
   }
