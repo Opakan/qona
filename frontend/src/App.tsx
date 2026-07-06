@@ -30,37 +30,39 @@ import GuestGuard from './components/auth/GuestGuard';
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public layout routes */}
-      <Route element={<Layout />}>
-        <Route path="/" element={<Landing />} />
-        <Route path="/product" element={<Product />} />
-        <Route path="/workflow-builder" element={<WorkflowBuilder />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/api" element={<Api />} />
-        <Route path="/pricing" element={<AuthProvider><Pricing /></AuthProvider>} />
-        <Route path="/resources" element={<Resources />} />
-        <Route path="/documentation" element={<Documentation />} />
-        <Route path="/tutorials" element={<Tutorials />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/press" element={<Press />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/cookie-policy" element={<CookiePolicy />} />
-        <Route path="/gdpr" element={<GDPR />} />
-      </Route>
+    <AuthProvider>
+      <Routes>
+        {/* Public layout routes */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<Landing />} />
+          <Route path="/product" element={<Product />} />
+          <Route path="/workflow-builder" element={<WorkflowBuilder />} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/api" element={<Api />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/documentation" element={<Documentation />} />
+          <Route path="/tutorials" element={<Tutorials />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/press" element={<Press />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/gdpr" element={<GDPR />} />
+        </Route>
 
-      {/* Auth pages (no layout) */}
-      <Route path="/sign-in" element={<AuthProvider><GuestGuard><SignIn /></GuestGuard></AuthProvider>} />
-      <Route path="/dashboard" element={<AuthProvider><AuthGuard><Dashboard /></AuthGuard></AuthProvider>} />
-      <Route path="/chat" element={<AuthProvider><AuthGuard><Chat /></AuthGuard></AuthProvider>} />
-      <Route path="/billing" element={<AuthProvider><AuthGuard><Billing /></AuthGuard></AuthProvider>} />
-      <Route path="/payment/success" element={<AuthProvider><AuthGuard><PaymentSuccess /></AuthGuard></AuthProvider>} />
-      <Route path="/auth/callback" element={<AuthProvider><AuthCallback /></AuthProvider>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Auth pages (no layout) */}
+        <Route path="/sign-in" element={<GuestGuard><SignIn /></GuestGuard>} />
+        <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+        <Route path="/chat" element={<AuthGuard><Chat /></AuthGuard>} />
+        <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
+        <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }

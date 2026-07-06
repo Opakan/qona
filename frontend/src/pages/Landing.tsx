@@ -1,11 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { ArrowUp } from 'lucide-react';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Sparkles, Workflow, Zap, Shield } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const suggestions = [
   'Send a welcome email when a new user signs up',
@@ -14,87 +10,105 @@ const suggestions = [
 ];
 
 export default function LandingPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: 'Describe the automation you want to build. Qona will generate a workflow you can export to n8n, Zapier, or Make.com.',
-    },
-  ]);
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Redirection for already signed in users
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (isAuthenticated && !isLoading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
-  const handleSend = async () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
-    setInput('');
+    if (!text) return;
 
-    const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content: text };
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-
-    setTimeout(() => {
-      const reply: Message = {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        content: 'To build this workflow, I need a few more details. What should trigger this automation — a webhook, a schedule, or a manual action? Once I understand the trigger, I can design the full workflow for you.',
-      };
-      setMessages((prev) => [...prev, reply]);
-      setLoading(false);
-    }, 1200);
+    // Save prompt to sessionStorage and redirect to sign-in
+    sessionStorage.setItem('qona_pending_prompt', text);
+    navigate('/sign-in');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      handleSubmit();
     }
   };
 
-  return (
-    <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-3xl flex-col px-4 lg:px-6">
-      {messages.length <= 1 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-medium text-gray-900 sm:text-3xl">What would you like to automate?</h1>
-            <p className="mt-2 text-sm text-gray-500">Describe your workflow in plain English.</p>
-          </div>
+  // If loading or authenticated, render a minimal clean loading layout to avoid flicker
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-slate-50/50">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
+      </div>
+    );
+  }
 
-          <div className="w-full max-w-xl">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
+  return (
+    <div className="relative isolate overflow-hidden bg-slate-50/50">
+      {/* Background decoration */}
+      <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80" aria-hidden="true">
+        <div
+          className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-indigo-200 to-indigo-400 opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
+          style={{
+            clipPath:
+              'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+          }}
+        />
+      </div>
+
+      <div className="mx-auto max-w-5xl px-6 pt-20 pb-24 sm:pt-28 sm:pb-32 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-semibold leading-6 text-indigo-600 shadow-sm ring-1 ring-indigo-600/10 hover:ring-indigo-600/20 transition-all mb-8">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>AI-Powered Workflow Generation</span>
+          </div>
+          
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 bg-clip-text">
+            Build your automations <br />
+            <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 bg-clip-text text-transparent">with conversational AI</span>
+          </h1>
+          
+          <p className="mt-6 text-lg leading-8 text-slate-600 max-w-2xl mx-auto">
+            Describe what you want to automate in plain English. Qona translates your ideas into fully compiled, ready-to-run n8n workflows.
+          </p>
+
+          {/* Interactive prompt area */}
+          <div className="mt-10 mx-auto max-w-xl">
+            <form onSubmit={handleSubmit} className="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-100/50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Send a welcome email when a new user signs up..."
                 rows={1}
-                className="min-h-[52px] w-full resize-none bg-transparent px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                className="w-full resize-none border-0 bg-transparent px-4 py-3.5 text-slate-950 placeholder-slate-400 focus:ring-0 sm:text-sm outline-none min-h-[52px]"
               />
-              <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
-                <span className="text-xs text-gray-400">Shift + Enter for new line</span>
+              <div className="flex items-center justify-between border-t border-slate-100 px-3 pt-2 pb-1">
+                <span className="text-xs text-slate-400">Shift + Enter for new line</span>
                 <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || loading}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white transition-opacity disabled:opacity-30 hover:opacity-90"
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 cursor-pointer"
                 >
-                  <ArrowUp className="h-4 w-4" />
+                  Create Workflow
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </div>
+            </form>
 
-            <div className="mt-4">
-              <p className="mb-2 text-xs text-gray-400">Try an example</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="mt-6">
+              <p className="mb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Try an example</p>
+              <div className="flex flex-wrap gap-2.5">
                 {suggestions.map((s) => (
                   <button
                     key={s}
+                    type="button"
                     onClick={() => setInput(s)}
-                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                    className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-600 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-50/30 hover:text-indigo-600 cursor-pointer"
                   >
                     {s}
                   </button>
@@ -102,60 +116,35 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-
-          <p className="text-xs text-gray-300">Exports to n8n, Zapier, and Make.com</p>
         </div>
-      ) : (
-        <div className="flex flex-1 flex-col py-8">
-          <div className="flex-1 space-y-5">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-400">
-                  <div className="flex gap-1">
-                    <span className="animate-pulse">.</span>
-                    <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>.</span>
-                    <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>.</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
 
-          <div className="mt-6">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Describe your automation..."
-                rows={1}
-                className="min-h-[52px] w-full resize-none bg-transparent px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"
-              />
-              <div className="flex items-center justify-end border-t border-gray-100 px-3 py-2">
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || loading}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white transition-opacity disabled:opacity-30 hover:opacity-90"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </button>
+        {/* Feature section */}
+        <div className="mx-auto mt-24 max-w-5xl sm:mt-32">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Zap className="h-5 w-5" />
               </div>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">Conversational Setup</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">No complex configuration. Simply answer dynamic clarifying questions customized to your goal.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Workflow className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">n8n Compilation</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Under the hood, Qona builds valid n8n nodes, connects variables, and validates structure.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Shield className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">Secure Export</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Download the JSON file and import it directly into your own self-hosted or cloud n8n instances.</p>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

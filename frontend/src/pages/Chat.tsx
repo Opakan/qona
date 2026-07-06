@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow,
-  LogOut, History, ChevronRight, Loader2, LayoutDashboard, Download
+  LogOut, History, Loader2, LayoutDashboard, Download
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -25,6 +25,7 @@ interface Message {
 export default function ChatPage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -36,6 +37,10 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [leftTab, setLeftTab] = useState<'conversations' | 'history'>('conversations');
   const [exporting, setExporting] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleExportSession = async () => {
     if (!sessionId || exporting) return;
@@ -62,10 +67,6 @@ export default function ChatPage() {
       setExporting(false);
     }
   };
-
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -151,6 +152,17 @@ export default function ChatPage() {
     }
   };
 
+  // Process initialPrompt passed from dashboard redirect
+  useEffect(() => {
+    const state = location.state as { initialPrompt?: string } | null;
+    if (state?.initialPrompt && !activeId && messages.length === 0 && !loading) {
+      const prompt = state.initialPrompt;
+      // Clear location state immediately so it doesn't trigger on refresh
+      window.history.replaceState({}, document.title);
+      sendMessage(prompt);
+    }
+  }, [location.state, activeId, messages.length, loading]);
+
   const handleSubmit = () => { const t = input.trim(); if (t && !loading) sendMessage(t); };
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
   const newConversation = () => { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); };
@@ -164,82 +176,140 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white text-gray-900 antialiased">
-      {/* ═════ LEFT COLUMN ═════ */}
-      <div className="flex w-64 flex-shrink-0 flex-col border-r border-gray-200 bg-gray-50">
-        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4 text-gray-400" /><span className="text-sm font-medium">Qona</span></Link>
+    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 antialiased">
+      {/* ═════ LEFT COLUMN: SIDEBAR ═════ */}
+      <div className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-900 text-slate-300">
+        <div className="flex h-16 items-center gap-2.5 border-b border-slate-800 px-5">
+          <Link to="/" className="flex items-center gap-2 text-sm font-semibold tracking-tight text-white hover:scale-[1.02] transition-all">
+            <LayoutDashboard className="h-4.5 w-4.5 text-indigo-400" />
+            <span>Qona Workspace</span>
+          </Link>
         </div>
-        <div className="flex border-b border-gray-200">
+        
+        <div className="flex border-b border-slate-800">
           {(['conversations', 'history'] as const).map((tab) => (
-            <button key={tab} onClick={() => setLeftTab(tab)} className={`flex-1 py-2.5 text-xs font-medium transition-colors ${leftTab === tab ? 'border-b-2 border-gray-900 text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+            <button
+              key={tab}
+              onClick={() => setLeftTab(tab)}
+              className={`flex-1 py-3 text-xs font-semibold tracking-wide transition-all border-b-2 uppercase ${
+                leftTab === tab
+                  ? 'border-indigo-500 text-white bg-slate-800/40'
+                  : 'border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-850/20'
+              }`}
+            >
               {tab === 'conversations' ? 'Chats' : 'Workflows'}
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-y-auto">
+
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
           {leftTab === 'conversations' ? (
             <>
-              <div className="px-3 py-2">
-                <button onClick={newConversation} className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100">
-                  <Plus className="h-3.5 w-3.5" /> New chat
+              <div>
+                <button
+                  onClick={newConversation}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-850 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-800"
+                >
+                  <Plus className="h-4 w-4 text-indigo-400" /> New Chat
                 </button>
               </div>
-              {conversations.map((conv) => (
-                <button key={conv.id} onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); }} className={`group flex w-full items-center gap-2 px-4 py-2 text-left text-xs transition-colors ${activeId === conv.id ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-100'}`}>
-                  <MessageSquare className="h-3 w-3 flex-shrink-0" />
-                  <span className="flex-1 truncate">{conv.title}</span>
-                  <Trash2 onClick={(e) => deleteConversation(e, conv.id)} className="h-3 w-3 flex-shrink-0 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100" />
-                </button>
-              ))}
+              
+              <div className="mt-4 space-y-1">
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); }}
+                    className={`group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-medium transition-all ${
+                      activeId === conv.id
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/25'
+                        : 'text-slate-400 hover:bg-slate-850 hover:text-slate-200'
+                    }`}
+                  >
+                    <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1 truncate">{conv.title}</span>
+                    <Trash2
+                      onClick={(e) => deleteConversation(e, conv.id)}
+                      className="h-3.5 w-3.5 flex-shrink-0 opacity-0 transition-opacity hover:text-rose-400 group-hover:opacity-100"
+                    />
+                  </button>
+                ))}
+              </div>
             </>
           ) : (
-            <div className="p-4 text-center text-xs text-gray-400">
-              <History className="mx-auto mb-2 h-5 w-5 opacity-30" />
+            <div className="p-6 text-center text-xs text-slate-500">
+              <History className="mx-auto mb-2 h-6 w-6 opacity-30" />
               <p>Workflow history coming soon</p>
             </div>
           )}
         </div>
-        <div className="border-t border-gray-200 px-4 py-3">
-          <button onClick={async () => { await signOut(); navigate('/sign-in'); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-200">
-            <LogOut className="h-3 w-3" /> Sign out
+
+        <div className="border-t border-slate-800 p-4">
+          <button
+            onClick={async () => { await signOut(); navigate('/sign-in'); }}
+            className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-xs font-semibold text-slate-400 transition-all hover:bg-slate-850 hover:text-rose-400"
+          >
+            <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
       </div>
 
-      {/* ═════ CENTER COLUMN ═════ */}
-      <div className="flex flex-1 flex-col min-w-0">
-        <header className="flex items-center justify-between border-b border-gray-200 px-5 py-2.5">
-          <span className="text-xs font-medium text-gray-400">Conversation</span>
-          <button onClick={newConversation} className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-100"><Sparkles className="h-3 w-3" /> New</button>
+      {/* ═════ CENTER COLUMN: CHAT INTERFACE ═════ */}
+      <div className="flex flex-1 flex-col min-w-0 bg-white">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200/60 px-6">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span>AI Copilot Session</span>
+          </div>
+          <button
+            onClick={newConversation}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-indigo-600" /> Clear & Restart
+          </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
+        {/* Messages list */}
+        <div className="flex-1 overflow-y-auto bg-slate-50/20">
           {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6">
-              <div className="flex items-center gap-2"><Workflow className="h-5 w-5 text-gray-300" /><span className="text-lg font-semibold">Qona</span></div>
-              <p className="max-w-sm text-center text-sm text-gray-400">Describe the automation you want — I'll ask questions to build it step by step.</p>
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 max-w-md mx-auto">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                <Workflow className="h-6 w-6 animate-pulse" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900">Let's design your workflow</h2>
+              <p className="text-center text-xs leading-relaxed text-slate-500 font-medium">
+                Describe your desired automation trigger and actions. I will collect requirements and build a production-ready n8n flow graph.
+              </p>
             </div>
           ) : (
-            <div className="mx-auto max-w-2xl space-y-4 px-5 py-6">
+            <div className="mx-auto max-w-2xl space-y-6 px-6 py-8">
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs ${msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                    {msg.role === 'user' ? 'U' : 'Q'}
+                <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-xs select-none ${
+                    msg.role === 'user'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  }`}>
+                    {msg.role === 'user' ? 'U' : 'AI'}
                   </div>
-                  <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[80%] ${msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                  <div className={`rounded-2xl px-4.5 py-3 text-sm leading-relaxed max-w-[82%] shadow-xs ${
+                    msg.role === 'user'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-white text-slate-800 border border-slate-200/60'
+                  }`}>
                     {msg.content}
                   </div>
                 </div>
               ))}
+              
               {typing && (
-                <div className="flex gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">Q</div>
-                  <div className="flex items-center gap-1.5 rounded-2xl bg-gray-100 px-4 py-2.5">
+                <div className="flex gap-4">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-bold">
+                    AI
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-2xl bg-white px-4.5 py-3 border border-slate-200/60 shadow-xs">
                     <div className="flex gap-1">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.15s' }} />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0.3s' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" style={{ animationDelay: '0.15s' }} />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" style={{ animationDelay: '0.3s' }} />
                     </div>
                   </div>
                 </div>
@@ -249,48 +319,64 @@ export default function ChatPage() {
           )}
         </div>
 
-        <div className="border-t border-gray-200 px-5 py-3">
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
-            <textarea ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Describe your automation..." rows={1}
-              className="min-h-[48px] w-full resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-gray-400" />
-            <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2">
-              <span className="text-xs text-gray-350">Shift + Enter for new line</span>
-              <button onClick={handleSubmit} disabled={!input.trim() || loading}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-900 text-white transition-opacity disabled:opacity-25 hover:opacity-90">
-                <ArrowUp className="h-3.5 w-3.5" />
+        {/* Input box */}
+        <div className="border-t border-slate-200/60 px-6 py-4 bg-white">
+          <div className="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-100/50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Reply or describe your automation..."
+              rows={1}
+              className="w-full resize-none border-0 bg-transparent px-4 py-3 text-slate-900 placeholder-slate-400 focus:ring-0 sm:text-sm outline-none min-h-[48px]"
+            />
+            <div className="flex items-center justify-between border-t border-slate-100 px-3 pt-2 pb-1">
+              <span className="text-xs text-slate-450">Shift + Enter for new line</span>
+              <button
+                onClick={handleSubmit}
+                disabled={!input.trim() || loading}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm transition-all hover:bg-indigo-700 disabled:opacity-30 cursor-pointer"
+              >
+                <ArrowUp className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ═════ RIGHT COLUMN ═════ */}
-      <div className="flex w-[420px] flex-shrink-0 flex-col border-l border-gray-200">
-        <div className="flex items-center gap-2 border-b border-gray-200 px-5 py-2.5 h-12">
-          <Workflow className="h-3.5 w-3.5 text-gray-400" />
-          <span className="text-xs font-medium text-gray-500">WORKFLOW PREVIEW</span>
+      {/* ═════ RIGHT COLUMN: WORKFLOW PREVIEW ═════ */}
+      <div className="flex w-[460px] flex-shrink-0 flex-col border-l border-slate-200 bg-slate-50">
+        <div className="flex h-16 items-center gap-2 border-b border-slate-200/60 px-6">
+          <Workflow className="h-4 w-4 text-slate-400" />
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Workflow Canvas</span>
           {sessionId && (
             <button
               onClick={handleExportSession}
               disabled={exporting}
-              className="ml-auto inline-flex items-center gap-1 rounded bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
             >
               {exporting ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 <Download className="h-3 w-3" />
               )}
-              {exporting ? 'Exporting...' : 'Export n8n JSON'}
+              {exporting ? 'Exporting...' : 'Export JSON'}
             </button>
           )}
         </div>
-        <div className="flex-1 bg-gray-50">
+        <div className="flex-1 relative bg-slate-100">
           {currentWorkflow ? (
             <WorkflowGraph graph={currentWorkflow} className="h-full" />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <Workflow className="h-8 w-8 text-gray-200" />
-              <p className="text-xs text-gray-400">Your workflow will appear here as it's built.</p>
+            <div className="flex h-full flex-col items-center justify-center gap-3.5 px-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200/60 text-slate-400">
+                <Workflow className="h-5.5 w-5.5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-800">Visualizer ready</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">Your nodes and connections will generate dynamically in real-time as we clarify details.</p>
+              </div>
             </div>
           )}
         </div>

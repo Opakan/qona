@@ -17,7 +17,6 @@ import {
   validateInternalGraph,
   PLANNING_STATES,
   WorkflowPlanSchema,
-  MAX_QUESTIONS_PER_SESSION,
 } from '@qona/shared';
 import type { InternalGraph, PlanningMissingField, WorkflowPlan } from '@qona/shared';
 import type { Prisma } from '@prisma/client';
@@ -354,23 +353,6 @@ export const conversationEngine = {
       };
     }
 
-    // ── Enforce max questions ──
-    const collectedCount = plan.requirements.filter((r) => r.collected).length;
-    if (collectedCount >= MAX_QUESTIONS_PER_SESSION) {
-      log('info', 'Max questions reached', { collectedCount, max: MAX_QUESTIONS_PER_SESSION });
-      await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: `I have everything I need. Say 'generate' when you're ready to build your workflow.`,
-        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
-      });
-      return {
-        type: 'complete',
-        sessionId,
-        sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'All requirements collected. Ready to generate.',
-      };
-    }
 
     // ── Ask next question ──
     const nextReq = stillMissing[0];

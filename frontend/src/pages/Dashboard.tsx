@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Workflow, BarChart3, Plus, History } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -6,82 +7,112 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
+  // Dynamic redirect if user typed a prompt on the homepage
+  useEffect(() => {
+    const pendingPrompt = sessionStorage.getItem('qona_pending_prompt');
+    if (pendingPrompt) {
+      sessionStorage.removeItem('qona_pending_prompt');
+      navigate('/chat', { state: { initialPrompt: pendingPrompt } });
+    }
+  }, [navigate]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/sign-in');
   };
 
+  const getGreeting = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good morning';
+    if (hr < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
-    <div className="flex min-h-screen flex-col bg-white text-gray-900 antialiased">
-      <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-        <Link to="/" className="flex items-center gap-2">
-          <Workflow className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium tracking-tight text-gray-900">Qona</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">
-            {user?.user_metadata?.full_name ?? user?.email ?? 'User'}
-          </span>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign out
-          </button>
+    <div className="flex min-h-screen flex-col bg-slate-50/50 text-slate-900 antialiased">
+      <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/75 backdrop-blur-md px-6 py-4 shadow-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
+            <Workflow className="h-4.5 w-4.5 text-indigo-600 animate-pulse" />
+            <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">Qona</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <span className="text-xs font-semibold text-slate-800">
+                {user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'User'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">{user?.email}</span>
+            </div>
+            <div className="h-8 w-px bg-slate-200" />
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-950 shadow-sm"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="mx-auto max-w-5xl px-6 py-12">
+          {/* Hero Greeting */}
           <div className="mb-12">
-            <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
-              Good afternoon{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : ''}
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              {getGreeting()}{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : ''}
             </h2>
-            <p className="mt-1.5 text-sm text-gray-500">Create and manage your AI-powered workflows.</p>
+            <p className="mt-2 text-sm text-slate-500 font-medium">Create and manage your AI-powered automation workflows.</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* Cards Grid */}
+          <div className="grid gap-6 sm:grid-cols-3">
             <Link
               to="/chat"
-              className="group flex flex-col rounded-xl border border-gray-200 p-6 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+              className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 hover:shadow-md cursor-pointer overflow-hidden"
             >
-              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                <Plus className="h-4 w-4 text-gray-500" />
+              <div className="absolute top-0 right-0 h-24 w-24 bg-gradient-to-br from-indigo-50/40 to-transparent rounded-bl-full -z-0" />
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                <Plus className="h-5 w-5" />
               </div>
-              <span className="text-sm font-medium text-gray-900">New workflow</span>
-              <span className="mt-1 text-sm text-gray-500">Start from a prompt</span>
+              <span className="text-sm font-semibold text-slate-950">New workflow</span>
+              <span className="mt-2 text-xs leading-relaxed text-slate-500">Start from a descriptive plain-English prompt.</span>
             </Link>
+            
             <Link
               to="/dashboard"
-              className="group flex flex-col rounded-xl border border-gray-200 p-6 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+              className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 hover:shadow-md cursor-pointer overflow-hidden"
             >
-              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                <History className="h-4 w-4 text-gray-500" />
+              <div className="absolute top-0 right-0 h-24 w-24 bg-gradient-to-br from-indigo-50/40 to-transparent rounded-bl-full -z-0" />
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                <History className="h-5 w-5" />
               </div>
-              <span className="text-sm font-medium text-gray-900">Recent workflows</span>
-              <span className="mt-1 text-sm text-gray-500">Continue where you left off</span>
+              <span className="text-sm font-semibold text-slate-955">Recent workflows</span>
+              <span className="mt-2 text-xs leading-relaxed text-slate-500">Continue building or editing your active projects.</span>
             </Link>
-            <button className="group flex flex-col rounded-xl border border-gray-200 p-6 text-left transition-colors hover:border-gray-300 hover:bg-gray-50">
-              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                <BarChart3 className="h-4 w-4 text-gray-500" />
+
+            <button className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 hover:shadow-md cursor-pointer text-left overflow-hidden">
+              <div className="absolute top-0 right-0 h-24 w-24 bg-gradient-to-br from-indigo-50/40 to-transparent rounded-bl-full -z-0" />
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                <BarChart3 className="h-5 w-5" />
               </div>
-              <span className="text-sm font-medium text-gray-900">Analytics</span>
-              <span className="mt-1 text-sm text-gray-500">Track performance</span>
+              <span className="text-sm font-semibold text-slate-955">Analytics</span>
+              <span className="mt-2 text-xs leading-relaxed text-slate-500">Track and monitor your execution rates and triggers.</span>
             </button>
           </div>
 
+          {/* Stats Overview */}
           <div className="mt-16">
-            <h3 className="text-xs font-medium text-gray-400">OVERVIEW</h3>
-            <div className="mt-4 grid grid-cols-3 gap-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Usage Overview</h3>
+            <div className="mt-4 grid grid-cols-3 gap-6">
               {[
-                { value: '0', label: 'Workflows' },
-                { value: '0', label: 'Exports this month' },
-                { value: '—', label: 'Success rate' },
+                { value: '0', label: 'Workflows Created' },
+                { value: '0', label: 'Exports This Month' },
+                { value: '—', label: 'Compilation Success Rate' },
               ].map((stat, i) => (
-                <div key={i} className="rounded-xl border border-gray-200 p-4">
-                  <div className="text-xl font-semibold tracking-tight text-gray-900">{stat.value}</div>
-                  <div className="mt-1 text-xs text-gray-400">{stat.label}</div>
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="text-2xl font-bold tracking-tight text-slate-900">{stat.value}</div>
+                  <div className="mt-1.5 text-xs font-semibold text-slate-400">{stat.label}</div>
                 </div>
               ))}
             </div>

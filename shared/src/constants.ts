@@ -44,7 +44,7 @@ export const DISPOSABLE_EMAIL_DOMAINS = [
 
 export type WorkflowStatus = (typeof WORKFLOW_STATUS)[keyof typeof WORKFLOW_STATUS];
 
-export const MAX_QUESTIONS_PER_SESSION = 5;
+
 
 export const CREDENTIAL_FIELDS = new Set([
   'apiKey', 'api_key', 'apikey',
