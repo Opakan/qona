@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Workflow, Brain, ArrowUp, Download, Layers } from 'lucide-react';
+import { ArrowRight, Sparkles, Workflow, Brain, ArrowUp, Download, Layers, History, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const suggestions = [
@@ -53,18 +53,9 @@ export default function LandingPage() {
       {/* ChatGPT-style Hero Section */}
       <div className="mx-auto max-w-5xl px-6 pt-24 pb-20 sm:pt-32 sm:pb-28 lg:px-8">
         <div className="mx-auto max-w-3xl text-center space-y-8">
-          <div className="space-y-5">
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-955 sm:text-5xl leading-[1.1] max-w-2xl mx-auto">
-              Build AI Automations Through Conversation
-            </h1>
-            
-            <div className="text-slate-500 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-1.5 font-medium">
-              <p>Describe what you want.</p>
-              <p>Qonace asks the right questions.</p>
-              <p>Generates production-ready workflows.</p>
-              <p>Export to n8n in seconds.</p>
-            </div>
-          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl leading-[1.1] max-w-2xl mx-auto">
+            Build AI Automations Through Conversation
+          </h1>
 
           {/* Interactive OpenAI-style prompt area */}
           <div className="mx-auto max-w-2xl">
@@ -80,7 +71,7 @@ export default function LandingPage() {
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="absolute bottom-3.5 right-3.5 flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-950 text-white transition-all hover:bg-slate-800 disabled:opacity-10 cursor-pointer border-0"
+                className="absolute bottom-3.5 right-3.5 flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-955 text-white transition-all hover:bg-slate-800 disabled:opacity-10 cursor-pointer border-0"
               >
                 <ArrowUp className="h-4 w-4" />
               </button>
@@ -103,19 +94,9 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Product Features Section (Qwen Style, 2x2 grid) */}
+      {/* Product Features Section (2x3 grid) */}
       <div className="mx-auto max-w-5xl px-6 pb-28">
-        <div className="text-center space-y-2 mb-16">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950">Product Features</h2>
-          <button 
-            onClick={() => navigate('/sign-in')}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors inline-flex items-center gap-1 cursor-pointer"
-          >
-            Explore Qonace Studio <ArrowRight className="h-3 w-3" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
+        <div className="border-t border-slate-100 pt-16 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
           {/* Feature 1: Workflow Generation */}
           <div className="space-y-4 text-left">
             <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
@@ -196,6 +177,48 @@ export default function LandingPage() {
               <h3 className="text-sm font-bold text-slate-900">Future Multi-platform Support</h3>
               <p className="text-xs leading-relaxed text-slate-500">
                 Architected to soon support native deployments for Make.com, Zapier integration recipes, and custom webhooks.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 5: Conversation Memory */}
+          <div className="space-y-4 text-left">
+            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
+              <img 
+                src="/assets/conversation_memory_preview.png" 
+                alt="Conversation Memory Preview" 
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
+                <History className="h-3.5 w-3.5 text-slate-800" />
+                Conversation Memory
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900">Conversation Memory</h3>
+              <p className="text-xs leading-relaxed text-slate-500">
+                Retain variables, labels, and parameters from past prompts to incrementally build and extend your integrations.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 6: Secure Local Execution */}
+          <div className="space-y-4 text-left">
+            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
+              <img 
+                src="/assets/secure_execution_preview.png" 
+                alt="Secure Local Execution Preview" 
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
+                <Shield className="h-3.5 w-3.5 text-slate-800" />
+                Secure Local Execution
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900">Secure Local Execution</h3>
+              <p className="text-xs leading-relaxed text-slate-500">
+                Export and run Qonace-generated JSON workflows locally on your own infrastructure without vendor lock-in.
               </p>
             </div>
           </div>
