@@ -3,11 +3,39 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles, Workflow, MessageSquare, Brain, Network, Download, History, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import PricingPage from './Pricing';
 
 const suggestions = [
   'Send a welcome email when a new user signs up',
   'Save Gmail attachments to Google Drive',
   'Post Slack messages when RSS feed updates',
+];
+
+const steps = [
+  {
+    title: 'Prompt',
+    description: 'Describe what you want to automate in plain English. Qona starts with a simple description of your goal.',
+  },
+  {
+    title: 'AI asks questions',
+    description: 'Qona identifies missing variables or credentials and prompts you for details to prevent broken workflows.',
+  },
+  {
+    title: 'Workflow planning',
+    description: 'The AI maps your intent into structured logical steps, planning trigger and action routing before generation.',
+  },
+  {
+    title: 'Internal graph',
+    description: 'An internal schema validation connects nodes, endpoints, and credentials to ensure strict integrity.',
+  },
+  {
+    title: 'n8n workflow generated',
+    description: 'The platform builds valid n8n nodes, connects variables, and compiles a ready-to-run structure.',
+  },
+  {
+    title: 'Export',
+    description: 'Download the compiled JSON workflow and import it directly into your own self-hosted or cloud n8n instances.',
+  },
 ];
 
 export default function LandingPage() {
@@ -218,6 +246,51 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* How Qonace Works Section */}
+        <div className="mx-auto mt-32 max-w-2xl border-t border-slate-100 pt-20">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              How Qonace Works
+            </h2>
+            <p className="text-slate-500 text-sm max-w-md mx-auto">
+              From plain text to fully-functioning workflow integrations in six simple stages.
+            </p>
+          </div>
+
+          <div className="relative border-l border-slate-200 ml-4 md:ml-6 space-y-12 pb-4">
+            {steps.map((step, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -10 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: '-100px' }}
+                transition={{ duration: 0.5, delay: idx * 0.05 }}
+                className="relative pl-8 md:pl-10 group"
+              >
+                {/* Dotted indicator on the timeline */}
+                <div className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full border border-white bg-slate-350 group-hover:bg-slate-800 transition-colors duration-200" />
+                
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap block">
+                    {`Stage 0${idx + 1}`}
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-slate-950 transition-colors duration-200">
+                    {step.title}
+                  </h3>
+                  <p className="text-xs leading-relaxed text-slate-500 max-w-lg">
+                    {step.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pricing Section */}
+        <div className="border-t border-slate-100 mt-24">
+          <PricingPage />
         </div>
       </div>
     </div>
