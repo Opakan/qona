@@ -36,16 +36,16 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50/50 antialiased">
+    <div className="flex min-h-screen flex-col bg-white antialiased">
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          scrolled ? 'border-b border-slate-200/60 bg-white/75 backdrop-blur-md shadow-sm' : 'bg-transparent'
+          scrolled ? 'border-b border-slate-200/65 bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'
         }`}
       >
         <nav className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900 transition-transform hover:scale-[1.02]">
-            <Workflow className="h-4.5 w-4.5 text-indigo-600 animate-pulse" />
-            <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">Qona</span>
+            <Workflow className="h-4.5 w-4.5 text-slate-900" />
+            <span className="text-slate-900">Qona</span>
           </Link>
 
           <div className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">

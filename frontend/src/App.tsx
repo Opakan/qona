@@ -52,10 +52,10 @@ export default function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/cookie-policy" element={<CookiePolicy />} />
           <Route path="/gdpr" element={<GDPR />} />
+          <Route path="/sign-in" element={<GuestGuard><SignIn /></GuestGuard>} />
         </Route>
 
         {/* Auth pages (no layout) */}
-        <Route path="/sign-in" element={<GuestGuard><SignIn /></GuestGuard>} />
         <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
         <Route path="/chat" element={<AuthGuard><Chat /></AuthGuard>} />
         <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />

@@ -6,19 +6,15 @@ export default function SignIn() {
   const { signInWithGoogle } = useAuth();
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 overflow-hidden">
-      {/* Background gradient shapes */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-200/20 rounded-full blur-3xl -translate-y-1/2" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-200/20 rounded-full blur-3xl translate-y-1/2" />
-
+    <div className="relative flex min-h-[calc(100vh-8rem)] items-center justify-center bg-white px-4 py-8 sm:px-6 lg:px-8 overflow-hidden">
       <div className="w-full max-w-md space-y-8 relative">
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl shadow-slate-100/50">
+        <div className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm">
           <div className="flex flex-col items-center">
             <Link to="/" className="flex items-center gap-2 group transition-transform hover:scale-[1.02]">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                <Workflow className="h-5 w-5 animate-pulse" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-900">
+                <Workflow className="h-5 w-5" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-indigo-950 bg-clip-text">Qona</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900">Qona</span>
             </Link>
             
             <h2 className="mt-6 text-center text-2xl font-extrabold text-slate-900 tracking-tight">
