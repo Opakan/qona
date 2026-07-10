@@ -25,10 +25,16 @@
     "clean": "npm run clean --workspaces --if-present"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "concurrently": "^9.1.0",
     "typescript": "^5.7.0"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@number-flow/react": "^0.6.1",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^12.42.2"
   }
 }
