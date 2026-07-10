@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Workflow, MessageSquare, Brain, Network, Download, History, Layers } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowRight, Sparkles, Workflow, Zap, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import PricingPage from './Pricing';
 
 const suggestions = [
   'Send a welcome email when a new user signs up',
@@ -11,36 +9,10 @@ const suggestions = [
   'Post Slack messages when RSS feed updates',
 ];
 
-const steps = [
-  {
-    title: 'Prompt',
-    description: 'Describe what you want to automate in plain English. Qona starts with a simple description of your goal.',
-  },
-  {
-    title: 'AI asks questions',
-    description: 'Qona identifies missing variables or credentials and prompts you for details to prevent broken workflows.',
-  },
-  {
-    title: 'Workflow planning',
-    description: 'The AI maps your intent into structured logical steps, planning trigger and action routing before generation.',
-  },
-  {
-    title: 'Internal graph',
-    description: 'An internal schema validation connects nodes, endpoints, and credentials to ensure strict integrity.',
-  },
-  {
-    title: 'n8n workflow generated',
-    description: 'The platform builds valid n8n nodes, connects variables, and compiles a ready-to-run structure.',
-  },
-  {
-    title: 'Export',
-    description: 'Download the compiled JSON workflow and import it directly into your own self-hosted or cloud n8n instances.',
-  },
-];
-
 export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [input, setInput] = useState('');
 
   // Redirection for already signed in users
   useEffect(() => {
@@ -49,248 +21,128 @@ export default function LandingPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = input.trim();
+    if (!text) return;
+
+    // Save prompt to sessionStorage and redirect to sign-in
+    sessionStorage.setItem('qona_pending_prompt', text);
+    navigate('/sign-in');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   // If loading or authenticated, render a minimal clean loading layout to avoid flicker
   if (isLoading || isAuthenticated) {
     return (
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-white">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-slate-50/50">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-white flex flex-col justify-center">
-      <div className="mx-auto max-w-5xl px-6 pt-16 pb-24 sm:pt-20 sm:pb-32 lg:px-8">
-        {/* HERO SECTION */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          {/* Left Column: Copy + Chat Preview */}
-          <div className="lg:col-span-7 space-y-8 text-left">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold leading-5 text-slate-600 select-none">
-                <Sparkles className="h-3.5 w-3.5 text-slate-500" />
-                <span>AI-Powered Workflow Generation</span>
-              </div>
-              
-              <h1 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl leading-[1.1] sm:leading-[1.1] max-w-xl">
-                Build AI Automations Through Conversation
-              </h1>
-              
-              <div className="text-base text-slate-500 max-w-md space-y-1.5 leading-relaxed font-medium">
-                <p>Describe what you want.</p>
-                <p>Qonace asks the right questions.</p>
-                <p>Generates production-ready workflows.</p>
-                <p>Export to n8n in seconds.</p>
-              </div>
-            </div>
+    <div className="relative isolate overflow-hidden bg-slate-50/50">
+      {/* Background decoration */}
+      <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80" aria-hidden="true">
+        <div
+          className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-indigo-200 to-indigo-400 opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
+          style={{
+            clipPath:
+              'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+          }}
+        />
+      </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => navigate('/sign-in')}
-                className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-all cursor-pointer"
-              >
-                Start Building
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </button>
-              <button
-                onClick={() => alert('Demo video is coming soon!')}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-650 shadow-sm hover:bg-slate-50 transition-all cursor-pointer"
-              >
-                Watch Demo
-              </button>
-            </div>
-
-            {/* Interactive Chat Preview */}
-            <div className="border border-slate-200/80 bg-slate-50/30 p-5 rounded-2xl max-w-xl space-y-4 shadow-sm select-none">
-              {/* User message */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="flex items-start gap-3"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold font-mono">
-                  U
-                </div>
-                <div className="flex-1 bg-white border border-slate-150 rounded-2xl px-4 py-2.5 text-xs text-slate-800 shadow-sm leading-relaxed max-w-[85%]">
-                  "When I receive a Gmail attachment, save it to Google Drive."
-                </div>
-              </motion.div>
-
-              {/* AI response */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 1.4 }}
-                className="flex items-start gap-3 justify-end"
-              >
-                <div className="flex-1 bg-indigo-50/40 border border-indigo-100 rounded-2xl px-4 py-2.5 text-xs text-slate-800 shadow-sm leading-relaxed max-w-[85%] text-left">
-                  "Which Gmail label should I monitor?"
-                </div>
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white text-xs font-bold font-mono">
-                  Q
-                </div>
-              </motion.div>
-            </div>
+      <div className="mx-auto max-w-5xl px-6 pt-20 pb-24 sm:pt-28 sm:pb-32 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-semibold leading-6 text-indigo-600 shadow-sm ring-1 ring-indigo-600/10 hover:ring-indigo-600/20 transition-all mb-8">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>AI-Powered Workflow Generation</span>
           </div>
+          
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 bg-clip-text">
+            Build your automations <br />
+            <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 bg-clip-text text-transparent">with conversational AI</span>
+          </h1>
+          
+          <p className="mt-6 text-lg leading-8 text-slate-600 max-w-2xl mx-auto">
+            Describe what you want to automate in plain English. Qona translates your ideas into fully compiled, ready-to-run n8n workflows.
+          </p>
 
-          {/* Right Column: Live Workflow Preview with Clean Nodes */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="border border-slate-100 bg-[#fafafa] p-8 rounded-2xl relative w-full aspect-[4/5] max-w-[340px] flex flex-col justify-between items-center shadow-inner overflow-hidden select-none">
-              {/* Connecting line with animated pulse */}
-              <div className="absolute top-[80px] bottom-[80px] w-0.5 bg-slate-200 border-dashed border-l">
-                <motion.div
-                  animate={{ y: [0, 160] }}
-                  transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
-                  className="h-2 w-2 -ml-[3px] rounded-full bg-slate-800 shadow-sm shadow-slate-900/50"
-                />
+          {/* Interactive prompt area */}
+          <div className="mt-10 mx-auto max-w-xl">
+            <form onSubmit={handleSubmit} className="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-100/50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Send a welcome email when a new user signs up..."
+                rows={1}
+                className="w-full resize-none border-0 bg-transparent px-4 py-3.5 text-slate-950 placeholder-slate-400 focus:ring-0 sm:text-sm outline-none min-h-[52px]"
+              />
+              <div className="flex items-center justify-between border-t border-slate-100 px-3 pt-2 pb-1">
+                <span className="text-xs text-slate-400">Shift + Enter for new line</span>
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 cursor-pointer"
+                >
+                  Create Workflow
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
               </div>
+            </form>
 
-              {/* Node 1: Gmail Trigger */}
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm flex items-center gap-3 w-full z-10 hover:border-slate-350 transition-colors"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 border border-red-100">
-                  <Workflow className="h-4.5 w-4.5" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Gmail Trigger</p>
-                  <p className="text-[10px] text-slate-450 mt-0.5">On new attachment</p>
-                </div>
-              </motion.div>
-
-              {/* Node 2: Filter check */}
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 1.8 }}
-                className="bg-white border border-slate-200/80 p-3 rounded-lg shadow-sm flex items-center gap-2.5 z-10"
-              >
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-[10px] font-semibold text-slate-600">Checking label matches...</span>
-              </motion.div>
-
-              {/* Node 3: Google Drive Upload */}
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 2.4 }}
-                className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-sm flex items-center gap-3 w-full z-10 hover:border-slate-350 transition-colors"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
-                  <Workflow className="h-4.5 w-4.5" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Google Drive</p>
-                  <p className="text-[10px] text-slate-450 mt-0.5">Upload file</p>
-                </div>
-              </motion.div>
+            <div className="mt-6">
+              <p className="mb-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Try an example</p>
+              <div className="flex flex-wrap gap-2.5">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setInput(s)}
+                    className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-600 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-50/30 hover:text-indigo-600 cursor-pointer"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Feature section */}
-        <div className="mx-auto mt-28 max-w-5xl">
-          <div className="border-t border-slate-100 pt-16">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-10 text-left">Platform Capabilities</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-12">
-              {/* Feature 1 */}
-              <div className="space-y-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                  <MessageSquare className="h-4 w-4 text-slate-650" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">AI Requirement Collection</h3>
-                <p className="text-xs leading-relaxed text-slate-500">Qonace conducts a conversational interview to extract credentials and variable details.</p>
+        <div className="mx-auto mt-24 max-w-5xl sm:mt-32">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Zap className="h-5 w-5" />
               </div>
-              {/* Feature 2 */}
-              <div className="space-y-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                  <Brain className="h-4 w-4 text-slate-650" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">Internal Workflow Planning</h3>
-                <p className="text-xs leading-relaxed text-slate-500">The AI outlines and drafts logical step mappings before building components.</p>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">Conversational Setup</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">No complex configuration. Simply answer dynamic clarifying questions customized to your goal.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Workflow className="h-5 w-5" />
               </div>
-              {/* Feature 3 */}
-              <div className="space-y-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                  <Network className="h-4 w-4 text-slate-650" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">Visual Workflow Graph</h3>
-                <p className="text-xs leading-relaxed text-slate-500">Preview node connections and routing parameters visually during compilation.</p>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">n8n Compilation</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Under the hood, Qona builds valid n8n nodes, connects variables, and validates structure.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Shield className="h-5 w-5" />
               </div>
-              {/* Feature 4 */}
-              <div className="space-y-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                  <Download className="h-4 w-4 text-slate-650" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">One-click n8n Export</h3>
-                <p className="text-xs leading-relaxed text-slate-500">Instantly download standard JSON templates ready to import into your n8n workspace.</p>
-              </div>
-              {/* Feature 5 */}
-              <div className="space-y-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                  <History className="h-4 w-4 text-slate-650" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">Conversation Memory</h3>
-                <p className="text-xs leading-relaxed text-slate-500">Reference previous chat contexts to easily extend or refine active automations.</p>
-              </div>
-              {/* Feature 6 */}
-              <div className="space-y-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                  <Layers className="h-4 w-4 text-slate-650" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">Future Multi-platform Support</h3>
-                <p className="text-xs leading-relaxed text-slate-500">Designed to export natively to Make.com, Zapier, and standard webhooks.</p>
-              </div>
+              <h3 className="mt-4 text-sm font-semibold text-slate-900">Secure Export</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Download the JSON file and import it directly into your own self-hosted or cloud n8n instances.</p>
             </div>
           </div>
-        </div>
-
-        {/* How Qonace Works Section */}
-        <div className="mx-auto mt-32 max-w-2xl border-t border-slate-100 pt-20">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              How Qonace Works
-            </h2>
-            <p className="text-slate-500 text-sm max-w-md mx-auto">
-              From plain text to fully-functioning workflow integrations in six simple stages.
-            </p>
-          </div>
-
-          <div className="relative border-l border-slate-200 ml-4 md:ml-6 space-y-12 pb-4">
-            {steps.map((step, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.5, delay: idx * 0.05 }}
-                className="relative pl-8 md:pl-10 group"
-              >
-                {/* Dotted indicator on the timeline */}
-                <div className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full border border-white bg-slate-350 group-hover:bg-slate-800 transition-colors duration-200" />
-                
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap block">
-                    {`Stage 0${idx + 1}`}
-                  </span>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-slate-950 transition-colors duration-200">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-slate-500 max-w-lg">
-                    {step.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Pricing Section */}
-        <div className="border-t border-slate-100 mt-24">
-          <PricingPage />
         </div>
       </div>
     </div>
