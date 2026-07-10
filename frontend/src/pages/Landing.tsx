@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Workflow, Zap, Shield } from 'lucide-react';
+import { ArrowRight, Sparkles, Workflow, MessageSquare, Brain, Network, Download, History, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
@@ -165,27 +165,57 @@ export default function LandingPage() {
 
         {/* Feature section */}
         <div className="mx-auto mt-28 max-w-5xl">
-          <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 border-t border-slate-100 pt-16">
-            <div className="space-y-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                <Zap className="h-4 w-4" />
+          <div className="border-t border-slate-100 pt-16">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-10 text-left">Platform Capabilities</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-12">
+              {/* Feature 1 */}
+              <div className="space-y-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
+                  <MessageSquare className="h-4 w-4 text-slate-650" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">AI Requirement Collection</h3>
+                <p className="text-xs leading-relaxed text-slate-500">Qonace conducts a conversational interview to extract credentials and variable details.</p>
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Conversational Setup</h3>
-              <p className="text-xs leading-relaxed text-slate-500">No complex configuration. Simply answer dynamic clarifying questions customized to your goal.</p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                <Workflow className="h-4 w-4" />
+              {/* Feature 2 */}
+              <div className="space-y-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
+                  <Brain className="h-4 w-4 text-slate-650" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">Internal Workflow Planning</h3>
+                <p className="text-xs leading-relaxed text-slate-500">The AI outlines and drafts logical step mappings before building components.</p>
               </div>
-              <h3 className="text-sm font-bold text-slate-900">n8n Compilation</h3>
-              <p className="text-xs leading-relaxed text-slate-500">Under the hood, Qona builds valid n8n nodes, connects variables, and validates structure.</p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
-                <Shield className="h-4 w-4" />
+              {/* Feature 3 */}
+              <div className="space-y-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
+                  <Network className="h-4 w-4 text-slate-650" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">Visual Workflow Graph</h3>
+                <p className="text-xs leading-relaxed text-slate-500">Preview node connections and routing parameters visually during compilation.</p>
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Secure Export</h3>
-              <p className="text-xs leading-relaxed text-slate-500">Download the JSON file and import it directly into your own self-hosted or cloud n8n instances.</p>
+              {/* Feature 4 */}
+              <div className="space-y-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
+                  <Download className="h-4 w-4 text-slate-650" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">One-click n8n Export</h3>
+                <p className="text-xs leading-relaxed text-slate-500">Instantly download standard JSON templates ready to import into your n8n workspace.</p>
+              </div>
+              {/* Feature 5 */}
+              <div className="space-y-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
+                  <History className="h-4 w-4 text-slate-650" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">Conversation Memory</h3>
+                <p className="text-xs leading-relaxed text-slate-500">Reference previous chat contexts to easily extend or refine active automations.</p>
+              </div>
+              {/* Feature 6 */}
+              <div className="space-y-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-900 border border-slate-200/50">
+                  <Layers className="h-4 w-4 text-slate-650" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">Future Multi-platform Support</h3>
+                <p className="text-xs leading-relaxed text-slate-500">Designed to export natively to Make.com, Zapier, and standard webhooks.</p>
+              </div>
             </div>
           </div>
         </div>
