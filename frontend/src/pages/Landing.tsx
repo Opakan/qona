@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, Sparkles, Workflow, Brain, ArrowUp, Download, Layers, History, Shield, 
-  MessageSquare, Play, HelpCircle, Network, Code, Plus, ChevronDown, CheckCircle2, MousePointer
+  MessageSquare, Play, HelpCircle, Network, Code, Plus, ChevronDown, CheckCircle2, MousePointer, Mic
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -12,45 +12,6 @@ const suggestions = [
   'Send welcome email on signup',
   'Sync Google Calendar with Slack',
   'Save email attachments to Drive',
-];
-
-const timelineSteps = [
-  {
-    title: 'Prompt',
-    icon: MessageSquare,
-    image: '/assets/timeline_prompt.png',
-    description: 'Describe what you want to automate in plain English. Qona starts with a simple description of your goal.',
-  },
-  {
-    title: 'AI asks questions',
-    icon: HelpCircle,
-    image: '/assets/timeline_questions.png',
-    description: 'Qona identifies missing variables or credentials and prompts you for details to prevent broken workflows.',
-  },
-  {
-    title: 'Workflow planning',
-    icon: Brain,
-    image: '/assets/timeline_planning.png',
-    description: 'The AI maps your intent into structured logical steps, planning trigger and action routing before generation.',
-  },
-  {
-    title: 'Internal graph',
-    icon: Network,
-    image: '/assets/timeline_graph.png',
-    description: 'An internal schema validation connects nodes, endpoints, and credentials to ensure strict integrity.',
-  },
-  {
-    title: 'n8n workflow generated',
-    icon: Workflow,
-    image: '/assets/timeline_workflow.png',
-    description: 'The platform builds valid n8n nodes, connects variables, and compiles a ready-to-run structure.',
-  },
-  {
-    title: 'Export',
-    icon: Download,
-    image: '/assets/timeline_export.png',
-    description: 'Download the compiled JSON workflow and import it directly into your own self-hosted or cloud n8n instances.',
-  },
 ];
 
 // Stepper items for the "Meet Qona" interactive showcase
@@ -72,7 +33,14 @@ const meetQonaSteps = [
   },
 ];
 
-// Typing carousel placeholders for the CTA section
+// Typing carousel placeholders for the Hero and CTA sections
+const heroPlaceholders = [
+  'design a database schema...',
+  'sync Google Calendar with Slack...',
+  'save email attachments to Drive...',
+  'create a signup welcome email workflow...',
+];
+
 const ctaPlaceholders = [
   'create a Stripe to Slack notification sync...',
   'build a database migration scheduler...',
@@ -84,6 +52,7 @@ export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [input, setInput] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
   // Interactive Demo State (Conversational Sandbox)
   const [demoStep, setDemoStep] = useState(0);
@@ -94,11 +63,17 @@ export default function LandingPage() {
   const [showcaseCursorClicked, setShowcaseCursorClicked] = useState(false);
   const [exportComplete, setExportComplete] = useState(false);
 
+  // Hero Section Typing Carousel State
+  const [heroPlaceholderText, setHeroPlaceholderText] = useState('');
+  const [heroPlaceholderIndex, setHeroPlaceholderIndex] = useState(0);
+  const [heroIsDeleting, setHeroIsDeleting] = useState(false);
+  const [heroTypingSpeed, setHeroTypingSpeed] = useState(70);
+
   // CTA Section Typing Carousel State
   const [ctaPlaceholderText, setCtaPlaceholderText] = useState('');
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [typingSpeed, setTypingSpeed] = useState(70);
+  const [ctaPlaceholderIndex, setCtaPlaceholderIndex] = useState(0);
+  const [ctaIsDeleting, setCtaIsDeleting] = useState(false);
+  const [ctaTypingSpeed, setCtaTypingSpeed] = useState(70);
 
   // Redirection for already signed in users
   useEffect(() => {
@@ -115,39 +90,67 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // CTA typing carousel animation
+  // Hero typing carousel animation
   useEffect(() => {
     let timer: any;
-    const fullText = ctaPlaceholders[placeholderIndex];
+    const fullText = heroPlaceholders[heroPlaceholderIndex];
 
-    if (!isDeleting) {
-      // Typing
+    if (!heroIsDeleting) {
       timer = setTimeout(() => {
-        setCtaPlaceholderText(fullText.substring(0, ctaPlaceholderText.length + 1));
-        setTypingSpeed(70);
-      }, typingSpeed);
+        setHeroPlaceholderText(fullText.substring(0, heroPlaceholderText.length + 1));
+        setHeroTypingSpeed(70);
+      }, heroTypingSpeed);
 
-      if (ctaPlaceholderText === fullText) {
-        // Wait before deleting
+      if (heroPlaceholderText === fullText) {
         timer = setTimeout(() => {
-          setIsDeleting(true);
+          setHeroIsDeleting(true);
         }, 2000);
       }
     } else {
-      // Deleting
       timer = setTimeout(() => {
-        setCtaPlaceholderText(fullText.substring(0, ctaPlaceholderText.length - 1));
-        setTypingSpeed(30);
-      }, typingSpeed);
+        setHeroPlaceholderText(fullText.substring(0, heroPlaceholderText.length - 1));
+        setHeroTypingSpeed(30);
+      }, heroTypingSpeed);
 
-      if (ctaPlaceholderText === '') {
-        setIsDeleting(false);
-        setPlaceholderIndex((prev) => (prev + 1) % ctaPlaceholders.length);
+      if (heroPlaceholderText === '') {
+        setHeroIsDeleting(false);
+        setHeroPlaceholderIndex((prev) => (prev + 1) % heroPlaceholders.length);
       }
     }
 
     return () => clearTimeout(timer);
-  }, [ctaPlaceholderText, isDeleting, placeholderIndex, typingSpeed]);
+  }, [heroPlaceholderText, heroIsDeleting, heroPlaceholderIndex, heroTypingSpeed]);
+
+  // CTA typing carousel animation
+  useEffect(() => {
+    let timer: any;
+    const fullText = ctaPlaceholders[ctaPlaceholderIndex];
+
+    if (!ctaIsDeleting) {
+      timer = setTimeout(() => {
+        setCtaPlaceholderText(fullText.substring(0, ctaPlaceholderText.length + 1));
+        setCtaTypingSpeed(70);
+      }, ctaTypingSpeed);
+
+      if (ctaPlaceholderText === fullText) {
+        timer = setTimeout(() => {
+          setCtaIsDeleting(true);
+        }, 2000);
+      }
+    } else {
+      timer = setTimeout(() => {
+        setCtaPlaceholderText(fullText.substring(0, ctaPlaceholderText.length - 1));
+        setCtaTypingSpeed(30);
+      }, ctaTypingSpeed);
+
+      if (ctaPlaceholderText === '') {
+        setCtaIsDeleting(false);
+        setCtaPlaceholderIndex((prev) => (prev + 1) % ctaPlaceholders.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [ctaPlaceholderText, ctaIsDeleting, ctaPlaceholderIndex, ctaTypingSpeed]);
 
   // Meet Qona Auto-Playing loop
   useEffect(() => {
@@ -155,7 +158,6 @@ export default function LandingPage() {
     
     const runShowcaseLoop = async () => {
       if (activeShowcaseStep === 0) {
-        // Typing prompt state
         setExportComplete(false);
         setShowcaseCursorClicked(false);
         const targetText = 'Create a customer onboarding workflow that syncs Stripe payments to Slack.';
@@ -165,18 +167,15 @@ export default function LandingPage() {
           currentText = targetText.substring(0, i);
           setShowcaseInputText(currentText);
         }
-        // Hover and click animation
         await new Promise((resolve) => setTimeout(resolve, 800));
         setShowcaseCursorClicked(true);
         await new Promise((resolve) => setTimeout(resolve, 600));
         setActiveShowcaseStep(1);
       } else if (activeShowcaseStep === 1) {
-        // Visual building state
         timer = setTimeout(() => {
           setActiveShowcaseStep(2);
         }, 5000);
       } else if (activeShowcaseStep === 2) {
-        // Export state
         await new Promise((resolve) => setTimeout(resolve, 1500));
         setExportComplete(true);
         timer = setTimeout(() => {
@@ -207,7 +206,6 @@ export default function LandingPage() {
     const text = input.trim();
     if (!text) return;
 
-    // Save prompt to sessionStorage and redirect to sign-in
     sessionStorage.setItem('qona_pending_prompt', text);
     navigate('/sign-in');
   };
@@ -219,7 +217,6 @@ export default function LandingPage() {
     }
   };
 
-  // If loading or authenticated, render a minimal clean loading layout to avoid flicker
   if (isLoading || isAuthenticated) {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-white">
@@ -230,31 +227,74 @@ export default function LandingPage() {
 
   return (
     <div className="relative isolate overflow-hidden bg-white">
-      {/* ChatGPT-style Hero Section */}
-      <div className="mx-auto max-w-5xl px-6 pt-24 pb-20 sm:pt-32 sm:pb-28 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center space-y-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-955 sm:text-5xl leading-[1.1] max-w-2xl mx-auto">
+      {/* Replicated Lovable-Style Hero Section with Teal-Indigo-Violet Gradient Backdrop */}
+      <div className="relative mx-auto max-w-5xl px-6 pt-28 pb-20 sm:pt-36 sm:pb-28 lg:px-8">
+        
+        {/* Teal-Indigo-Violet Gradient Background */}
+        <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[320px] rounded-full bg-gradient-to-tr from-teal-400/20 via-indigo-400/10 to-violet-500/20 blur-[90px] pointer-events-none select-none z-0 animate-pulse" style={{ animationDuration: '7s' }} />
+
+        <div className="relative z-10 mx-auto max-w-3xl text-center space-y-6">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-955 sm:text-5xl lg:text-6xl leading-[1.05] max-w-3xl mx-auto">
             Build AI Automations Through Conversation
           </h1>
+          <p className="text-slate-500 text-sm sm:text-base max-w-lg mx-auto">
+            Create production-ready workflows and export them to n8n by chatting with Qona.
+          </p>
 
-          {/* Interactive OpenAI-style prompt area */}
-          <div className="mx-auto max-w-2xl">
-            <form onSubmit={handleSubmit} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-md focus-within:border-slate-350 focus-within:ring-2 focus-within:ring-slate-100 transition-all">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Design a database schema"
-                rows={2}
-                className="w-full resize-none border-0 bg-transparent pr-12 pl-4 py-2.5 text-slate-900 placeholder-slate-400 focus:ring-0 sm:text-base outline-none min-h-[64px]"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim()}
-                className="absolute bottom-3.5 right-3.5 flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-955 text-white transition-all hover:bg-slate-800 disabled:opacity-10 cursor-pointer border-0"
+          {/* Interactive Lovable-style Hero Input Box */}
+          <div className="mx-auto max-w-2xl pt-6">
+            <form onSubmit={handleSubmit} className="relative rounded-3xl border border-slate-200 bg-white/80 backdrop-blur-md p-3 shadow-md focus-within:border-slate-350 focus-within:ring-2 focus-within:ring-slate-100 transition-all flex items-center justify-between">
+              
+              {/* Left Action Button */}
+              <button 
+                type="button" 
+                className="flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer border-0"
               >
-                <ArrowUp className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
               </button>
+
+              {/* Center Text Area with Overlay Typing Placeholder */}
+              <div className="flex-1 relative mx-3 min-h-[44px] flex items-center">
+                {input === '' && !isFocused && (
+                  <div className="absolute left-3 text-slate-400 text-xs sm:text-sm font-medium pointer-events-none flex items-center">
+                    <span>Ask Qona to </span>
+                    <span className="ml-1 text-slate-500">{heroPlaceholderText}</span>
+                    <span className="inline-block w-1 h-3.5 ml-0.5 bg-slate-650 animate-pulse align-middle" />
+                  </div>
+                )}
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  onKeyDown={handleKeyDown}
+                  placeholder=""
+                  rows={1}
+                  className="w-full resize-none border-0 bg-transparent px-3 py-2 text-slate-905 placeholder-transparent focus:ring-0 sm:text-sm outline-none"
+                />
+              </div>
+
+              {/* Right Side Controls */}
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">
+                  <span>Build</span>
+                  <ChevronDown className="h-2.5 w-2.5 text-slate-450" />
+                </div>
+                <button 
+                  type="button" 
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer border-0"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-950 text-white transition-all hover:bg-slate-800 disabled:opacity-10 cursor-pointer border-0"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+              </div>
+
             </form>
 
             {/* Pill chips below input */}
@@ -270,179 +310,6 @@ export default function LandingPage() {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Product Features Section (2x3 grid) */}
-      <div className="mx-auto max-w-5xl px-6 pb-28">
-        <div className="border-t border-slate-100 pt-16">
-          <div className="text-left mb-12">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-955">Product Features</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
-            {/* Feature 1: Workflow Generation */}
-            <div className="space-y-4 text-left">
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                <img 
-                  src="/assets/workflow_generation_preview.png" 
-                  alt="Workflow Generation Preview" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                  <Workflow className="h-3.5 w-3.5 text-slate-800" />
-                  Workflow Generation
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">Workflow Generation</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Qonace empowers your operations by transforming ideas into fully operational, tested workflow configurations.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 2: Deep Reasoning */}
-            <div className="space-y-4 text-left">
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                <img 
-                  src="/assets/deep_reasoning_professional.png" 
-                  alt="Deep Reasoning Preview" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                  <Brain className="h-3.5 w-3.5 text-slate-800" />
-                  Deep Reasoning
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">Deep Reasoning</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Qonace is an intelligent agent system that plans and verifies every connection parameter before compiling standard JSON.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 3: One-click n8n Export */}
-            <div className="space-y-4 text-left">
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                <img 
-                  src="/assets/n8n_export_preview.png" 
-                  alt="One-click n8n Export Preview" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                  <Download className="h-3.5 w-3.5 text-slate-800" />
-                  One-click n8n Export
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">One-click n8n Export</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Instantly download compiled workflow configurations and import them directly into self-hosted or cloud n8n instances.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 4: Future Multi-platform Support */}
-            <div className="space-y-4 text-left">
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                <img 
-                  src="/assets/multi_platform_preview.png" 
-                  alt="Future Multi-platform Support Preview" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                  <Layers className="h-3.5 w-3.5 text-slate-800" />
-                  Future Multi-platform Support
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">Future Multi-platform Support</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Architected to soon support native deployments for Make.com, Zapier integration recipes, and custom webhooks.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 5: Conversation Memory */}
-            <div className="space-y-4 text-left">
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                <img 
-                  src="/assets/conversation_memory_preview.png" 
-                  alt="Conversation Memory Preview" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                  <History className="h-3.5 w-3.5 text-slate-800" />
-                  Conversation Memory
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">Conversation Memory</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Retain variables, labels, and parameters from past prompts to incrementally build and extend your integrations.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 6: Secure Local Execution */}
-            <div className="space-y-4 text-left">
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                <img 
-                  src="/assets/secure_execution_preview.png" 
-                  alt="Secure Local Execution Preview" 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                  <Shield className="h-3.5 w-3.5 text-slate-800" />
-                  Secure Local Execution
-                </div>
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900">Secure Local Execution</h3>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Export and run Qonace-generated JSON workflows locally on your own infrastructure without vendor lock-in.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Redesigned How Qonace Works Section (Grid Styled Like Features) */}
-      <div className="mx-auto max-w-5xl px-6 pb-28">
-        <div className="border-t border-slate-100 pt-20">
-          <div className="text-left mb-12">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-955">How Qonace Works</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
-            {timelineSteps.map((step, idx) => {
-              const StepIcon = step.icon;
-              return (
-                <div key={idx} className="space-y-4 text-left">
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
-                    <img 
-                      src={step.image} 
-                      alt={`${step.title} Stage`} 
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
-                      <StepIcon className="h-3.5 w-3.5 text-slate-850" />
-                      Stage 0{idx + 1}: {step.title}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-slate-900">{step.title}</h3>
-                    <p className="text-xs leading-relaxed text-slate-500">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -640,7 +507,7 @@ export default function LandingPage() {
                         : 'bg-transparent border-transparent hover:bg-slate-50/50'
                     }`}
                   >
-                    <h3 className={`text-sm font-bold transition-colors duration-250 ${isActive ? 'text-slate-950' : 'text-slate-500'}`}>
+                    <h3 className={`text-sm font-bold transition-colors duration-250 ${isActive ? 'text-slate-955' : 'text-slate-500'}`}>
                       {step.title}
                     </h3>
                     <p className={`text-xs mt-1.5 leading-relaxed transition-colors duration-250 ${isActive ? 'text-slate-600' : 'text-slate-400'}`}>
@@ -815,29 +682,42 @@ export default function LandingPage() {
       {/* Redesigned Premium Glowing CTA Section (Lovable-Style CTA Replication) */}
       <div className="relative mx-auto max-w-5xl px-6 py-32 border-t border-slate-100 overflow-hidden">
         
-        {/* Soft Glowing Pulsing Blur Background */}
-        <div className="absolute left-1/2 bottom-[-10%] -translate-x-1/2 w-[550px] h-[300px] rounded-full bg-gradient-to-tr from-indigo-500/20 via-purple-500/10 to-blue-500/20 blur-[80px] pointer-events-none select-none z-0 animate-pulse" style={{ animationDuration: '6s' }} />
+        {/* Soft Glowing Pulsing Blur Background (Teal-Indigo-Violet color scheme) */}
+        <div className="absolute left-1/2 bottom-[-10%] -translate-x-1/2 w-[550px] h-[300px] rounded-full bg-gradient-to-tr from-teal-500/20 via-indigo-500/10 to-violet-500/20 blur-[80px] pointer-events-none select-none z-0 animate-pulse" style={{ animationDuration: '6s' }} />
 
         <div className="relative z-10 max-w-3xl mx-auto text-center space-y-10">
           
-          {/* Headline copy */}
           <div className="space-y-3.5">
             <span className="text-[10px] font-extrabold text-slate-400 tracking-[0.2em] uppercase block">
               AI Automation Builder
             </span>
-            <h2 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
+            <h2 className="text-4xl font-extrabold tracking-tight text-slate-955 sm:text-5xl">
               Ready to build?
             </h2>
           </div>
 
           {/* Interactive Lovable-style Prompter Input Box */}
           <div className="mx-auto max-w-xl">
-            <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-md p-4 shadow-lg focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-slate-100 transition-all text-left">
-              {/* Text input area with moving cursor placeholder */}
-              <div className="min-h-[50px] text-sm text-slate-800 pl-3 pt-1 select-none font-medium">
-                <span className="text-slate-400">Ask Qona to </span>
-                {ctaPlaceholderText}
-                <span className="inline-block w-1.5 h-4 ml-0.5 bg-slate-800 animate-pulse align-middle" />
+            <div className="rounded-2xl border border-slate-200 bg-white/85 backdrop-blur-md p-4 shadow-lg focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-slate-100 transition-all text-left">
+              
+              <div className="min-h-[50px] text-sm text-slate-805 pl-3 pt-1 font-medium relative flex items-center">
+                {input === '' && !isFocused && (
+                  <div className="absolute left-3 text-slate-400 pointer-events-none select-none flex items-center">
+                    <span>Ask Qona to </span>
+                    <span className="ml-1 text-slate-500">{ctaPlaceholderText}</span>
+                    <span className="inline-block w-1.5 h-4 ml-0.5 bg-slate-800 animate-pulse align-middle" />
+                  </div>
+                )}
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  onKeyDown={handleKeyDown}
+                  placeholder=""
+                  rows={1}
+                  className="w-full resize-none border-0 bg-transparent px-3 py-2 text-slate-905 placeholder-transparent focus:ring-0 sm:text-sm outline-none"
+                />
               </div>
 
               {/* Lower Tool Bar inside input card */}
@@ -845,7 +725,7 @@ export default function LandingPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-850 hover:bg-slate-100 transition-all cursor-pointer"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-850 hover:bg-slate-100 transition-all cursor-pointer border-0"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
