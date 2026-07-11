@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Workflow, Brain, ArrowUp, Download, Layers, History, Shield, MessageSquare, Play } from 'lucide-react';
+import { ArrowRight, Sparkles, Workflow, Brain, ArrowUp, Download, Layers, History, Shield, MessageSquare, Play, HelpCircle, Network, Code } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import PricingPage from './Pricing';
 
 const suggestions = [
   'Design a database schema',
@@ -15,26 +14,38 @@ const suggestions = [
 const timelineSteps = [
   {
     title: 'Prompt',
+    icon: MessageSquare,
+    image: '/assets/timeline_prompt.png',
     description: 'Describe what you want to automate in plain English. Qona starts with a simple description of your goal.',
   },
   {
     title: 'AI asks questions',
+    icon: HelpCircle,
+    image: '/assets/timeline_questions.png',
     description: 'Qona identifies missing variables or credentials and prompts you for details to prevent broken workflows.',
   },
   {
     title: 'Workflow planning',
+    icon: Brain,
+    image: '/assets/timeline_planning.png',
     description: 'The AI maps your intent into structured logical steps, planning trigger and action routing before generation.',
   },
   {
     title: 'Internal graph',
+    icon: Network,
+    image: '/assets/timeline_graph.png',
     description: 'An internal schema validation connects nodes, endpoints, and credentials to ensure strict integrity.',
   },
   {
     title: 'n8n workflow generated',
+    icon: Workflow,
+    image: '/assets/timeline_workflow.png',
     description: 'The platform builds valid n8n nodes, connects variables, and compiles a ready-to-run structure.',
   },
   {
     title: 'Export',
+    icon: Download,
+    image: '/assets/timeline_export.png',
     description: 'Download the compiled JSON workflow and import it directly into your own self-hosted or cloud n8n instances.',
   },
 ];
@@ -93,7 +104,7 @@ export default function LandingPage() {
       {/* ChatGPT-style Hero Section */}
       <div className="mx-auto max-w-5xl px-6 pt-24 pb-20 sm:pt-32 sm:pb-28 lg:px-8">
         <div className="mx-auto max-w-3xl text-center space-y-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl leading-[1.1] max-w-2xl mx-auto">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-955 sm:text-5xl leading-[1.1] max-w-2xl mx-auto">
             Build AI Automations Through Conversation
           </h1>
 
@@ -111,7 +122,7 @@ export default function LandingPage() {
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="absolute bottom-3.5 right-3.5 flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-950 text-white transition-all hover:bg-slate-800 disabled:opacity-10 cursor-pointer border-0"
+                className="absolute bottom-3.5 right-3.5 flex h-8.5 w-8.5 items-center justify-center rounded-full bg-slate-955 text-white transition-all hover:bg-slate-800 disabled:opacity-10 cursor-pointer border-0"
               >
                 <ArrowUp className="h-4 w-4" />
               </button>
@@ -124,7 +135,7 @@ export default function LandingPage() {
                   key={s}
                   type="button"
                   onClick={() => setInput(s)}
-                  className="rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-600 transition-all cursor-pointer"
+                  className="rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-650 transition-all cursor-pointer"
                 >
                   {s}
                 </button>
@@ -271,44 +282,38 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Premium Linear-Style How Qonace Works Timeline Section */}
+      {/* Redesigned How Qonace Works Section (Grid Styled Like Features) */}
       <div className="mx-auto max-w-5xl px-6 pb-28">
-        <div className="border-t border-slate-100 pt-20 max-w-2xl mx-auto">
-          <div className="text-center space-y-4 mb-20">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              How Qonace Works
-            </h2>
-            <p className="text-slate-500 text-sm max-w-md mx-auto">
-              From plain text to fully-functioning workflow integrations in six simple stages.
-            </p>
+        <div className="border-t border-slate-100 pt-20">
+          <div className="text-left mb-12">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-955">How Qonace Works</h2>
           </div>
 
-          <div className="relative border-l border-slate-200 ml-4 md:ml-6 space-y-12 pb-4">
-            {timelineSteps.map((step, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.5, delay: idx * 0.05 }}
-                className="relative pl-8 md:pl-10 group"
-              >
-                {/* Stepper Dot */}
-                <div className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full border border-white bg-slate-350 group-hover:bg-slate-850 transition-colors duration-200" />
-                
-                <div className="space-y-1.5 text-left">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap block">
-                    {`Stage 0${idx + 1}`}
-                  </span>
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-slate-950 transition-colors duration-200">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-slate-500 max-w-lg">
-                    {step.description}
-                  </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-16">
+            {timelineSteps.map((step, idx) => {
+              const StepIcon = step.icon;
+              return (
+                <div key={idx} className="space-y-4 text-left">
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white aspect-[16/10] flex items-center justify-center relative group">
+                    <img 
+                      src={step.image} 
+                      alt={`${step.title} Stage`} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                    />
+                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur border border-slate-200/50 rounded-full px-3.5 py-1 text-[10px] font-bold text-slate-900 flex items-center gap-1.5 shadow-sm">
+                      <StepIcon className="h-3.5 w-3.5 text-slate-850" />
+                      Stage 0{idx + 1}: {step.title}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold text-slate-900">{step.title}</h3>
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      {step.description}
+                    </p>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -382,10 +387,10 @@ export default function LandingPage() {
               <div className="flex justify-between items-center text-[9px] text-slate-400 font-mono">
                 <span>Cycle updates automatically</span>
                 <span className="flex items-center gap-1">
-                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 0 ? 'bg-slate-900' : 'bg-slate-200'}`} />
-                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 1 ? 'bg-slate-900' : 'bg-slate-200'}`} />
-                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 2 ? 'bg-slate-900' : 'bg-slate-200'}`} />
-                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 3 ? 'bg-slate-900' : 'bg-slate-200'}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 0 ? 'bg-slate-950' : 'bg-slate-200'}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 1 ? 'bg-slate-955' : 'bg-slate-200'}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 2 ? 'bg-slate-955' : 'bg-slate-200'}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${demoStep === 3 ? 'bg-slate-955' : 'bg-slate-200'}`} />
                 </span>
               </div>
             </div>
@@ -471,28 +476,25 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Pricing plans */}
-      <div className="border-t border-slate-100">
-        <PricingPage />
-      </div>
-
-      {/* Minimalist Typography-Focused CTA Section */}
-      <div className="mx-auto max-w-5xl px-6 py-28 border-t border-slate-100 text-center">
-        <div className="mx-auto max-w-2xl space-y-6">
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
-            Start Building Automations Today
-          </h2>
-          <div className="text-slate-550 text-base sm:text-lg leading-relaxed max-w-sm mx-auto font-medium">
-            <p>Describe your workflow.</p>
-            <p>Qonace builds it.</p>
-          </div>
-          <div className="pt-4">
-            <button
-              onClick={() => navigate('/sign-in')}
-              className="inline-flex items-center justify-center rounded-lg bg-slate-950 px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-all cursor-pointer border-0"
-            >
-              Start Free
-            </button>
+      {/* Premium Typographic Card CTA Section */}
+      <div className="mx-auto max-w-5xl px-6 py-28 border-t border-slate-100">
+        <div className="border border-slate-200 rounded-3xl bg-white p-12 md:p-16 text-center max-w-3xl mx-auto shadow-sm relative overflow-hidden">
+          <div className="space-y-6 relative z-10">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-955 sm:text-4xl">
+              Start Building Automations Today
+            </h2>
+            <div className="text-slate-500 text-base sm:text-lg leading-relaxed max-w-sm mx-auto font-medium">
+              <p>Describe your workflow.</p>
+              <p>Qonace builds it.</p>
+            </div>
+            <div className="pt-4">
+              <button
+                onClick={() => navigate('/sign-in')}
+                className="inline-flex items-center justify-center rounded-lg bg-slate-950 px-6 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-all cursor-pointer border-0"
+              >
+                Start Free
+              </button>
+            </div>
           </div>
         </div>
       </div>
