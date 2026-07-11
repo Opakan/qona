@@ -1,0 +1,41 @@
+{
+  "name": "qonace-api",
+  "description": "Backend API for Qona AI-Powered Automation Assistant",
+  "keywords": ["node", "express", "prisma", "postgres"],
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "value": "production"
+    },
+    "SUPABASE_URL": {
+      "value": "https://icxlfpmldbpjjqxmjpol.supabase.co"
+    },
+    "SUPABASE_ANON_KEY": {
+      "value": "sb_publishable_n70nfEz0nzetwwsrtG3LYA_AuKWCLg4"
+    },
+    "DEEPSEEK_API_KEY": {
+      "value": "sk-fe607fff947346f19ac851d401f411ba"
+    },
+    "FLUTTERWAVE_SECRET_KEY": {
+      "value": "FLWSECK-c61dd59bcc5d5b2b6b648ef3236e3398-19e4ce5c768vt-X"
+    },
+    "FLUTTERWAVE_PUBLIC_KEY": {
+      "value": "FLWPUBK-ee67b63e18c5156137eac7fd5b5bdb00-X"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
