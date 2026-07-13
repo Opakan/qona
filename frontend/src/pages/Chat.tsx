@@ -181,8 +181,8 @@ export default function ChatPage() {
       <div className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-900 text-slate-300">
         <div className="flex h-16 items-center gap-2.5 border-b border-slate-800 px-5">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold tracking-tight text-white hover:scale-[1.02] transition-all">
-            <LayoutDashboard className="h-4.5 w-4.5 text-indigo-400" />
-            <span>Qona Workspace</span>
+            <img src="/logo.png" alt="Qonace Logo" className="h-5.5 w-auto object-contain brightness-0 invert" />
+            <span>Qonace Workspace</span>
           </Link>
         </div>
         

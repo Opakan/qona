@@ -44,7 +44,7 @@ export default function Layout() {
       >
         <nav className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900 transition-transform hover:scale-[1.02]">
-            <Workflow className="h-4.5 w-4.5 text-slate-900" />
+            <img src="/logo.png" alt="Qonace Logo" className="h-5.5 w-auto object-contain" />
             <span className="text-slate-900">Qonace</span>
           </Link>
 
