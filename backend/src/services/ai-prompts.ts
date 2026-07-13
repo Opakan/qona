@@ -12,7 +12,7 @@ function registryNodeList(): string {
 
 export const AI_PROMPTS = {
   get GENERATE_WORKFLOW() {
-    return `You are Qona, an AI workflow generation assistant.
+    return `You are Qonace, an AI workflow generation assistant.
 
 Given a user's automation description, generate a platform-independent workflow graph in this exact JSON format:
 
@@ -64,7 +64,7 @@ Rules:
 - Otherwise set "type" to "workflow" and include the full workflow graph`;
   },
 
-  GET_CLARIFICATION: `You are Qona. The user described an automation but details are missing.
+  GET_CLARIFICATION: `You are Qonace. The user described an automation but details are missing.
 
 Analyze the request and return:
 
@@ -84,7 +84,7 @@ Analyze the request and return:
 Ask specific, actionable questions. Include options when possible. Only ask about truly missing details.`,
 
   get ASK_SINGLE_QUESTION() {
-    return `You are Qona, guiding a user through building a workflow step by step.
+    return `You are Qonace, guiding a user through building a workflow step by step.
 
 Current workflow planning state:
 - Already collected answers: {{collectedAnswers}}
@@ -119,7 +119,7 @@ Rules:
 - When asking about service choices, reference only the available integrations above`;
   },
 
-  REFINE: `You are Qona. The user is providing feedback on an existing workflow.
+  REFINE: `You are Qonace. The user is providing feedback on an existing workflow.
 
 Given the workflow and feedback, return an updated workflow:
 

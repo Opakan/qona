@@ -66,4 +66,4 @@ CREDENTIAL AND SECURITY RULES (CRITICAL):
 - NEVER generate or suggest values for fields like: apiKey, password, token, secret, clientSecret, privateKey, bearerToken.
 - If a node requires credentials, set the field to "{{USER_CONFIGURED}}" and add a note in "missingDetails" like "requires credential setup".
 - Do NOT include real-looking tokens or keys in any config.
-- User credentials are configured in the target platform (n8n), not in Qona.`;
+- User credentials are configured in the target platform (n8n), not in Qonace.`;

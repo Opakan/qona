@@ -12,6 +12,7 @@ export const UserProfileSchema = z.object({
   name: z.string().min(1).max(200),
   avatarUrl: z.string().url().nullable().optional(),
   role: z.enum(['USER', 'ADMIN']).default('USER'),
+  country: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

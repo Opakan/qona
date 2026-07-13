@@ -27,6 +27,8 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import AuthCallback from './pages/AuthCallback';
 import AuthGuard from './components/auth/AuthGuard';
 import GuestGuard from './components/auth/GuestGuard';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminGuard from './components/auth/AdminGuard';
 
 export default function App() {
   return (
@@ -61,6 +63,7 @@ export default function App() {
         <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
         <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/admin" element={<AuthGuard><AdminGuard><AdminDashboard /></AdminGuard></AuthGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

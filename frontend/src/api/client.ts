@@ -11,7 +11,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
   try {
-    const guestToken = localStorage.getItem('qona-guest-token');
+    const guestToken = localStorage.getItem('qonace-guest-token');
     if (guestToken) {
       config.headers.Authorization = `Bearer ${guestToken}`;
       return config;
@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn('[Qona API] Unauthorized — redirecting to login');
+      console.warn('[Qonace API] Unauthorized — redirecting to login');
       supabase.auth.signOut();
     }
     return Promise.reject(error);

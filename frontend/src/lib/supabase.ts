@@ -9,7 +9,7 @@ export const supabase: SupabaseClient = supabaseAnonKey
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
-        storageKey: 'qona-auth-token',
+        storageKey: 'qonace-auth-token',
       },
     })
   : (new Proxy({} as any, {

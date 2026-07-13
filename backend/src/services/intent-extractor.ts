@@ -7,7 +7,7 @@ import { workflowMemory } from './workflow-memory.js';
 function buildPrompt(memoryContext?: string): string {
   const registryCtx = nodeRegistry.buildRegistryContext();
   const memoryBlock = memoryContext ?? '';
-  return `You are Qona's intent extraction engine. Your job is to parse a user's automation request and extract structured information.
+  return `You are Qonace's intent extraction engine. Your job is to parse a user's automation request and extract structured information.
 
 Analyze the user's prompt and return a JSON object in this EXACT format:
 

@@ -206,7 +206,7 @@ export default function LandingPage() {
     const text = input.trim();
     if (!text) return;
 
-    sessionStorage.setItem('qona_pending_prompt', text);
+    sessionStorage.setItem('qonace_pending_prompt', text);
     navigate('/sign-in');
   };
 
@@ -238,7 +238,7 @@ export default function LandingPage() {
             Build AI Automations Through Conversation
           </h1>
           <p className="text-slate-500 text-sm sm:text-base max-w-lg mx-auto">
-            Create production-ready workflows and export them to n8n by chatting with Qona.
+            Create production-ready workflows and export them to n8n by chatting with Qonace.
           </p>
 
           {/* Interactive Lovable-style Hero Input Box */}
@@ -257,9 +257,9 @@ export default function LandingPage() {
               <div className="flex-1 relative mx-3 min-h-[44px] flex items-center">
                 {input === '' && !isFocused && (
                   <div className="absolute left-3 text-slate-400 text-xs sm:text-sm font-medium pointer-events-none flex items-center">
-                    <span>Ask Qona to </span>
+                    <span>Ask Qonace to </span>
                     <span className="ml-1 text-slate-500">{heroPlaceholderText}</span>
-                    <span className="inline-block w-1 h-3.5 ml-0.5 bg-slate-650 animate-pulse align-middle" />
+                    <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-slate-650 animate-pulse align-middle" />
                   </div>
                 )}
                 <textarea
@@ -488,7 +488,7 @@ export default function LandingPage() {
               </AnimatePresence>
 
               <div className="flex justify-between items-center text-[9px] text-slate-400 font-mono border-t border-slate-100 pt-3">
-                <span>Interactive Qona Engine</span>
+                <span>Interactive Qonace Engine</span>
                 <span>Active State: {meetQonaSteps[activeShowcaseStep].title}</span>
               </div>
             </div>
@@ -703,7 +703,7 @@ export default function LandingPage() {
               <div className="min-h-[50px] text-sm text-slate-805 pl-3 pt-1 font-medium relative flex items-center">
                 {input === '' && !isFocused && (
                   <div className="absolute left-3 text-slate-400 pointer-events-none select-none flex items-center">
-                    <span>Ask Qona to </span>
+                    <span>Ask Qonace to </span>
                     <span className="ml-1 text-slate-500">{ctaPlaceholderText}</span>
                     <span className="inline-block w-1.5 h-4 ml-0.5 bg-slate-800 animate-pulse align-middle" />
                   </div>
@@ -731,7 +731,7 @@ export default function LandingPage() {
                   </button>
                   <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-600">
                     <Brain className="h-3 w-3 text-indigo-650" />
-                    <span>Qona Reasoner</span>
+                    <span>Qonace Reasoner</span>
                     <ChevronDown className="h-2.5 w-2.5 text-slate-450 ml-0.5" />
                   </div>
                 </div>

@@ -45,7 +45,7 @@ export default function Layout() {
         <nav className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900 transition-transform hover:scale-[1.02]">
             <Workflow className="h-4.5 w-4.5 text-slate-900" />
-            <span className="text-slate-900">Qona</span>
+            <span className="text-slate-900">Qonace</span>
           </Link>
 
           <div className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
@@ -74,7 +74,7 @@ export default function Layout() {
                   to="/sign-in"
                   className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-100"
                 >
-                  Try Qona
+                  Try Qonace
                 </Link>
               </>
             )}
@@ -101,7 +101,7 @@ export default function Layout() {
               ) : (
                 <>
                   <Link to="/sign-in" className="text-slate-600 hover:text-indigo-600" onClick={() => setMenuOpen(false)}>Sign in</Link>
-                  <Link to="/sign-in" className="rounded-lg bg-indigo-600 py-2.5 text-center font-medium text-white shadow-sm hover:bg-indigo-700" onClick={() => setMenuOpen(false)}>Try Qona</Link>
+                  <Link to="/sign-in" className="rounded-lg bg-indigo-600 py-2.5 text-center font-medium text-white shadow-sm hover:bg-indigo-700" onClick={() => setMenuOpen(false)}>Try Qonace</Link>
                 </>
               )}
             </div>
@@ -117,7 +117,7 @@ export default function Layout() {
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-1">
-              <Link to="/" className="text-sm font-medium text-gray-900">Qona</Link>
+              <Link to="/" className="text-sm font-medium text-gray-900">Qonace</Link>
               <p className="mt-2 text-sm leading-relaxed text-gray-400">AI-powered automation.</p>
             </div>
             {Object.entries(footerSections).map(([category, links]) => (
@@ -139,7 +139,7 @@ export default function Layout() {
             ))}
           </div>
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 sm:flex-row">
-            <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} Qona, Inc.</p>
+            <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} Qonace, Inc.</p>
             <div className="flex gap-4">
               <a href="#" className="text-gray-300 hover:text-gray-600"><Github className="h-4 w-4" /></a>
               <a href="#" className="text-gray-300 hover:text-gray-600"><Twitter className="h-4 w-4" /></a>

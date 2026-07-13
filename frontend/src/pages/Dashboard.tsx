@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Workflow, BarChart3, Plus, History } from 'lucide-react';
+import { LogOut, Workflow, BarChart3, Plus, History, Sparkles } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
+  const { user, dbUser, signOut, toggleDeveloperRole } = useAuth();
   const navigate = useNavigate();
 
   // Dynamic redirect if user typed a prompt on the homepage
   useEffect(() => {
-    const pendingPrompt = sessionStorage.getItem('qona_pending_prompt');
+    const pendingPrompt = sessionStorage.getItem('qonace_pending_prompt');
     if (pendingPrompt) {
-      sessionStorage.removeItem('qona_pending_prompt');
+      sessionStorage.removeItem('qonace_pending_prompt');
       navigate('/chat', { state: { initialPrompt: pendingPrompt } });
     }
   }, [navigate]);
@@ -34,19 +34,37 @@ export default function Dashboard() {
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
             <Workflow className="h-4.5 w-4.5 text-indigo-600 animate-pulse" />
-            <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">Qona</span>
+            <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">Qonace</span>
           </Link>
           <div className="flex items-center gap-4">
+            {dbUser?.role === 'ADMIN' && (
+              <Link
+                to="/admin"
+                className="rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition-colors px-3 py-1.5 text-xs font-bold shadow-2xs"
+              >
+                Admin Panel
+              </Link>
+            )}
+            
+            <button
+              onClick={toggleDeveloperRole}
+              className="flex items-center gap-1 rounded-lg border border-yellow-250 bg-yellow-50 px-2 py-1 text-[10px] font-semibold text-yellow-800 hover:bg-yellow-100 transition-colors shadow-2xs cursor-pointer"
+              title="Quick toggle ADMIN/USER role for easy testing."
+            >
+              <Sparkles className="h-3 w-3 text-yellow-600 animate-spin" style={{ animationDuration: '3s' }} />
+              Dev: Toggle Admin
+            </button>
+
             <div className="flex flex-col items-end">
               <span className="text-xs font-semibold text-slate-800">
-                {user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'User'}
+                {dbUser?.name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'User'}
               </span>
-              <span className="text-[10px] text-slate-400 font-medium">{user?.email}</span>
+              <span className="text-[10px] text-slate-400 font-medium">{dbUser?.email ?? user?.email}</span>
             </div>
             <div className="h-8 w-px bg-slate-200" />
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-950 shadow-sm"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-955 shadow-sm cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sign out

@@ -25,7 +25,7 @@ import type { Prisma } from '@prisma/client';
 // Logger
 // ═══════════════════════════════════════════════════════
 
-const LOG_PREFIX = '[Qona AI]';
+const LOG_PREFIX = '[Qonace AI]';
 
 let _traceId: string | undefined;
 function log(level: 'info' | 'warn' | 'error', message: string, data?: Record<string, unknown>) {

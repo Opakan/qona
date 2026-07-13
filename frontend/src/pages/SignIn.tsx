@@ -14,7 +14,7 @@ export default function SignIn() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-900">
                 <Workflow className="h-5 w-5" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">Qona</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900">Qonace</span>
             </Link>
             
             <h2 className="mt-6 text-center text-2xl font-extrabold text-slate-900 tracking-tight">

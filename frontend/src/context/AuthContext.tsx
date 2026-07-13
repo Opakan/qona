@@ -1,23 +1,47 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import apiClient from '../api/client';
 
 interface AuthState {
   user: User | null;
+  dbUser: any | null;
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
+  toggleDeveloperRole: () => void;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [dbUser, setDbUser] = useState<any | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchDbUser = useCallback(async (cancelled = false) => {
+    try {
+      const response = await apiClient.get('/auth/me');
+      if (!cancelled && response.data?.user) {
+        setDbUser(response.data.user);
+      }
+    } catch (err) {
+      console.warn('[AuthContext] Failed to fetch database profile:', err);
+    }
+  }, []);
+
+  const toggleDeveloperRole = useCallback(() => {
+    setDbUser((prev: any) => {
+      if (!prev) return prev;
+      const newRole = prev.role === 'ADMIN' ? 'USER' : 'ADMIN';
+      console.log(`[AuthContext] Developer role toggled to: ${newRole}`);
+      return { ...prev, role: newRole };
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,6 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
+        if (initialSession?.user) {
+          fetchDbUser(cancelled);
+        } else {
+          setDbUser(null);
+        }
         setIsLoading(false);
       })
       .catch(() => {
@@ -41,6 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      if (newSession?.user) {
+        fetchDbUser(cancelled);
+      } else {
+        setDbUser(null);
+      }
       if (newSession) setIsLoading(false);
     });
 
@@ -48,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchDbUser]);
 
   const signInWithGoogle = useCallback(async () => {
     await supabase.auth.signInWithOAuth({
@@ -63,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const header = { alg: 'HS256', typ: 'JWT' };
     const payload = {
       sub: 'mock-user-12345',
-      email: 'tester@qona.ai',
+      email: 'tester@qonace.com',
       email_verified: true,
       user_metadata: {
         full_name: 'Guest User',
@@ -87,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: 'mock-user-12345',
       aud: 'authenticated',
       role: 'authenticated',
-      email: 'tester@qona.ai',
+      email: 'tester@qonace.com',
       email_confirmed_at: new Date().toISOString(),
       last_sign_in_at: new Date().toISOString(),
       user_metadata: {
@@ -110,8 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      localStorage.setItem('qona-auth-token', JSON.stringify(mockSession));
-      localStorage.setItem('qona-guest-token', token);
+      localStorage.setItem('qonace-auth-token', JSON.stringify(mockSession));
+      localStorage.setItem('qonace-guest-token', token);
     } catch (e) {
       console.warn('Failed to set session in localStorage:', e);
     }
@@ -127,19 +161,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setSession(mockSession);
     setUser(mockUser);
+    setDbUser({
+      id: 'mock-user-12345',
+      authId: 'mock-user-12345',
+      email: 'tester@qonace.com',
+      name: 'Guest User',
+      role: 'USER',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
   }, []);
 
   const signOut = useCallback(async () => {
     try {
-      localStorage.removeItem('qona-guest-token');
-      localStorage.removeItem('qona-auth-token');
+      localStorage.removeItem('qonace-guest-token');
+      localStorage.removeItem('qonace-auth-token');
     } catch { /* ignore */ }
     await supabase.auth.signOut();
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, isAuthenticated: !!user, signInWithGoogle, signInAsGuest, signOut }}
+      value={{
+        user,
+        dbUser,
+        session,
+        isLoading,
+        isAuthenticated: !!user,
+        signInWithGoogle,
+        signInAsGuest,
+        signOut,
+        toggleDeveloperRole,
+      }}
     >
       {children}
     </AuthContext.Provider>
