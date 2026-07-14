@@ -11,6 +11,13 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
   try {
+    const devRole = localStorage.getItem('qonace-developer-role');
+    if (devRole) {
+      config.headers['x-developer-role'] = devRole;
+    }
+  } catch { /* ignore */ }
+
+  try {
     const guestToken = localStorage.getItem('qonace-guest-token');
     if (guestToken) {
       config.headers.Authorization = `Bearer ${guestToken}`;

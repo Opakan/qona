@@ -39,6 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentRole = prev?.role ?? 'USER';
       const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
       console.log(`[AuthContext] Developer role toggled to: ${newRole}`);
+      try {
+        localStorage.setItem('qonace-developer-role', newRole);
+      } catch { /* ignore */ }
       if (!prev) {
         return {
           id: 'mock-user-12345',
@@ -157,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('qonace-auth-token', JSON.stringify(mockSession));
       localStorage.setItem('qonace-guest-token', token);
+      localStorage.removeItem('qonace-developer-role');
     } catch (e) {
       console.warn('Failed to set session in localStorage:', e);
     }
@@ -187,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('qonace-guest-token');
       localStorage.removeItem('qonace-auth-token');
+      localStorage.removeItem('qonace-developer-role');
     } catch { /* ignore */ }
     await supabase.auth.signOut();
   }, []);

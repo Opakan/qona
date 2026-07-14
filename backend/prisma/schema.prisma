@@ -7,57 +7,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-enum WorkflowStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
 model User {
-  id        String   @id @default(cuid())
-  authId    String   @unique
-  email     String   @unique
-  name      String
-  avatarUrl String?
-  role      Role     @default(USER)
-  country   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workflows        Workflow[]
+  id               String                    @id @default(cuid())
+  authId           String                    @unique
+  email            String                    @unique
+  name             String
+  avatarUrl        String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  role             Role                      @default(USER)
+  country          String?
+  apiKeys          ApiKey[]
   conversations    Conversation[]
   exportHistory    ExportHistory[]
-  internalGraphs   InternalGraph[]
-  planningSessions WorkflowPlanningSession[]
-  apiKeys          ApiKey[]
-  subscriptions    Subscription[]
   invoices         Invoice[]
-  workflowPatterns WorkflowPattern[]
-  executionLogs    WorkflowExecutionLog[]
+  subscriptions    Subscription[]
+  workflows        Workflow[]
+  internalGraphs   InternalGraph[]
   workflowDrafts   WorkflowDraft[]
+  executionLogs    WorkflowExecutionLog[]
+  workflowPatterns WorkflowPattern[]
+  planningSessions WorkflowPlanningSession[]
 
   @@map("users")
 }
 
 model Workflow {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String   @default("")
-  definition  Json
-  status      WorkflowStatus @default(DRAFT)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  versions      WorkflowVersion[]
+  id            String            @id @default(cuid())
+  userId        String
+  name          String
+  description   String            @default("")
+  definition    Json
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  status        WorkflowStatus    @default(DRAFT)
   conversations Conversation[]
   exportHistory ExportHistory[]
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions      WorkflowVersion[]
 
   @@index([userId])
   @@index([status])
@@ -71,25 +58,23 @@ model WorkflowVersion {
   definition Json
   changelog  String   @default("")
   createdAt  DateTime @default(now())
-
-  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@unique([workflowId, version])
   @@index([workflowId])
 }
 
 model Conversation {
-  id         String   @id @default(cuid())
+  id         String                @id @default(cuid())
   userId     String
   workflowId String?
   title      String
-  status     String   @default("ACTIVE")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workflow Workflow?             @relation(fields: [workflowId], references: [id], onDelete: SetNull)
-  messages ConversationMessage[]
+  status     String                @default("ACTIVE")
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow   Workflow?             @relation(fields: [workflowId], references: [id])
+  messages   ConversationMessage[]
 
   @@index([userId])
   @@index([workflowId])
@@ -97,31 +82,29 @@ model Conversation {
 }
 
 model ConversationMessage {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   conversationId String
   role           String
   content        String
-  metadata       Json     @default("{}")
-  createdAt      DateTime @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
 }
 
 model ExportHistory {
-  id           String   @id @default(cuid())
-  userId       String
-  workflowId   String
-  platform     String
-  format       String   @default("json")
-  status       String   @default("SUCCESS")
-  fileUrl      String?
-  metadata     Json     @default("{}")
-  exportedAt   DateTime @default(now())
-
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  workflowId String
+  platform   String
+  format     String   @default("json")
+  status     String   @default("SUCCESS")
+  fileUrl    String?
+  metadata   Json     @default("{}")
+  exportedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([workflowId])
@@ -129,94 +112,88 @@ model ExportHistory {
 }
 
 model SubscriptionPlan {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
-  description String
-  price       Int
-  currency    String   @default("NGN")
-  interval    String   @default("month")
-  exports     Int
-  features    Json     @default("[]")
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id            String         @id @default(cuid())
+  name          String         @unique
+  slug          String         @unique
+  description   String
+  price         Int
+  currency      String         @default("NGN")
+  interval      String         @default("month")
+  exports       Int
+  features      Json           @default("[]")
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
 
   @@map("subscription_plans")
 }
 
 model Subscription {
-  id             String   @id @default(cuid())
-  userId         String
-  planId         String
-  provider       String
-  providerRef    String   @unique
-  status         String   @default("ACTIVE")
-  currentPeriod  DateTime @default(now())
-  expiresAt      DateTime?
-  cancelledAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan     SubscriptionPlan  @relation(fields: [planId], references: [id])
-  invoices Invoice[]
+  id            String           @id @default(cuid())
+  userId        String
+  planId        String
+  provider      String
+  providerRef   String           @unique
+  status        String           @default("ACTIVE")
+  currentPeriod DateTime         @default(now())
+  expiresAt     DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  invoices      Invoice[]
+  plan          SubscriptionPlan @relation(fields: [planId], references: [id])
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
 }
 
 model Invoice {
-  id          String   @id @default(cuid())
-  userId      String
+  id             String        @id @default(cuid())
+  userId         String
   subscriptionId String?
-  provider    String
-  providerRef String   @unique
-  amount      Int
-  currency    String   @default("NGN")
-  status      String   @default("PENDING")
-  paidAt      DateTime?
-  metadata    Json     @default("{}")
-  createdAt   DateTime @default(now())
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  provider       String
+  providerRef    String        @unique
+  amount         Int
+  currency       String        @default("NGN")
+  status         String        @default("PENDING")
+  paidAt         DateTime?
+  metadata       Json          @default("{}")
+  createdAt      DateTime      @default(now())
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
 }
 
 model ApiKey {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
-  keyHash    String   @unique
+  keyHash    String    @unique
   name       String
   lastUsedAt DateTime?
-  createdAt  DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model InternalGraph {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String   @default("")
-  version     Int      @default(1)
-  nodes       Json
-  edges       Json
-  metadata    Json     @default("{}")
-  status      String   @default("DRAFT")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  planningSessions     WorkflowPlanningSession[]
+  id               String                    @id @default(cuid())
+  userId           String
+  name             String
+  description      String                    @default("")
+  version          Int                       @default(1)
+  nodes            Json
+  edges            Json
+  metadata         Json                      @default("{}")
+  status           String                    @default("DRAFT")
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planningSessions WorkflowPlanningSession[]
 
   @@index([userId])
   @@index([status])
@@ -224,21 +201,20 @@ model InternalGraph {
 }
 
 model WorkflowPlanningSession {
-  id                String   @id @default(cuid())
-  userId            String
-  state             String   @default("collecting_intent")
-  collectedAnswers  Json     @default("{}")
-  missingFields     Json     @default("[]")
-  extractedIntent   Json?
-  workflowDraft     Json?
-  internalGraphId   String?
-  conversationId    String?
-  stage             Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  graph       InternalGraph? @relation(fields: [internalGraphId], references: [id])
+  id               String         @id @default(cuid())
+  userId           String
+  state            String         @default("collecting_intent")
+  collectedAnswers Json           @default("{}")
+  missingFields    Json           @default("[]")
+  extractedIntent  Json?
+  workflowDraft    Json?
+  internalGraphId  String?
+  conversationId   String?
+  stage            Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  graph            InternalGraph? @relation(fields: [internalGraphId], references: [id])
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([state])
@@ -246,22 +222,21 @@ model WorkflowPlanningSession {
 }
 
 model WorkflowPattern {
-  id              String   @id @default(cuid())
-  userId          String
-  goal            String
-  triggerType     String
-  triggerLabel    String   @default("")
-  actionTypes     Json     @default("[]")
-  integrationTypes Json    @default("[]")
-  graphSnapshot   Json
-  confidence      Float    @default(0)
-  success         Boolean  @default(false)
-  usageCount      Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String                   @id @default(cuid())
+  userId           String
+  goal             String
+  triggerType      String
+  triggerLabel     String                   @default("")
+  actionTypes      Json                     @default("[]")
+  integrationTypes Json                     @default("[]")
+  graphSnapshot    Json
+  confidence       Float                    @default(0)
+  success          Boolean                  @default(false)
+  usageCount       Int                      @default(0)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
   executionLogs    WorkflowExecutionLog[]
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   successPatterns  WorkflowSuccessPattern[]
 
   @@index([userId])
@@ -272,17 +247,16 @@ model WorkflowPattern {
 }
 
 model WorkflowExecutionLog {
-  id             String   @id @default(cuid())
-  userId         String
-  patternId      String?
-  status         String   @default("PENDING")
-  errorMessage   String?
-  durationMs     Int?
-  metadata       Json     @default("{}")
-  executedAt     DateTime @default(now())
-
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pattern WorkflowPattern? @relation(fields: [patternId], references: [id], onDelete: SetNull)
+  id           String           @id @default(cuid())
+  userId       String
+  patternId    String?
+  status       String           @default("PENDING")
+  errorMessage String?
+  durationMs   Int?
+  metadata     Json             @default("{}")
+  executedAt   DateTime         @default(now())
+  pattern      WorkflowPattern? @relation(fields: [patternId], references: [id])
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([patternId])
@@ -292,17 +266,16 @@ model WorkflowExecutionLog {
 }
 
 model WorkflowSuccessPattern {
-  id              String   @id @default(cuid())
-  patternId       String?
-  triggerType     String
-  actionTypes     Json     @default("[]")
-  integrationTypes Json    @default("[]")
-  successCount    Int      @default(1)
-  avgConfidence   Float    @default(0)
-  lastUsedAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-
-  pattern WorkflowPattern? @relation(fields: [patternId], references: [id], onDelete: SetNull)
+  id               String           @id @default(cuid())
+  patternId        String?
+  triggerType      String
+  actionTypes      Json             @default("[]")
+  integrationTypes Json             @default("[]")
+  successCount     Int              @default(1)
+  avgConfidence    Float            @default(0)
+  lastUsedAt       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  pattern          WorkflowPattern? @relation(fields: [patternId], references: [id])
 
   @@index([triggerType])
   @@index([successCount])
@@ -318,10 +291,20 @@ model WorkflowDraft {
   internalGraph Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
   @@map("workflow_drafts")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum WorkflowStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
