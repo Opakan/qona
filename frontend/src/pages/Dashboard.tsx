@@ -33,7 +33,7 @@ export default function Dashboard() {
       <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/75 backdrop-blur-md px-6 py-4 shadow-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
-            <img src="/logo.png" alt="Qonace Logo" className="h-5.5 w-auto object-contain" />
+            <Workflow className="h-4.5 w-4.5 text-indigo-600 animate-pulse" />
             <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">Qonace</span>
           </Link>
           <div className="flex items-center gap-4">
