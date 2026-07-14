@@ -36,12 +36,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const toggleDeveloperRole = useCallback(() => {
     setDbUser((prev: any) => {
-      if (!prev) return prev;
-      const newRole = prev.role === 'ADMIN' ? 'USER' : 'ADMIN';
+      const currentRole = prev?.role ?? 'USER';
+      const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
       console.log(`[AuthContext] Developer role toggled to: ${newRole}`);
+      if (!prev) {
+        return {
+          id: 'mock-user-12345',
+          authId: user?.id ?? 'mock-user-12345',
+          email: user?.email ?? 'tester@qonace.com',
+          name: user?.user_metadata?.full_name ?? 'Guest User',
+          role: newRole,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
       return { ...prev, role: newRole };
     });
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;

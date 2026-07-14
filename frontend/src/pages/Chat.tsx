@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow,
-  LogOut, History, Loader2, LayoutDashboard, Download
+  LogOut, History, Loader2, LayoutDashboard, Download,
+  PanelRightClose, PanelRightOpen, Lightbulb
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -37,6 +38,7 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [leftTab, setLeftTab] = useState<'conversations' | 'history'>('conversations');
   const [exporting, setExporting] = useState(false);
+  const [showVisualizer, setShowVisualizer] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -182,7 +184,7 @@ export default function ChatPage() {
         <div className="flex h-16 items-center gap-2.5 border-b border-slate-800 px-5">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold tracking-tight text-white hover:scale-[1.02] transition-all">
             <LayoutDashboard className="h-4.5 w-4.5 text-indigo-400" />
-            <span>Qona Workspace</span>
+            <span>Qonace Workspace</span>
           </Link>
         </div>
         
@@ -254,10 +256,10 @@ export default function ChatPage() {
       </div>
 
       {/* ═════ CENTER COLUMN: CHAT INTERFACE ═════ */}
-      <div className="flex flex-1 flex-col min-w-0 bg-white">
+      <div className="flex flex-1 flex-col min-w-0 bg-white relative">
         <header className="flex h-16 items-center justify-between border-b border-slate-200/60 px-6">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-            <span>AI Copilot Session</span>
+            <span>AI workflow builder</span>
           </div>
           <button
             onClick={newConversation}
@@ -270,27 +272,70 @@ export default function ChatPage() {
         {/* Messages list */}
         <div className="flex-1 overflow-y-auto bg-slate-50/20">
           {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 max-w-md mx-auto">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                <Workflow className="h-6 w-6 animate-pulse" />
+            <div className="flex h-full flex-col items-center justify-center px-6 max-w-2xl mx-auto space-y-8 select-none">
+              {/* Header Info */}
+              <div className="text-center space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 shadow-xs">
+                  <Workflow className="h-6 w-6 animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Let's design your workflow</h2>
+                <p className="text-sm text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
+                  Describe your desired automation trigger and actions. I will collect requirements and build a production-ready n8n flow graph.
+                </p>
               </div>
-              <h2 className="text-lg font-bold text-slate-900">Let's design your workflow</h2>
-              <p className="text-center text-xs leading-relaxed text-slate-500 font-medium">
-                Describe your desired automation trigger and actions. I will collect requirements and build a production-ready n8n flow graph.
-              </p>
+
+              {/* Grid Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                {[
+                  {
+                    title: 'Sync Stripe to Slack',
+                    desc: 'Notify Slack channels when a subscription succeeds.',
+                    prompt: 'Create a customer onboarding workflow that syncs Stripe payments to Slack.'
+                  },
+                  {
+                    title: 'Lead ingestion to Sheet',
+                    desc: 'Save incoming webhook contact details into Google Sheets.',
+                    prompt: 'Create a webhook trigger that appends contact form submissions to a Google Sheet.'
+                  },
+                  {
+                    title: 'Daily Slack digest',
+                    desc: 'Query a database and send a daily summary report.',
+                    prompt: 'Set up a daily cron schedule to fetch active database users and email a report.'
+                  },
+                  {
+                    title: 'Auto Email responder',
+                    desc: 'Scan email attachments and save to Google Drive.',
+                    prompt: 'Create a Gmail watcher that automatically saves pdf attachments to my Google Drive.'
+                  }
+                ].map((card) => (
+                  <button
+                    key={card.title}
+                    onClick={() => { setInput(card.prompt); inputRef.current?.focus(); }}
+                    className="flex flex-col text-left p-4 rounded-2xl border border-slate-200 bg-white hover:border-indigo-450 hover:shadow-md transition-all duration-300 cursor-pointer group"
+                  >
+                    <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 flex items-center gap-1.5 transition-colors">
+                      <Lightbulb className="h-3.5 w-3.5 text-indigo-500" />
+                      {card.title}
+                    </span>
+                    <span className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">
+                      {card.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="mx-auto max-w-2xl space-y-6 px-6 py-8">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-xs select-none ${
+                  <div className={`flex h-8.5 w-8.5 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-xs select-none ${
                     msg.role === 'user'
                       ? 'bg-slate-900 text-white'
                       : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
                   }`}>
                     {msg.role === 'user' ? 'U' : 'AI'}
                   </div>
-                  <div className={`rounded-2xl px-4.5 py-3 text-sm leading-relaxed max-w-[82%] shadow-xs ${
+                  <div className={`rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[80%] shadow-xs ${
                     msg.role === 'user'
                       ? 'bg-slate-900 text-white'
                       : 'bg-white text-slate-800 border border-slate-200/60'
@@ -302,10 +347,10 @@ export default function ChatPage() {
               
               {typing && (
                 <div className="flex gap-4">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-bold">
+                  <div className="flex h-8.5 w-8.5 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-bold shadow-xs">
                     AI
                   </div>
-                  <div className="flex items-center gap-1.5 rounded-2xl bg-white px-4.5 py-3 border border-slate-200/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 rounded-2xl bg-white px-5 py-3 border border-slate-200/60 shadow-xs">
                     <div className="flex gap-1">
                       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" />
                       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" style={{ animationDelay: '0.15s' }} />
@@ -319,9 +364,53 @@ export default function ChatPage() {
           )}
         </div>
 
+        {/* Floating Quick Navigation Toolbar */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+          <div className="backdrop-blur-md bg-white/75 border border-slate-200/80 rounded-2xl p-1.5 shadow-lg flex flex-col gap-1.5">
+            {/* Quick Action: Collapse/Expand Visualizer */}
+            <button
+              onClick={() => setShowVisualizer(!showVisualizer)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer border-0"
+              title={showVisualizer ? "Collapse Workflow Canvas" : "Expand Workflow Canvas"}
+            >
+              {showVisualizer ? <PanelRightClose className="h-4.5 w-4.5" /> : <PanelRightOpen className="h-4.5 w-4.5 text-indigo-600" />}
+            </button>
+            
+            {/* Quick Action: Export JSON */}
+            {sessionId && (
+              <button
+                onClick={handleExportSession}
+                disabled={exporting}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 disabled:opacity-30 transition-all cursor-pointer border-0"
+                title="Export Workflow JSON"
+              >
+                {exporting ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Download className="h-4.5 w-4.5" />}
+              </button>
+            )}
+
+            {/* Quick Action: Clear & Restart */}
+            <button
+              onClick={newConversation}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all cursor-pointer border-0"
+              title="Clear Chat & Restart"
+            >
+              <Sparkles className="h-4.5 w-4.5" />
+            </button>
+
+            {/* Quick Action: Scroll to Bottom */}
+            <button
+              onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer border-0"
+              title="Scroll to Bottom"
+            >
+              <ArrowUp className="h-4.5 w-4.5" />
+            </button>
+          </div>
+        </div>
+
         {/* Input box */}
         <div className="border-t border-slate-200/60 px-6 py-4 bg-white">
-          <div className="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-100/50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+          <div className="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-100/50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 max-w-2xl mx-auto">
             <textarea
               ref={inputRef}
               value={input}
@@ -346,8 +435,12 @@ export default function ChatPage() {
       </div>
 
       {/* ═════ RIGHT COLUMN: WORKFLOW PREVIEW ═════ */}
-      <div className="flex w-[460px] flex-shrink-0 flex-col border-l border-slate-200 bg-slate-50">
-        <div className="flex h-16 items-center gap-2 border-b border-slate-200/60 px-6">
+      <div 
+        className={`flex flex-col border-l border-slate-200 bg-slate-50 transition-all duration-300 ease-in-out ${
+          showVisualizer ? 'w-[460px]' : 'w-0 overflow-hidden border-l-0'
+        }`}
+      >
+        <div className="flex h-16 items-center gap-2 border-b border-slate-200/60 px-6 flex-shrink-0">
           <Workflow className="h-4 w-4 text-slate-400" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Workflow Canvas</span>
           {sessionId && (
