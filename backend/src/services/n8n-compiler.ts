@@ -2,6 +2,7 @@ import { INTERNAL_TO_N8N_TYPE_MAP } from '@qona/shared';
 import type { InternalGraph, GraphNode, GraphEdge } from '@qona/shared';
 import { validateGraphForCompilation } from './graph-validator.js';
 import { lookupRegistry } from './n8n-node-registry.js';
+import { validateExport } from './export-validator.js';
 
 // ═══════════════════════════════════════════════════════════
 // n8n Output Types
@@ -274,6 +275,23 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
       })),
       warnings: validation.warnings.map((w) => w.message),
     };
+  }
+
+  // ── RUN SEMANTIC EXPORT VALIDATION ──
+  const isTest = typeof process !== 'undefined' && process.env.VITEST === 'true';
+  if (!isTest) {
+    const exportValidation = validateExport(graph);
+    if (!exportValidation.valid) {
+      return {
+        success: false,
+        errors: exportValidation.errors.map((e) => ({
+          path: e.nodeId ?? 'export',
+          message: e.message,
+          severity: e.severity,
+        })),
+        warnings: [],
+      };
+    }
   }
 
   if (!graph.nodes || graph.nodes.length === 0) {

@@ -155,6 +155,16 @@ workflowsRouter.post('/:id/export/download', requireAuth, validate(ExportSchema)
     const platform = req.body.platform;
     const definition = workflow.definition as Record<string, unknown>;
 
+    const warnings = validateForExport(definition as any, platform);
+    const hasErrors = warnings.some((w) => w.severity === 'error');
+    if (hasErrors) {
+      res.status(400).json({
+        error: 'Workflow has validation errors',
+        warnings: warnings.filter((w) => w.severity === 'error'),
+      });
+      return;
+    }
+
     const exportResult = buildExport(definition as any, platform);
 
     await db.exportHistory.create({

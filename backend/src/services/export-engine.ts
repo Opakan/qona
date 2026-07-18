@@ -1,4 +1,5 @@
-import type { WorkflowDefinition } from '@qona/shared';
+import type { WorkflowDefinition, InternalGraph } from '@qona/shared';
+import { validateExport } from './export-validator.js';
 
 export interface SetupInstructions {
   platform: string;
@@ -106,6 +107,28 @@ export interface ValidationWarning {
   severity: 'error' | 'warning';
 }
 
+function workflowDefinitionToInternalGraph(def: WorkflowDefinition): InternalGraph {
+  return {
+    nodes: (def.nodes ?? []).map((n) => ({
+      id: n.id,
+      type: n.type,
+      label: (n.data as any)?.label ?? n.id,
+      config: (n.data as any)?.config ?? {},
+      position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
+    })),
+    edges: (def.edges ?? []).map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      label: e.label,
+    })),
+    metadata: {
+      name: def.metadata?.name,
+      description: def.metadata?.description,
+    },
+  };
+}
+
 export function validateForExport(
   definition: WorkflowDefinition,
   platform: string,
@@ -114,31 +137,23 @@ export function validateForExport(
 
   if (!definition.nodes || definition.nodes.length === 0) {
     warnings.push({ field: 'nodes', message: 'Workflow has no nodes', severity: 'error' });
+    return warnings;
   }
 
   if (!definition.edges || definition.edges.length === 0) {
     warnings.push({ field: 'edges', message: 'Workflow has no connections between nodes', severity: 'warning' });
   }
 
-  const hasTrigger = definition.nodes?.some((n) =>
-    ['webhook', 'trigger', 'cron', 'schedule'].includes(n.type?.toLowerCase() ?? ''),
-  );
-  if (!hasTrigger) {
-    warnings.push({ field: 'nodes', message: 'No trigger node found. Workflow may not start automatically', severity: 'warning' });
-  }
+  // Convert to InternalGraph and run semantic export validation
+  const graph = workflowDefinitionToInternalGraph(definition);
+  const result = validateExport(graph);
 
-  if (!definition.metadata?.name) {
-    warnings.push({ field: 'name', message: 'Workflow has no name', severity: 'warning' });
-  }
-
-  const nodeIds = new Set(definition.nodes?.map((n) => n.id));
-  for (const edge of definition.edges ?? []) {
-    if (!nodeIds.has(edge.source)) {
-      warnings.push({ field: 'edges', message: `Edge references missing source node: ${edge.source}`, severity: 'error' });
-    }
-    if (!nodeIds.has(edge.target)) {
-      warnings.push({ field: 'edges', message: `Edge references missing target node: ${edge.target}`, severity: 'error' });
-    }
+  for (const err of result.errors) {
+    warnings.push({
+      field: err.field ?? err.nodeId ?? 'export',
+      message: err.message,
+      severity: err.severity,
+    });
   }
 
   if (platform === 'make') {

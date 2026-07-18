@@ -28,7 +28,7 @@ interface ResolvedReqs {
   dependencies?: { required: boolean; value?: string };
 }
 
-function determineRequirements(nodeType: string, config: Record<string, unknown>): ResolvedReqs {
+export function determineRequirements(nodeType: string, config: Record<string, unknown>): ResolvedReqs {
   const registryEntry = lookupRegistry(nodeType);
   const providerMap: Record<string, string> = {
     'n8n-nodes-base.webhook': 'webhook',
