@@ -27,24 +27,18 @@ describe('Export Validator', () => {
           position: { x: 300, y: 100 },
         },
       ],
-      edges: [
-        {
-          id: 'e1',
-          source: 'trigger-1',
-          target: 'action-1',
-        },
-      ],
-      metadata: {
-        name: 'My Valid Workflow',
-      },
+      edges: [{ id: 'e1', source: 'trigger-1', target: 'action-1' }],
+      metadata: { name: 'My Valid Workflow' },
     };
 
     const result = validateExport(graph);
+    // Credential warnings are expected — check only that there are no hard errors
+    const hardErrors = result.errors.filter((e) => e.severity === 'error');
+    expect(hardErrors.length).toBe(0);
     expect(result.valid).toBe(true);
-    expect(result.errors.length).toBe(0);
   });
 
-  it('detects invalid node types', () => {
+  it('detects invalid node types as warnings (falls back to noOp)', () => {
     const graph: InternalGraph = {
       nodes: [
         {
@@ -60,11 +54,11 @@ describe('Export Validator', () => {
     };
 
     const result = validateExport(graph);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes('unregistered or invalid type'))).toBe(true);
+    // Unregistered type is a warning — noOp fallback is safe
+    expect(result.errors.some((e) => e.message.includes('unregistered'))).toBe(true);
   });
 
-  it('detects invalid resource and operation values', () => {
+  it('detects invalid options-type parameter values', () => {
     const graph: InternalGraph = {
       nodes: [
         {
@@ -72,9 +66,8 @@ describe('Export Validator', () => {
           type: 'google_sheets',
           label: 'Sheets',
           config: {
-            resource: 'invalid_resource',
-            operation: 'invalid_operation',
-            spreadsheetId: 'sheet123',
+            operation: 'invalid_operation', // not in allowedValues
+            documentId: 'sheet123',
             sheetName: 'Sheet1',
           },
           position: { x: 100, y: 100 },
@@ -86,7 +79,7 @@ describe('Export Validator', () => {
 
     const result = validateExport(graph);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes('unsupported resource') || e.message.includes('unsupported operation'))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes('invalid value') && e.message.includes('invalid_operation'))).toBe(true);
   });
 
   it('detects missing required parameters', () => {
@@ -97,7 +90,7 @@ describe('Export Validator', () => {
           type: 'google_sheets',
           label: 'Google Sheets',
           config: {
-            // spreadsheetId is missing
+            // documentId is missing
             sheetName: 'Sheet1',
           },
           position: { x: 100, y: 100 },
@@ -109,7 +102,7 @@ describe('Export Validator', () => {
 
     const result = validateExport(graph);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes('missing required parameter'))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes('Missing required parameter') && e.message.includes('documentId'))).toBe(true);
   });
 
   it('detects invalid connections for conditional If nodes', () => {
@@ -119,7 +112,7 @@ describe('Export Validator', () => {
           id: 'if-1',
           type: 'n8n-nodes-base.if',
           label: 'If Node',
-          config: {},
+          config: { conditions: { string: [] } },
           position: { x: 100, y: 100 },
         },
         {
@@ -135,7 +128,7 @@ describe('Export Validator', () => {
           id: 'e1',
           source: 'if-1',
           target: 'action-1',
-          // missing label
+          // missing label — invalid for If node
         },
       ],
       metadata: {},
@@ -143,7 +136,7 @@ describe('Export Validator', () => {
 
     const result = validateExport(graph);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes('must have a label'))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes("'true'/'yes'"))).toBe(true);
   });
 
   it('detects expressions referencing non-existent nodes', () => {
@@ -167,13 +160,7 @@ describe('Export Validator', () => {
           position: { x: 300, y: 100 },
         },
       ],
-      edges: [
-        {
-          id: 'e1',
-          source: 'trigger-1',
-          target: 'action-1',
-        },
-      ],
+      edges: [{ id: 'e1', source: 'trigger-1', target: 'action-1' }],
       metadata: {},
     };
 
@@ -236,7 +223,7 @@ describe('Export Validator', () => {
     expect(result.errors.some((e) => e.message.includes('Duplicate Node ID'))).toBe(true);
   });
 
-  it('detects unsupported parameters', () => {
+  it('flags unknown parameters as warnings on webhook nodes', () => {
     const graph: InternalGraph = {
       nodes: [
         {
@@ -246,7 +233,7 @@ describe('Export Validator', () => {
           config: {
             method: 'POST',
             path: 'h',
-            hallucinated_param: 'some value', // unsupported property
+            hallucinated_param: 'some value', // unknown
           },
           position: { x: 100, y: 100 },
         },
@@ -256,7 +243,7 @@ describe('Export Validator', () => {
     };
 
     const result = validateExport(graph);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes('unsupported property') && e.message.includes('hallucinated_param'))).toBe(true);
+    // Unknown params are warnings (not hard errors) since n8n nodes can have dynamic params
+    expect(result.errors.some((e) => e.message.includes('Unknown parameter') && e.message.includes('hallucinated_param'))).toBe(true);
   });
 });

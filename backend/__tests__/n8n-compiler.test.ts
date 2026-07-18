@@ -32,7 +32,8 @@ describe('compileInternalGraph', () => {
 
     const webhookNode = result.workflow!.nodes[0];
     expect(webhookNode.webhookId).toBeDefined();
-    expect(webhookNode.webhookId).toContain('qona-wf-');
+    // webhookId is now a proper UUID v4
+    expect(webhookNode.webhookId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     expect(webhookNode.parameters.authentication).toBe('none');
     expect(webhookNode.parameters.options).toBeDefined();
   });

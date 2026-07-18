@@ -167,7 +167,8 @@ describe('Registry-based n8n Compiler', () => {
     expect(result.success).toBe(true);
     const sheets = result.workflow!.nodes.find((n) => n.id === 'n2')!;
     expect(sheets.parameters.documentId).toBeDefined();
-    expect(String(sheets.parameters.documentId)).toContain('auto-generated-');
+    // Placeholder text was updated to be more descriptive
+    expect(String(sheets.parameters.documentId)).toContain('REPLACE_WITH_');
   });
 
   it('strips conversation unregistered fields and unknown parameters completely', () => {
@@ -256,16 +257,16 @@ describe('Registry-based n8n Compiler', () => {
     expect(result.success).toBe(true);
     const connections = result.workflow!.connections;
     
-    // Verify "If Node" (n2) outputs map to true (port 0) and false (port 1)
-    const ifNodeConns = connections['n2'];
+    // Connections are keyed by node NAME (not id) — n8n requirement
+    const ifNodeConns = connections['If Node'];
     expect(ifNodeConns.main).toHaveLength(2); // must have exactly 2 ports
     
-    // Port 0 (true) connects to n3
+    // Port 0 (true) connects to "Slack True Path"
     expect(ifNodeConns.main[0]).toHaveLength(1);
-    expect(ifNodeConns.main[0][0].node).toBe('n3');
+    expect(ifNodeConns.main[0][0].node).toBe('Slack True Path');
 
-    // Port 1 (false) connects to n4
+    // Port 1 (false) connects to "Gmail False Path"
     expect(ifNodeConns.main[1]).toHaveLength(1);
-    expect(ifNodeConns.main[1][0].node).toBe('n4');
+    expect(ifNodeConns.main[1][0].node).toBe('Gmail False Path');
   });
 });

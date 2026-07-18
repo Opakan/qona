@@ -3,9 +3,10 @@ import type { InternalGraph, GraphNode, GraphEdge } from '@qona/shared';
 import { validateGraphForCompilation } from './graph-validator.js';
 import { lookupRegistry } from './n8n-node-registry.js';
 import { validateExport } from './export-validator.js';
+import { generateUUID } from './uuid.js';
 
 // ═══════════════════════════════════════════════════════════
-// n8n Output Types
+// n8n Output Types — conforms to the official n8n import schema
 // ═══════════════════════════════════════════════════════════
 
 export interface N8nNode {
@@ -15,7 +16,9 @@ export interface N8nNode {
   typeVersion: number;
   position: [number, number];
   parameters: Record<string, unknown>;
+  credentials?: Record<string, { id: string; name: string }>;
   webhookId?: string;
+  disabled?: boolean;
 }
 
 export interface N8nConnectionMap {
@@ -23,10 +26,14 @@ export interface N8nConnectionMap {
 }
 
 export interface N8nWorkflowOutput {
+  id: string;
   name: string;
-  version: number;
+  active: boolean;
   nodes: N8nNode[];
+  /** Keyed by node NAME (not id) — this is what n8n requires */
   connections: Record<string, N8nConnectionMap>;
+  settings: { executionOrder: 'v1' };
+  pinData: Record<string, never>;
   tags?: string[];
 }
 
@@ -74,6 +81,27 @@ function isTriggerNode(type: string): boolean {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Credential stub emitter
+// Emits a placeholder credential reference that n8n will
+// prompt the user to replace, rather than silently missing it.
+// ═══════════════════════════════════════════════════════════
+
+function buildCredentialsObject(
+  registryEntry: ReturnType<typeof lookupRegistry>,
+): Record<string, { id: string; name: string }> | undefined {
+  if (!registryEntry?.credentials || registryEntry.credentials.length === 0) return undefined;
+
+  const creds: Record<string, { id: string; name: string }> = {};
+  for (const cred of registryEntry.credentials) {
+    creds[cred.name] = {
+      id: generateUUID(),
+      name: `${cred.type} account`,
+    };
+  }
+  return creds;
+}
+
+// ═══════════════════════════════════════════════════════════
 // Node compiler
 // ═══════════════════════════════════════════════════════════
 
@@ -111,7 +139,6 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
     for (const key of binaryKeys) {
       const val = params[key] ?? configSource[key];
       if (typeof val === 'string' && val.includes('{{')) {
-        // 1. Try to extract property name from expression
         const binaryMatch = val.match(/\.binary\.([a-zA-Z0-9_]+)/) ||
                             val.match(/\$json\.([a-zA-Z0-9_]+)/) ||
                             val.match(/attachment_([a-zA-Z0-9_]+)/);
@@ -122,7 +149,6 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
           break;
         }
 
-        // 2. Try to identify by referenced node type
         const nodeMatch = val.match(/\$node\["([^"]+)"\]/) || val.match(/\$node\.([a-zA-Z0-9_]+)/);
         if (nodeMatch) {
           const refNodeName = nodeMatch[1];
@@ -152,7 +178,7 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
     }
   }
 
-  // 2. Filter out internal metadata/leaks and keep ONLY registry-defined parameters
+  // 2. Filter out internal metadata — keep ONLY registry-defined parameters
   const finalParams: Record<string, unknown> = {
     ...(registryEntry?.defaults ?? {}),
   };
@@ -163,6 +189,11 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
       ...registryEntry.optionalParams,
     ]);
 
+    // Also allow all params defined in paramSchema
+    for (const s of registryEntry.paramSchema ?? []) {
+      allowedParams.add(s.field);
+    }
+
     for (const [key, val] of Object.entries(params)) {
       if (allowedParams.has(key) && val !== undefined) {
         finalParams[key] = val;
@@ -170,29 +201,32 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
     }
   }
 
-  // 4. Validate required params and inject fallbacks
+  // 3. Inject fallback placeholders for missing required params
   if (registryEntry?.requiredParams) {
     for (const req of registryEntry.requiredParams) {
       if (finalParams[req] === undefined || finalParams[req] === null || String(finalParams[req]).trim().length === 0) {
         if (req === 'documentId' && n8nType.includes('googleSheets')) {
-          finalParams.documentId = 'auto-generated-' + Date.now();
+          finalParams.documentId = 'REPLACE_WITH_SPREADSHEET_ID';
         } else if (req === 'toEmail' && (n8nType.includes('emailSend') || n8nType.includes('gmail'))) {
-          finalParams.toEmail = 'placeholder@example.com';
+          finalParams.toEmail = 'REPLACE_WITH_EMAIL';
         } else if (req === 'table' && n8nType.includes('supabase')) {
-          finalParams.table = 'users';
+          finalParams.table = 'REPLACE_WITH_TABLE_NAME';
         } else if (req === 'chatId' && n8nType.includes('telegram')) {
-          finalParams.chatId = 'placeholder_chat_id';
+          finalParams.chatId = 'REPLACE_WITH_CHAT_ID';
         } else {
-          finalParams[req] = 'placeholder_value';
+          finalParams[req] = `REPLACE_WITH_${req.toUpperCase()}`;
         }
       }
     }
   }
 
-  // Custom compile logic for Webhook nodes to inject webhookId
+  // 4. Build credentials stub
+  const credentials = buildCredentialsObject(registryEntry);
+
+  // 5. Webhook: generate proper UUID v4 webhookId
   let webhookId: string | undefined = undefined;
   if (n8nType === 'n8n-nodes-base.webhook') {
-    webhookId = `qona-wf-${node.id}-${Date.now()}`;
+    webhookId = generateUUID();
   }
 
   const compiled: N8nNode = {
@@ -204,15 +238,15 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
     parameters: finalParams,
   };
 
-  if (webhookId) {
-    compiled.webhookId = webhookId;
-  }
+  if (credentials) compiled.credentials = credentials;
+  if (webhookId) compiled.webhookId = webhookId;
 
   return compiled;
 }
 
 // ═══════════════════════════════════════════════════════════
 // Connection compiler
+// IMPORTANT: n8n requires connection keys to be node NAMES, not IDs
 // ═══════════════════════════════════════════════════════════
 
 function compileConnections(
@@ -220,18 +254,23 @@ function compileConnections(
   edges: GraphEdge[],
 ): Record<string, N8nConnectionMap> {
   const connections: Record<string, N8nConnectionMap> = {};
+  // Build name lookup: id → name
+  const idToName = new Map<string, string>(nodes.map((n) => [n.id, n.name]));
 
   for (const node of nodes) {
     if (node.type === 'n8n-nodes-base.if') {
-      connections[node.id] = { main: [[], []] };
+      connections[node.name] = { main: [[], []] };
     } else {
-      connections[node.id] = { main: [[]] };
+      connections[node.name] = { main: [[]] };
     }
   }
 
   for (const edge of edges) {
-    if (!connections[edge.source]) {
-      connections[edge.source] = { main: [[]] };
+    const sourceName = idToName.get(edge.source) ?? edge.source;
+    const targetName = idToName.get(edge.target) ?? edge.target;
+
+    if (!connections[sourceName]) {
+      connections[sourceName] = { main: [[]] };
     }
 
     const sourceNode = nodes.find((n) => n.id === edge.source);
@@ -246,12 +285,12 @@ function compileConnections(
       }
     }
 
-    while (connections[edge.source].main.length <= outputIndex) {
-      connections[edge.source].main.push([]);
+    while (connections[sourceName].main.length <= outputIndex) {
+      connections[sourceName].main.push([]);
     }
 
-    connections[edge.source].main[outputIndex].push({
-      node: edge.target,
+    connections[sourceName].main[outputIndex].push({
+      node: targetName,
       type: 'main',
       index: 0,
     });
@@ -261,21 +300,7 @@ function compileConnections(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Valid output types
-// ═══════════════════════════════════════════════════════════
-
-const VALID_N8N_TYPES = new Set([
-  'n8n-nodes-base.webhook', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.emailSend',
-  'n8n-nodes-base.googleSheets', 'n8n-nodes-base.set', 'n8n-nodes-base.if',
-  'n8n-nodes-base.noOp', 'n8n-nodes-base.cron', 'n8n-nodes-base.spreadsheetFile',
-  'n8n-nodes-base.filter', 'n8n-nodes-base.scheduleTrigger',
-  'n8n-nodes-base.respondToWebhook', 'n8n-nodes-base.code',
-  'n8n-nodes-base.manualTrigger', 'n8n-nodes-base.emailReadImap',
-  'n8n-nodes-base.wait', 'n8n-nodes-base.slack',
-]);
-
-// ═══════════════════════════════════════════════════════════
-// Output validation
+// Output validation (post-compilation structural checks)
 // ═══════════════════════════════════════════════════════════
 
 function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
@@ -290,16 +315,17 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
     return errors;
   }
 
-  const nodeIds = new Set(wf.nodes.map((n) => n.id));
+  const nodeNames = new Set(wf.nodes.map((n) => n.name));
 
   for (const node of wf.nodes) {
-    if (!node.id) errors.push({ path: `nodes.${node.id}`, message: 'Node missing id', severity: 'error' });
-    if (!node.type) errors.push({ path: `nodes.${node.id}`, message: 'Node missing type', severity: 'error' });
-    if (node.type && !VALID_N8N_TYPES.has(node.type) && !node.type.startsWith('n8n-nodes-base.')) {
-      errors.push({ path: `nodes.${node.id}.type`, message: `Unknown n8n type: ${node.type}`, severity: 'warning' });
+    if (!node.id) errors.push({ path: `nodes.${node.name}`, message: 'Node missing id', severity: 'error' });
+    if (!node.type) errors.push({ path: `nodes.${node.name}`, message: 'Node missing type', severity: 'error' });
+    if (!node.name) errors.push({ path: `nodes.${node.id}`, message: 'Node missing name', severity: 'error' });
+    if (node.type && !node.type.startsWith('n8n-nodes-base.')) {
+      errors.push({ path: `nodes.${node.name}.type`, message: `Type "${node.type}" does not start with "n8n-nodes-base." — may not be importable`, severity: 'warning' });
     }
     if (!node.position || node.position.length !== 2 || isNaN(node.position[0]) || isNaN(node.position[1])) {
-      errors.push({ path: `nodes.${node.id}.position`, message: 'Invalid node position', severity: 'error' });
+      errors.push({ path: `nodes.${node.name}.position`, message: 'Invalid node position', severity: 'error' });
     }
   }
 
@@ -311,20 +337,40 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
     errors.push({ path: 'nodes', message: 'Workflow has no trigger node', severity: 'error' });
   }
 
-  for (const [sourceId, connData] of Object.entries(wf.connections)) {
-    if (!nodeIds.has(sourceId)) {
-      errors.push({ path: `connections.${sourceId}`, message: `Connection source "${sourceId}" is not a valid node`, severity: 'error' });
+  // Validate connections reference node names that exist
+  for (const [sourceName, connData] of Object.entries(wf.connections)) {
+    if (!nodeNames.has(sourceName)) {
+      errors.push({ path: `connections.${sourceName}`, message: `Connection source "${sourceName}" is not a valid node name`, severity: 'error' });
     }
     for (const output of connData.main ?? []) {
       for (const conn of output ?? []) {
-        if (conn.node && !nodeIds.has(conn.node)) {
-          errors.push({ path: `connections.${sourceId}.${conn.node}`, message: `Connection target "${conn.node}" is not a valid node`, severity: 'error' });
+        if (conn.node && !nodeNames.has(conn.node)) {
+          errors.push({ path: `connections.${sourceName}.${conn.node}`, message: `Connection target "${conn.node}" is not a valid node name`, severity: 'error' });
         }
       }
     }
   }
 
   return errors;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Name deduplication helper
+// n8n requires unique node names for connection keying
+// ═══════════════════════════════════════════════════════════
+
+function deduplicateNodeNames(nodes: { id: string; label: string; [key: string]: unknown }[]): Map<string, string> {
+  const idToName = new Map<string, string>();
+  const usedNames = new Map<string, number>(); // name → count
+
+  for (const node of nodes) {
+    const base = node.label?.trim() || node.id;
+    const count = usedNames.get(base) ?? 0;
+    const name = count === 0 ? base : `${base} ${count + 1}`;
+    usedNames.set(base, count + 1);
+    idToName.set(node.id, name);
+  }
+  return idToName;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -374,18 +420,22 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
     };
   }
 
+  // Deduplicate node names before compilation (n8n keys connections by name)
+  const nameMap = deduplicateNodeNames(graph.nodes);
+  const patchedNodes = graph.nodes.map((n) => ({ ...n, label: nameMap.get(n.id) ?? n.label }));
+
   const compiledNodes: N8nNode[] = [];
   const unmappedTypes: string[] = [];
 
-  for (let i = 0; i < graph.nodes.length; i++) {
-    const node = graph.nodes[i];
+  for (let i = 0; i < patchedNodes.length; i++) {
+    const node = patchedNodes[i];
     const n8nType = mapNodeType(node.type, node);
 
     if (!INTERNAL_TO_N8N_TYPE_MAP[node.type] && !node.type.startsWith('n8n-nodes-base.')) {
       unmappedTypes.push(node.type);
     }
 
-    compiledNodes.push(compileNode(node, i, graph.nodes.length, graph.nodes));
+    compiledNodes.push(compileNode(node, i, patchedNodes.length, patchedNodes));
   }
 
   if (unmappedTypes.length > 0) {
@@ -395,10 +445,13 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
   const connections = compileConnections(compiledNodes, graph.edges ?? []);
 
   const workflow: N8nWorkflowOutput = {
+    id: generateUUID(),
     name: graph.metadata.name ?? 'Untitled Workflow',
-    version: graph.metadata.version ?? 1,
+    active: false,
     nodes: compiledNodes,
     connections,
+    settings: { executionOrder: 'v1' },
+    pinData: {},
     tags: graph.metadata.tags ?? ['qona-ai-generated'],
   };
 

@@ -1,0 +1,62 @@
+{
+  "name": "Anytime someone sends me an email with attachment pls autom",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "qn1",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        200
+      ],
+      "parameters": {
+        "type": "n8n-nodes-base.emailTrigger",
+        "options": {
+          "attachments": true
+        }
+      }
+    },
+    {
+      "id": "qn2",
+      "name": "Save Attachment to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 1,
+      "position": [
+        500,
+        200
+      ],
+      "parameters": {
+        "data": "{{$json.attachment.data}}",
+        "name": "{{$json.attachment.filename}}",
+        "type": "n8n-nodes-base.googleDrive",
+        "options": {},
+        "operation": "upload",
+        "unregistered": "Are you done?"
+      }
+    }
+  ],
+  "connections": {
+    "qn1": {
+      "main": [
+        [
+          {
+            "node": "qn2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "qn2": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "tags": [
+    "email",
+    "storage"
+  ]
+}

@@ -1,19 +1,41 @@
+// ═══════════════════════════════════════════════════════════
+// Parameter schema for deep validation
+// ═══════════════════════════════════════════════════════════
+
+export interface N8nParamSchema {
+  field: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'options';
+  required: boolean;
+  allowedValues?: string[]; // only for type === 'options'
+  defaultValue?: unknown;
+  description?: string;
+}
+
+export interface N8nCredentialSchema {
+  name: string;   // key used in the node's credentials object
+  type: string;   // official n8n credential type string
+  required: boolean;
+}
+
 export interface N8nRegistryEntry {
   n8nType: string;
   category: 'trigger' | 'action';
   displayName: string;
   typeVersion: number;
+  /** Derived from paramSchema for backward compat */
   requiredParams: string[];
+  /** Derived from paramSchema for backward compat */
   optionalParams: string[];
   defaults: Record<string, unknown>;
-  credentialRequired?: {
-    name: string;
-    type: string;
-  };
+  paramSchema: N8nParamSchema[];
+  credentials?: N8nCredentialSchema[];
   mapConfig?: (config: Record<string, unknown>) => Record<string, unknown>;
 }
 
 export const n8nRegistry: Record<string, N8nRegistryEntry> = {
+  // ─────────────────────────────────────────
+  // TRIGGERS
+  // ─────────────────────────────────────────
   'n8n-nodes-base.webhook': {
     n8nType: 'n8n-nodes-base.webhook',
     category: 'trigger',
@@ -29,6 +51,31 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       authentication: 'none',
       options: {},
     },
+    paramSchema: [
+      {
+        field: 'httpMethod',
+        type: 'options',
+        required: false,
+        allowedValues: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'],
+        defaultValue: 'POST',
+      },
+      { field: 'path', type: 'string', required: false, defaultValue: 'webhook' },
+      {
+        field: 'responseMode',
+        type: 'options',
+        required: false,
+        allowedValues: ['lastNode', 'responseNode', 'onReceived'],
+        defaultValue: 'lastNode',
+      },
+      {
+        field: 'authentication',
+        type: 'options',
+        required: false,
+        allowedValues: ['none', 'basicAuth', 'headerAuth'],
+        defaultValue: 'none',
+      },
+      { field: 'options', type: 'object', required: false },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.method) mapped.httpMethod = config.method;
@@ -38,6 +85,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.cron': {
     n8nType: 'n8n-nodes-base.cron',
     category: 'trigger',
@@ -50,10 +98,12 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
         item: [{ mode: 'everyMinute', hour: 9, minute: 0 }],
       },
     },
+    paramSchema: [
+      { field: 'triggerTimes', type: 'object', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.cronExpression) {
-        // Basic parser/default if cron expression is provided
         mapped.triggerTimes = {
           item: [{ mode: 'custom', cronExpression: config.cronExpression }],
         };
@@ -61,6 +111,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.manualTrigger': {
     n8nType: 'n8n-nodes-base.manualTrigger',
     category: 'trigger',
@@ -69,7 +120,9 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     requiredParams: [],
     optionalParams: [],
     defaults: {},
+    paramSchema: [],
   },
+
   'n8n-nodes-base.scheduleTrigger': {
     n8nType: 'n8n-nodes-base.scheduleTrigger',
     category: 'trigger',
@@ -82,6 +135,9 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
         interval: [{ field: 'hours', value: 1 }],
       },
     },
+    paramSchema: [
+      { field: 'rule', type: 'object', required: true, description: 'Scheduling rule object' },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.cronExpression) {
@@ -93,6 +149,84 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
+  'n8n-nodes-base.gmailTrigger': {
+    n8nType: 'n8n-nodes-base.gmailTrigger',
+    category: 'trigger',
+    displayName: 'Gmail Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['pollTimes', 'simple', 'filters'],
+    defaults: {},
+    paramSchema: [
+      { field: 'simple', type: 'boolean', required: false, defaultValue: true },
+      { field: 'pollTimes', type: 'object', required: false },
+      { field: 'filters', type: 'object', required: false },
+    ],
+    credentials: [
+      { name: 'gmailOAuth2', type: 'gmailOAuth2', required: true },
+    ],
+  },
+
+  'n8n-nodes-base.microsoftOutlookTrigger': {
+    n8nType: 'n8n-nodes-base.microsoftOutlookTrigger',
+    category: 'trigger',
+    displayName: 'Microsoft Outlook Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['pollTimes', 'simple', 'events'],
+    defaults: {},
+    paramSchema: [
+      { field: 'simple', type: 'boolean', required: false, defaultValue: true },
+      { field: 'pollTimes', type: 'object', required: false },
+      { field: 'events', type: 'array', required: false },
+    ],
+    credentials: [
+      { name: 'microsoftOutlookOAuth2Api', type: 'microsoftOutlookOAuth2Api', required: true },
+    ],
+  },
+
+  'n8n-nodes-base.emailReadImap': {
+    n8nType: 'n8n-nodes-base.emailReadImap',
+    category: 'trigger',
+    displayName: 'Email Read IMAP',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['pollTimes', 'simple', 'format', 'onEmailReceived'],
+    defaults: {},
+    paramSchema: [
+      { field: 'simple', type: 'boolean', required: false, defaultValue: true },
+      { field: 'pollTimes', type: 'object', required: false },
+      {
+        field: 'format',
+        type: 'options',
+        required: false,
+        allowedValues: ['resolved', 'simple', 'raw'],
+        defaultValue: 'simple',
+      },
+    ],
+    credentials: [
+      { name: 'imap', type: 'imap', required: true },
+    ],
+  },
+
+  'n8n-nodes-base.microsoftExchangeTrigger': {
+    n8nType: 'n8n-nodes-base.microsoftExchangeTrigger',
+    category: 'trigger',
+    displayName: 'Microsoft Exchange Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: [],
+    defaults: {},
+    paramSchema: [],
+    credentials: [
+      { name: 'microsoftExchangeOAuth2Api', type: 'microsoftExchangeOAuth2Api', required: true },
+    ],
+  },
+
+  // ─────────────────────────────────────────
+  // ACTIONS
+  // ─────────────────────────────────────────
   'n8n-nodes-base.httpRequest': {
     n8nType: 'n8n-nodes-base.httpRequest',
     category: 'action',
@@ -104,6 +238,34 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       method: 'GET',
       options: {},
     },
+    paramSchema: [
+      { field: 'url', type: 'string', required: true },
+      {
+        field: 'method',
+        type: 'options',
+        required: false,
+        allowedValues: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+        defaultValue: 'GET',
+      },
+      {
+        field: 'authentication',
+        type: 'options',
+        required: false,
+        allowedValues: ['none', 'genericCredentialType', 'predefinedCredentialType'],
+        defaultValue: 'none',
+      },
+      { field: 'headers', type: 'object', required: false },
+      { field: 'body', type: 'object', required: false },
+      { field: 'queryParameters', type: 'object', required: false },
+      {
+        field: 'responseFormat',
+        type: 'options',
+        required: false,
+        allowedValues: ['autodetect', 'json', 'text', 'file'],
+        defaultValue: 'autodetect',
+      },
+      { field: 'options', type: 'object', required: false },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.url) mapped.url = config.url;
@@ -118,6 +280,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.googleSheets': {
     n8nType: 'n8n-nodes-base.googleSheets',
     category: 'action',
@@ -129,9 +292,27 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       operation: 'appendRow',
       options: {},
     },
+    paramSchema: [
+      { field: 'documentId', type: 'string', required: true },
+      { field: 'sheetName', type: 'string', required: true },
+      {
+        field: 'operation',
+        type: 'options',
+        required: false,
+        allowedValues: ['appendRow', 'readRows', 'updateRow', 'deleteRow', 'clear', 'getRows'],
+        defaultValue: 'appendRow',
+      },
+      { field: 'columns', type: 'object', required: false },
+      { field: 'dataMode', type: 'options', required: false, allowedValues: ['autoMap', 'defineBelow', 'nothing'] },
+      { field: 'options', type: 'object', required: false },
+    ],
+    credentials: [
+      { name: 'googleSheetsOAuth2Api', type: 'googleSheetsOAuth2Api', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.spreadsheetId) mapped.documentId = config.spreadsheetId;
+      if (config.documentId) mapped.documentId = config.documentId;
       if (config.sheetName) mapped.sheetName = config.sheetName;
       if (config.operation) {
         const op = String(config.operation).toLowerCase();
@@ -145,6 +326,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.slack': {
     n8nType: 'n8n-nodes-base.slack',
     category: 'action',
@@ -156,6 +338,22 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       select: 'channel',
       options: {},
     },
+    paramSchema: [
+      { field: 'resource', type: 'options', required: false, allowedValues: ['message', 'channel', 'file', 'reaction', 'star', 'userGroup', 'user'], defaultValue: 'message' },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['post', 'postEphemeral', 'update', 'delete', 'get', 'getAll'], defaultValue: 'post' },
+      { field: 'channel', type: 'string', required: true },
+      { field: 'message', type: 'string', required: false },
+      { field: 'blocks', type: 'array', required: false },
+      { field: 'username', type: 'string', required: false },
+      { field: 'threadTs', type: 'string', required: false },
+      { field: 'select', type: 'options', required: false, allowedValues: ['channel', 'user'] },
+      { field: 'options', type: 'object', required: false },
+      { field: 'binaryData', type: 'boolean', required: false },
+      { field: 'binaryPropertyName', type: 'string', required: false },
+    ],
+    credentials: [
+      { name: 'slackApi', type: 'slackApi', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.channelId) mapped.channel = config.channelId;
@@ -170,17 +368,44 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.gmail': {
     n8nType: 'n8n-nodes-base.gmail',
     category: 'action',
     displayName: 'Gmail',
     typeVersion: 2,
     requiredParams: ['toEmail'],
-    optionalParams: ['subject', 'html', 'cc', 'bcc', 'fromName', 'attachments'],
+    optionalParams: ['subject', 'html', 'cc', 'bcc', 'fromName', 'attachments', 'resource', 'operation'],
     defaults: {
       resource: 'message',
       operation: 'send',
     },
+    paramSchema: [
+      {
+        field: 'resource',
+        type: 'options',
+        required: false,
+        allowedValues: ['message', 'label', 'draft', 'thread'],
+        defaultValue: 'message',
+      },
+      {
+        field: 'operation',
+        type: 'options',
+        required: false,
+        allowedValues: ['send', 'get', 'getAll', 'reply', 'delete', 'trash', 'untrash', 'markAsRead', 'markAsUnread', 'addLabels', 'removeLabels'],
+        defaultValue: 'send',
+      },
+      { field: 'toEmail', type: 'string', required: true },
+      { field: 'subject', type: 'string', required: false },
+      { field: 'html', type: 'string', required: false },
+      { field: 'cc', type: 'string', required: false },
+      { field: 'bcc', type: 'string', required: false },
+      { field: 'fromName', type: 'string', required: false },
+      { field: 'attachments', type: 'string', required: false },
+    ],
+    credentials: [
+      { name: 'gmailOAuth2', type: 'gmailOAuth2', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.to) mapped.toEmail = config.to;
@@ -195,6 +420,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.emailSend': {
     n8nType: 'n8n-nodes-base.emailSend',
     category: 'action',
@@ -205,6 +431,18 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     defaults: {
       fromEmail: 'qona@notifications.ai',
     },
+    paramSchema: [
+      { field: 'toEmail', type: 'string', required: true },
+      { field: 'subject', type: 'string', required: false },
+      { field: 'html', type: 'string', required: false },
+      { field: 'cc', type: 'string', required: false },
+      { field: 'bcc', type: 'string', required: false },
+      { field: 'fromEmail', type: 'string', required: false },
+      { field: 'attachments', type: 'string', required: false },
+    ],
+    credentials: [
+      { name: 'smtp', type: 'smtp', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.to) mapped.toEmail = config.to;
@@ -219,6 +457,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.supabase': {
     n8nType: 'n8n-nodes-base.supabase',
     category: 'action',
@@ -229,6 +468,23 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     defaults: {
       operation: 'rowCreate',
     },
+    paramSchema: [
+      {
+        field: 'operation',
+        type: 'options',
+        required: false,
+        allowedValues: ['rowCreate', 'rowGet', 'rowUpdate', 'rowDelete', 'rowGetAll'],
+        defaultValue: 'rowCreate',
+      },
+      { field: 'table', type: 'string', required: true },
+      { field: 'filters', type: 'object', required: false },
+      { field: 'columns', type: 'object', required: false },
+      { field: 'limit', type: 'number', required: false },
+      { field: 'orderBy', type: 'object', required: false },
+    ],
+    credentials: [
+      { name: 'supabaseApi', type: 'supabaseApi', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.tableName) mapped.table = config.tableName;
@@ -248,6 +504,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.telegram': {
     n8nType: 'n8n-nodes-base.telegram',
     category: 'action',
@@ -260,6 +517,30 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       operation: 'sendMessage',
       parseMode: 'Markdown',
     },
+    paramSchema: [
+      {
+        field: 'resource',
+        type: 'options',
+        required: false,
+        allowedValues: ['message', 'bot', 'file', 'chat', 'callback'],
+        defaultValue: 'message',
+      },
+      {
+        field: 'operation',
+        type: 'options',
+        required: false,
+        allowedValues: ['sendMessage', 'sendDocument', 'sendPhoto', 'sendVideo', 'sendAudio', 'sendLocation', 'editMessageText', 'deleteMessage', 'getUpdates', 'setWebhook', 'getMe', 'sendChatAction'],
+        defaultValue: 'sendMessage',
+      },
+      { field: 'chatId', type: 'string', required: true },
+      { field: 'text', type: 'string', required: false },
+      { field: 'photo', type: 'string', required: false },
+      { field: 'parseMode', type: 'options', required: false, allowedValues: ['Markdown', 'HTML', 'None'], defaultValue: 'Markdown' },
+      { field: 'disableNotification', type: 'boolean', required: false },
+    ],
+    credentials: [
+      { name: 'telegramApi', type: 'telegramApi', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.chatId) mapped.chatId = config.chatId;
@@ -273,6 +554,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.wait': {
     n8nType: 'n8n-nodes-base.wait',
     category: 'action',
@@ -284,6 +566,16 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       amount: 1,
       unit: 'minutes',
     },
+    paramSchema: [
+      { field: 'amount', type: 'number', required: true, defaultValue: 1 },
+      {
+        field: 'unit',
+        type: 'options',
+        required: true,
+        allowedValues: ['seconds', 'minutes', 'hours', 'days'],
+        defaultValue: 'minutes',
+      },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.amount) mapped.amount = config.amount;
@@ -301,6 +593,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.if': {
     n8nType: 'n8n-nodes-base.if',
     category: 'action',
@@ -314,11 +607,13 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
         string: [],
       },
     },
+    paramSchema: [
+      { field: 'conditions', type: 'object', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.conditions) mapped.conditions = config.conditions;
       if (config.expression) {
-        // Fallback simple string mapping for filter expressions
         mapped.conditions = {
           string: [
             {
@@ -331,6 +626,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.code': {
     n8nType: 'n8n-nodes-base.code',
     category: 'action',
@@ -341,6 +637,16 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     defaults: {
       mode: 'runOnceForAllItems',
     },
+    paramSchema: [
+      { field: 'jsCode', type: 'string', required: true },
+      {
+        field: 'mode',
+        type: 'options',
+        required: false,
+        allowedValues: ['runOnceForAllItems', 'runOnceForEachItem'],
+        defaultValue: 'runOnceForAllItems',
+      },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.code) mapped.jsCode = config.code;
@@ -348,6 +654,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.googleDrive': {
     n8nType: 'n8n-nodes-base.googleDrive',
     category: 'action',
@@ -361,6 +668,29 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       binaryData: true,
       binaryPropertyName: 'attachment_0',
     },
+    paramSchema: [
+      {
+        field: 'resource',
+        type: 'options',
+        required: true,
+        allowedValues: ['file', 'folder', 'sharedDrive'],
+        defaultValue: 'file',
+      },
+      {
+        field: 'operation',
+        type: 'options',
+        required: true,
+        allowedValues: ['upload', 'download', 'list', 'delete', 'move', 'copy', 'share', 'update'],
+        defaultValue: 'upload',
+      },
+      { field: 'name', type: 'string', required: false },
+      { field: 'parents', type: 'array', required: false },
+      { field: 'binaryData', type: 'boolean', required: false, defaultValue: true },
+      { field: 'binaryPropertyName', type: 'string', required: false, defaultValue: 'attachment_0' },
+    ],
+    credentials: [
+      { name: 'googleDriveOAuth2Api', type: 'googleDriveOAuth2Api', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.operation) mapped.operation = config.operation;
@@ -370,6 +700,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.noOp': {
     n8nType: 'n8n-nodes-base.noOp',
     category: 'action',
@@ -378,7 +709,9 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     requiredParams: [],
     optionalParams: [],
     defaults: {},
+    paramSchema: [],
   },
+
   'n8n-nodes-base.dropbox': {
     n8nType: 'n8n-nodes-base.dropbox',
     category: 'action',
@@ -392,6 +725,16 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       binaryData: true,
       binaryPropertyName: 'data',
     },
+    paramSchema: [
+      { field: 'path', type: 'string', required: true },
+      { field: 'resource', type: 'options', required: false, allowedValues: ['file', 'folder', 'search'], defaultValue: 'file' },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['upload', 'download', 'list', 'delete', 'move', 'copy', 'search'], defaultValue: 'upload' },
+      { field: 'binaryData', type: 'boolean', required: false, defaultValue: true },
+      { field: 'binaryPropertyName', type: 'string', required: false, defaultValue: 'data' },
+    ],
+    credentials: [
+      { name: 'dropboxApi', type: 'dropboxApi', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.path) mapped.path = config.path;
@@ -400,6 +743,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.oneDrive': {
     n8nType: 'n8n-nodes-base.oneDrive',
     category: 'action',
@@ -413,6 +757,17 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       binaryData: true,
       binaryPropertyName: 'data',
     },
+    paramSchema: [
+      { field: 'resource', type: 'options', required: false, allowedValues: ['file', 'folder'], defaultValue: 'file' },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['upload', 'download', 'delete', 'getChildren', 'rename', 'search'], defaultValue: 'upload' },
+      { field: 'path', type: 'string', required: false },
+      { field: 'fileId', type: 'string', required: false },
+      { field: 'binaryData', type: 'boolean', required: false, defaultValue: true },
+      { field: 'binaryPropertyName', type: 'string', required: false, defaultValue: 'data' },
+    ],
+    credentials: [
+      { name: 'microsoftOneDriveOAuth2Api', type: 'microsoftOneDriveOAuth2Api', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.path) mapped.path = config.path;
@@ -422,6 +777,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.s3': {
     n8nType: 'n8n-nodes-base.s3',
     category: 'action',
@@ -434,6 +790,16 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       binaryData: true,
       binaryPropertyName: 'data',
     },
+    paramSchema: [
+      { field: 'bucketName', type: 'string', required: true },
+      { field: 'key', type: 'string', required: true },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['upload', 'download', 'getAll', 'delete', 'copy'], defaultValue: 'upload' },
+      { field: 'binaryData', type: 'boolean', required: false, defaultValue: true },
+      { field: 'binaryPropertyName', type: 'string', required: false, defaultValue: 'data' },
+    ],
+    credentials: [
+      { name: 'aws', type: 'aws', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.bucketName) mapped.bucketName = config.bucketName;
@@ -442,6 +808,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
   'n8n-nodes-base.ftp': {
     n8nType: 'n8n-nodes-base.ftp',
     category: 'action',
@@ -454,6 +821,15 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       binaryData: true,
       binaryPropertyName: 'data',
     },
+    paramSchema: [
+      { field: 'path', type: 'string', required: true },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['upload', 'download', 'list', 'delete', 'rename'], defaultValue: 'upload' },
+      { field: 'binaryData', type: 'boolean', required: false, defaultValue: true },
+      { field: 'binaryPropertyName', type: 'string', required: false, defaultValue: 'data' },
+    ],
+    credentials: [
+      { name: 'ftp', type: 'ftp', required: true },
+    ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.path) mapped.path = config.path;
@@ -461,48 +837,17 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
-  'n8n-nodes-base.gmailTrigger': {
-    n8nType: 'n8n-nodes-base.gmailTrigger',
-    category: 'trigger',
-    displayName: 'Gmail Trigger',
-    typeVersion: 1,
-    requiredParams: [],
-    optionalParams: ['pollTimes', 'simple', 'filters'],
-    defaults: {},
-  },
-  'n8n-nodes-base.microsoftOutlookTrigger': {
-    n8nType: 'n8n-nodes-base.microsoftOutlookTrigger',
-    category: 'trigger',
-    displayName: 'Microsoft Outlook Trigger',
-    typeVersion: 1,
-    requiredParams: [],
-    optionalParams: ['pollTimes', 'simple', 'events'],
-    defaults: {},
-  },
-  'n8n-nodes-base.emailReadImap': {
-    n8nType: 'n8n-nodes-base.emailReadImap',
-    category: 'trigger',
-    displayName: 'Email Read IMAP',
-    typeVersion: 1,
-    requiredParams: [],
-    optionalParams: ['pollTimes', 'simple', 'format', 'onEmailReceived'],
-    defaults: {},
-  },
-  'n8n-nodes-base.microsoftExchangeTrigger': {
-    n8nType: 'n8n-nodes-base.microsoftExchangeTrigger',
-    category: 'trigger',
-    displayName: 'Microsoft Exchange Trigger',
-    typeVersion: 1,
-    requiredParams: [],
-    optionalParams: [],
-    defaults: {},
-  },
 };
 
+// ═══════════════════════════════════════════════════════════
+// Registry lookup helpers
+// ═══════════════════════════════════════════════════════════
+
 export function lookupRegistry(internalType: string, config?: Record<string, unknown>): N8nRegistryEntry | undefined {
-  // First check direct n8nType match
+  // Direct n8nType match first
   if (n8nRegistry[internalType]) return n8nRegistry[internalType];
 
+  // Email trigger: resolve by provider
   if (internalType === 'email_received') {
     const provider = String(config?.provider || '').toLowerCase();
     if (provider === 'gmail') return n8nRegistry['n8n-nodes-base.gmailTrigger'];
@@ -511,10 +856,10 @@ export function lookupRegistry(internalType: string, config?: Record<string, unk
     if (provider === 'pop3') return n8nRegistry['n8n-nodes-base.emailReadImap'];
     if (provider === 'exchange') return n8nRegistry['n8n-nodes-base.microsoftExchangeTrigger'];
     if (provider === 'yahoo') return n8nRegistry['n8n-nodes-base.emailReadImap'];
-    return n8nRegistry['n8n-nodes-base.emailReadImap']; // fallback
+    return n8nRegistry['n8n-nodes-base.emailReadImap'];
   }
 
-  // Map internal types to n8nTypes
+  // Internal type → n8n type mapping
   const typeMap: Record<string, string> = {
     webhook: 'n8n-nodes-base.webhook',
     schedule: 'n8n-nodes-base.scheduleTrigger',
@@ -525,7 +870,7 @@ export function lookupRegistry(internalType: string, config?: Record<string, unk
     send_email: 'n8n-nodes-base.emailSend',
     gmail: 'n8n-nodes-base.gmail',
     http_request: 'n8n-nodes-base.httpRequest',
-    transform_data: 'n8n-nodes-base.noOp', // fallback NoOp or Set
+    transform_data: 'n8n-nodes-base.noOp',
     filter: 'n8n-nodes-base.if',
     delay: 'n8n-nodes-base.wait',
     create_record: 'n8n-nodes-base.googleSheets',
@@ -547,4 +892,11 @@ export function lookupRegistry(internalType: string, config?: Record<string, unk
   if (n8nType) return n8nRegistry[n8nType];
 
   return undefined;
+}
+
+/** Return all trigger-type n8n types from the registry */
+export function getTriggerTypes(): string[] {
+  return Object.values(n8nRegistry)
+    .filter((e) => e.category === 'trigger')
+    .map((e) => e.n8nType);
 }
