@@ -255,6 +255,9 @@ export function buildExport(
     case 'make':
       content = convertToMakeFormat(definition);
       break;
+    case 'n8n':
+      content = definition;
+      break;
     default:
       content = convertToN8nFormat(definition);
       break;
@@ -262,7 +265,7 @@ export function buildExport(
 
   return {
     platform,
-    filename: getFilename(definition.metadata?.name ?? 'workflow', platform),
+    filename: getFilename(definition.metadata?.name ?? (definition as any).name ?? 'workflow', platform),
     content,
     instructions: getInstructions(platform),
     warnings: warnings.map((w) => w.message),

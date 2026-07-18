@@ -1,6 +1,7 @@
 import { INTERNAL_TO_N8N_TYPE_MAP } from '@qona/shared';
 import type { InternalGraph, GraphNode, GraphEdge } from '@qona/shared';
 import { validateGraphForCompilation } from './graph-validator.js';
+import { lookupRegistry } from './n8n-node-registry.js';
 
 // ═══════════════════════════════════════════════════════════
 // n8n Output Types
@@ -66,39 +67,72 @@ function isTriggerNode(type: string): boolean {
 // ═══════════════════════════════════════════════════════════
 
 function compileNode(node: GraphNode, index: number, totalNodes: number): N8nNode {
-  const n8nType = mapNodeType(node.type);
+  const registryEntry = lookupRegistry(node.type);
+  const n8nType = registryEntry?.n8nType ?? mapNodeType(node.type);
+  const typeVersion = registryEntry?.typeVersion ?? 1;
 
-  const params: Record<string, unknown> = { ...(node.config ?? {}) };
-  if (n8nType.includes('webhook')) { params.method = params.method || 'POST'; params.path = params.path || '/webhook'; }
-  if (n8nType.includes('httpRequest')) { params.method = params.method || 'GET'; params.authentication = 'genericCredentialType'; }
-  if (n8nType.includes('googleSheets') && !params.spreadsheetId) { params.spreadsheetId = 'auto-generated-' + Date.now(); }
-  if (n8nType.includes('wait') && !params.amount) { params.amount = 1; params.unit = 'minutes'; }
-  if (n8nType.includes('emailSend')) { params.fromEmail = params.fromEmail || 'qona@notifications.ai'; }
+  // 1. Run custom mapping to translate parameters
+  let params: Record<string, unknown> = {};
+  if (registryEntry?.mapConfig) {
+    params = registryEntry.mapConfig(node.config ?? {});
+  } else {
+    params = { ...(node.config ?? {}) };
+  }
+
+  // 2. Filter out internal metadata/leaks and keep ONLY registry-defined parameters
+  const finalParams: Record<string, unknown> = {
+    ...(registryEntry?.defaults ?? {}),
+  };
+
+  if (registryEntry) {
+    const allowedParams = new Set([
+      ...registryEntry.requiredParams,
+      ...registryEntry.optionalParams,
+    ]);
+
+    for (const [key, val] of Object.entries(params)) {
+      if (allowedParams.has(key) && val !== undefined) {
+        finalParams[key] = val;
+      }
+    }
+  }
+
+  // 4. Validate required params and inject fallbacks
+  if (registryEntry?.requiredParams) {
+    for (const req of registryEntry.requiredParams) {
+      if (finalParams[req] === undefined || finalParams[req] === null || String(finalParams[req]).trim().length === 0) {
+        if (req === 'documentId' && n8nType.includes('googleSheets')) {
+          finalParams.documentId = 'auto-generated-' + Date.now();
+        } else if (req === 'toEmail' && (n8nType.includes('emailSend') || n8nType.includes('gmail'))) {
+          finalParams.toEmail = 'placeholder@example.com';
+        } else if (req === 'table' && n8nType.includes('supabase')) {
+          finalParams.table = 'users';
+        } else if (req === 'chatId' && n8nType.includes('telegram')) {
+          finalParams.chatId = 'placeholder_chat_id';
+        } else {
+          finalParams[req] = 'placeholder_value';
+        }
+      }
+    }
+  }
+
+  // Custom compile logic for Webhook nodes to inject webhookId
+  let webhookId: string | undefined = undefined;
+  if (n8nType === 'n8n-nodes-base.webhook') {
+    webhookId = `qona-wf-${node.id}-${Date.now()}`;
+  }
+
   const compiled: N8nNode = {
     id: node.id,
     name: node.label,
     type: n8nType,
-    typeVersion: 1,
+    typeVersion,
     position: [node.position.x, node.position.y],
-    parameters: params,
+    parameters: finalParams,
   };
 
-  if (isTriggerNode(node.type) && n8nType.includes('webhook')) {
-    compiled.webhookId = `qona-wf-${node.id}-${Date.now()}`;
-    compiled.parameters = {
-      ...compiled.parameters,
-      authentication: (compiled.parameters as Record<string, unknown>)?.authentication ?? 'none',
-      options: { responseMode: 'lastNode', responseData: 'allEntries' },
-    };
-  }
-
-  if (isTriggerNode(node.type) && n8nType.includes('cron')) {
-    compiled.parameters = {
-      ...compiled.parameters,
-      triggerTimes: {
-        item: [{ mode: 'everyMinute', hour: 9, minute: 0 }],
-      },
-    };
+  if (webhookId) {
+    compiled.webhookId = webhookId;
   }
 
   return compiled;
@@ -115,7 +149,11 @@ function compileConnections(
   const connections: Record<string, N8nConnectionMap> = {};
 
   for (const node of nodes) {
-    connections[node.id] = { main: [[]] };
+    if (node.type === 'n8n-nodes-base.if') {
+      connections[node.id] = { main: [[], []] };
+    } else {
+      connections[node.id] = { main: [[]] };
+    }
   }
 
   for (const edge of edges) {
@@ -123,14 +161,27 @@ function compileConnections(
       connections[edge.source] = { main: [[]] };
     }
 
-    const outputIndex = 0;
+    const sourceNode = nodes.find((n) => n.id === edge.source);
+    let outputIndex = 0;
 
-    if (edge.type === 'conditional' && edge.conditions.length > 0) {
-      connections[edge.source].main.push([{ node: edge.target, type: 'main', index: 0 }]);
-      continue;
+    if (sourceNode?.type === 'n8n-nodes-base.if') {
+      const label = (edge.label ?? '').toLowerCase().trim();
+      if (label === 'false' || label === 'no') {
+        outputIndex = 1;
+      } else {
+        outputIndex = 0;
+      }
     }
 
-    connections[edge.source].main[0].push({ node: edge.target, type: 'main', index: outputIndex });
+    while (connections[edge.source].main.length <= outputIndex) {
+      connections[edge.source].main.push([]);
+    }
+
+    connections[edge.source].main[outputIndex].push({
+      node: edge.target,
+      type: 'main',
+      index: 0,
+    });
   }
 
   return connections;
