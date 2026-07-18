@@ -461,11 +461,58 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+  'n8n-nodes-base.gmailTrigger': {
+    n8nType: 'n8n-nodes-base.gmailTrigger',
+    category: 'trigger',
+    displayName: 'Gmail Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['pollTimes', 'simple', 'filters'],
+    defaults: {},
+  },
+  'n8n-nodes-base.microsoftOutlookTrigger': {
+    n8nType: 'n8n-nodes-base.microsoftOutlookTrigger',
+    category: 'trigger',
+    displayName: 'Microsoft Outlook Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['pollTimes', 'simple', 'events'],
+    defaults: {},
+  },
+  'n8n-nodes-base.emailReadImap': {
+    n8nType: 'n8n-nodes-base.emailReadImap',
+    category: 'trigger',
+    displayName: 'Email Read IMAP',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['pollTimes', 'simple', 'format', 'onEmailReceived'],
+    defaults: {},
+  },
+  'n8n-nodes-base.microsoftExchangeTrigger': {
+    n8nType: 'n8n-nodes-base.microsoftExchangeTrigger',
+    category: 'trigger',
+    displayName: 'Microsoft Exchange Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: [],
+    defaults: {},
+  },
 };
 
-export function lookupRegistry(internalType: string): N8nRegistryEntry | undefined {
+export function lookupRegistry(internalType: string, config?: Record<string, unknown>): N8nRegistryEntry | undefined {
   // First check direct n8nType match
   if (n8nRegistry[internalType]) return n8nRegistry[internalType];
+
+  if (internalType === 'email_received') {
+    const provider = String(config?.provider || '').toLowerCase();
+    if (provider === 'gmail') return n8nRegistry['n8n-nodes-base.gmailTrigger'];
+    if (provider === 'outlook') return n8nRegistry['n8n-nodes-base.microsoftOutlookTrigger'];
+    if (provider === 'imap') return n8nRegistry['n8n-nodes-base.emailReadImap'];
+    if (provider === 'pop3') return n8nRegistry['n8n-nodes-base.emailReadImap'];
+    if (provider === 'exchange') return n8nRegistry['n8n-nodes-base.microsoftExchangeTrigger'];
+    if (provider === 'yahoo') return n8nRegistry['n8n-nodes-base.emailReadImap'];
+    return n8nRegistry['n8n-nodes-base.emailReadImap']; // fallback
+  }
 
   // Map internal types to n8nTypes
   const typeMap: Record<string, string> = {
@@ -474,7 +521,6 @@ export function lookupRegistry(internalType: string): N8nRegistryEntry | undefin
     cron: 'n8n-nodes-base.cron',
     manual: 'n8n-nodes-base.manualTrigger',
     form_submission: 'n8n-nodes-base.webhook',
-    email_received: 'n8n-nodes-base.emailSend', // fallback or IMAP
     payment_received: 'n8n-nodes-base.webhook',
     send_email: 'n8n-nodes-base.emailSend',
     gmail: 'n8n-nodes-base.gmail',

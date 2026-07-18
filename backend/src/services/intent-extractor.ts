@@ -58,6 +58,7 @@ Integration type labels (for the integrations array, not node types):
 Rules:
 - EXACTLY one trigger node
 - trigger.type should preferably be one of the registered trigger nodeType values above. If the required trigger is not registered, you are fully allowed to use the official n8n base node type name (prefixed with "n8n-nodes-base.", e.g., "n8n-nodes-base.webhook" or "n8n-nodes-base.scheduleTrigger").
+- For trigger node type 'email_received', you MUST extract the email provider and place it in config.provider if specified. Possible values are 'gmail', 'outlook', 'imap', 'pop3', 'exchange', 'yahoo'.
 - action.type should preferably be one of the registered action nodeType values above. If the required action is not registered, you are fully allowed to use the official n8n base node type name (prefixed with "n8n-nodes-base.", e.g., "n8n-nodes-base.postgres", "n8n-nodes-base.openAi", "n8n-nodes-base.hubspot") and define its parameters in "config".
 - Order actions by execution sequence
 - Set confidence based on how clear the prompt is (0-1)

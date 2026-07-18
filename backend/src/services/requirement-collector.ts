@@ -29,6 +29,21 @@ interface ResolvedReqs {
 }
 
 export function determineRequirements(nodeType: string, config: Record<string, unknown>): ResolvedReqs {
+  if (nodeType === 'email_received' || nodeType === 'n8n-nodes-base.emailReadImap') {
+    const p = config.provider || config.email_provider;
+    const allowedProviders = ['gmail', 'outlook', 'imap', 'pop3', 'exchange', 'yahoo'];
+    const resolvedProvider = typeof p === 'string' ? p.toLowerCase() : undefined;
+    const isCollected = resolvedProvider && allowedProviders.includes(resolvedProvider);
+    return {
+      credentials: { required: false },
+      provider: { required: true, value: isCollected ? resolvedProvider : undefined },
+      resource: { required: true, value: 'message' },
+      operation: { required: true, value: 'receive' },
+      triggerType: { required: true, value: nodeType },
+      dependencies: { required: true, value: 'none' },
+    };
+  }
+
   const registryEntry = lookupRegistry(nodeType);
   const providerMap: Record<string, string> = {
     'n8n-nodes-base.webhook': 'webhook',
@@ -575,6 +590,11 @@ export function generateNextQuestion(
         ? 'action'
         : 'integration',
   };
+
+  if (req.field === 'trigger_provider' && plan.trigger?.type === 'email_received') {
+    question.question = 'Which email provider do you use?';
+    question.options = ['Gmail', 'Microsoft Outlook', 'IMAP', 'POP3', 'Exchange', 'Yahoo'];
+  }
 
   if (req.field === 'method') {
     question.options = ['GET', 'POST', 'PUT', 'DELETE'];

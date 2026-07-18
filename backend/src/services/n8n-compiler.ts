@@ -47,7 +47,17 @@ export interface CompilationResult {
 // Node type mapping
 // ═══════════════════════════════════════════════════════════
 
-function mapNodeType(internalType: string): string {
+function mapNodeType(internalType: string, node?: GraphNode): string {
+  if (internalType === 'email_received' && node) {
+    const provider = String(node.config?.provider || '').toLowerCase();
+    if (provider === 'gmail') return 'n8n-nodes-base.gmailTrigger';
+    if (provider === 'outlook') return 'n8n-nodes-base.microsoftOutlookTrigger';
+    if (provider === 'imap') return 'n8n-nodes-base.emailReadImap';
+    if (provider === 'pop3') return 'n8n-nodes-base.emailReadImap';
+    if (provider === 'exchange') return 'n8n-nodes-base.microsoftExchangeTrigger';
+    if (provider === 'yahoo') return 'n8n-nodes-base.emailReadImap';
+  }
+
   const mapped = INTERNAL_TO_N8N_TYPE_MAP[internalType];
   if (mapped) return mapped;
 
@@ -68,8 +78,8 @@ function isTriggerNode(type: string): boolean {
 // ═══════════════════════════════════════════════════════════
 
 function compileNode(node: GraphNode, index: number, totalNodes: number, graphNodes?: GraphNode[]): N8nNode {
-  const registryEntry = lookupRegistry(node.type);
-  const n8nType = registryEntry?.n8nType ?? mapNodeType(node.type);
+  const registryEntry = lookupRegistry(node.type, node.config);
+  const n8nType = registryEntry?.n8nType ?? mapNodeType(node.type, node);
   const typeVersion = registryEntry?.typeVersion ?? 1;
 
   // 1. Run custom mapping to translate parameters
@@ -295,7 +305,7 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
 
   const hasTrigger = wf.nodes.some((n) => {
     const lowerType = n.type?.toLowerCase() ?? '';
-    return lowerType.includes('trigger') || lowerType.includes('webhook') || lowerType.includes('cron') || lowerType.includes('schedule') || lowerType.includes('manual');
+    return lowerType.includes('trigger') || lowerType.includes('webhook') || lowerType.includes('cron') || lowerType.includes('schedule') || lowerType.includes('manual') || lowerType.includes('emailreadimap');
   });
   if (!hasTrigger) {
     errors.push({ path: 'nodes', message: 'Workflow has no trigger node', severity: 'error' });
@@ -369,7 +379,7 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
 
   for (let i = 0; i < graph.nodes.length; i++) {
     const node = graph.nodes[i];
-    const n8nType = mapNodeType(node.type);
+    const n8nType = mapNodeType(node.type, node);
 
     if (!INTERNAL_TO_N8N_TYPE_MAP[node.type] && !node.type.startsWith('n8n-nodes-base.')) {
       unmappedTypes.push(node.type);

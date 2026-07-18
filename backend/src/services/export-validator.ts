@@ -95,7 +95,7 @@ export function validateExport(graph: InternalGraph): ExportValidationResult {
 
   // 2. Validate Nodes (type, resource, operation, required params, unsupported properties)
   for (const node of nodes) {
-    const registryEntry = lookupRegistry(node.type);
+    const registryEntry = lookupRegistry(node.type, node.config);
     if (!registryEntry) {
       errors.push({
         nodeId: node.id,
