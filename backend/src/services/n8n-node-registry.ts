@@ -151,7 +151,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     displayName: 'Slack',
     typeVersion: 2,
     requiredParams: ['channel'],
-    optionalParams: ['message', 'blocks', 'username', 'threadTs', 'select', 'options'],
+    optionalParams: ['message', 'blocks', 'username', 'threadTs', 'select', 'options', 'binaryData', 'binaryPropertyName', 'resource', 'operation'],
     defaults: {
       select: 'channel',
       options: {},
@@ -165,6 +165,8 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       if (config.blocks) mapped.blocks = config.blocks;
       if (config.username) mapped.username = config.username;
       if (config.threadTs) mapped.threadTs = config.threadTs;
+      if (config.resource) mapped.resource = config.resource;
+      if (config.operation) mapped.operation = config.operation;
       return mapped;
     },
   },
@@ -199,7 +201,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     displayName: 'Send Email (SMTP)',
     typeVersion: 1,
     requiredParams: ['toEmail'],
-    optionalParams: ['subject', 'html', 'cc', 'bcc', 'fromEmail'],
+    optionalParams: ['subject', 'html', 'cc', 'bcc', 'fromEmail', 'attachments'],
     defaults: {
       fromEmail: 'qona@notifications.ai',
     },
@@ -213,6 +215,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       if (config.cc) mapped.cc = config.cc;
       if (config.bcc) mapped.bcc = config.bcc;
       if (config.fromEmail) mapped.fromEmail = config.fromEmail;
+      if (config.attachments) mapped.attachments = config.attachments;
       return mapped;
     },
   },
@@ -376,6 +379,88 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     optionalParams: [],
     defaults: {},
   },
+  'n8n-nodes-base.dropbox': {
+    n8nType: 'n8n-nodes-base.dropbox',
+    category: 'action',
+    displayName: 'Dropbox',
+    typeVersion: 1,
+    requiredParams: ['path'],
+    optionalParams: ['operation', 'resource', 'binaryData', 'binaryPropertyName', 'fileContent'],
+    defaults: {
+      resource: 'file',
+      operation: 'upload',
+      binaryData: true,
+      binaryPropertyName: 'data',
+    },
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.path) mapped.path = config.path;
+      if (config.operation) mapped.operation = config.operation;
+      if (config.resource) mapped.resource = config.resource;
+      return mapped;
+    },
+  },
+  'n8n-nodes-base.oneDrive': {
+    n8nType: 'n8n-nodes-base.oneDrive',
+    category: 'action',
+    displayName: 'Microsoft OneDrive',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['operation', 'resource', 'binaryData', 'binaryPropertyName', 'fileContent', 'path', 'fileId'],
+    defaults: {
+      resource: 'file',
+      operation: 'upload',
+      binaryData: true,
+      binaryPropertyName: 'data',
+    },
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.path) mapped.path = config.path;
+      if (config.fileId) mapped.fileId = config.fileId;
+      if (config.operation) mapped.operation = config.operation;
+      if (config.resource) mapped.resource = config.resource;
+      return mapped;
+    },
+  },
+  'n8n-nodes-base.s3': {
+    n8nType: 'n8n-nodes-base.s3',
+    category: 'action',
+    displayName: 'AWS S3',
+    typeVersion: 1,
+    requiredParams: ['bucketName', 'key'],
+    optionalParams: ['operation', 'binaryData', 'binaryPropertyName', 'fileContent'],
+    defaults: {
+      operation: 'upload',
+      binaryData: true,
+      binaryPropertyName: 'data',
+    },
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.bucketName) mapped.bucketName = config.bucketName;
+      if (config.key) mapped.key = config.key;
+      if (config.operation) mapped.operation = config.operation;
+      return mapped;
+    },
+  },
+  'n8n-nodes-base.ftp': {
+    n8nType: 'n8n-nodes-base.ftp',
+    category: 'action',
+    displayName: 'FTP',
+    typeVersion: 1,
+    requiredParams: ['path'],
+    optionalParams: ['operation', 'binaryData', 'binaryPropertyName', 'fileContent'],
+    defaults: {
+      operation: 'upload',
+      binaryData: true,
+      binaryPropertyName: 'data',
+    },
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.path) mapped.path = config.path;
+      if (config.operation) mapped.operation = config.operation;
+      return mapped;
+    },
+  },
 };
 
 export function lookupRegistry(internalType: string): N8nRegistryEntry | undefined {
@@ -406,6 +491,10 @@ export function lookupRegistry(internalType: string): N8nRegistryEntry | undefin
     telegram: 'n8n-nodes-base.telegram',
     supabase: 'n8n-nodes-base.supabase',
     google_drive: 'n8n-nodes-base.googleDrive',
+    dropbox: 'n8n-nodes-base.dropbox',
+    one_drive: 'n8n-nodes-base.oneDrive',
+    s3: 'n8n-nodes-base.s3',
+    ftp: 'n8n-nodes-base.ftp',
   };
 
   const n8nType = typeMap[internalType];

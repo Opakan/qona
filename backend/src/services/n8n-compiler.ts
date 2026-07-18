@@ -67,7 +67,7 @@ function isTriggerNode(type: string): boolean {
 // Node compiler
 // ═══════════════════════════════════════════════════════════
 
-function compileNode(node: GraphNode, index: number, totalNodes: number): N8nNode {
+function compileNode(node: GraphNode, index: number, totalNodes: number, graphNodes?: GraphNode[]): N8nNode {
   const registryEntry = lookupRegistry(node.type);
   const n8nType = registryEntry?.n8nType ?? mapNodeType(node.type);
   const typeVersion = registryEntry?.typeVersion ?? 1;
@@ -78,6 +78,68 @@ function compileNode(node: GraphNode, index: number, totalNodes: number): N8nNod
     params = registryEntry.mapConfig(node.config ?? {});
   } else {
     params = { ...(node.config ?? {}) };
+  }
+
+  // ── BINARY-AWARE CONFIG COMPILATION ──
+  const binaryUploadNodes = [
+    'n8n-nodes-base.googleDrive',
+    'n8n-nodes-base.dropbox',
+    'n8n-nodes-base.oneDrive',
+    'n8n-nodes-base.s3',
+    'n8n-nodes-base.ftp',
+    'n8n-nodes-base.slack',
+    'n8n-nodes-base.emailSend',
+    'n8n-nodes-base.gmail',
+  ];
+
+  if (binaryUploadNodes.includes(n8nType)) {
+    const configSource = node.config ?? {};
+    const binaryKeys = ['fileContent', 'binaryPropertyName', 'attachments', 'file', 'binaryProperty', 'fileContentExpression'];
+    let foundBinaryRef = false;
+    let extractedPropName = 'data';
+
+    for (const key of binaryKeys) {
+      const val = params[key] ?? configSource[key];
+      if (typeof val === 'string' && val.includes('{{')) {
+        // 1. Try to extract property name from expression
+        const binaryMatch = val.match(/\.binary\.([a-zA-Z0-9_]+)/) ||
+                            val.match(/\$json\.([a-zA-Z0-9_]+)/) ||
+                            val.match(/attachment_([a-zA-Z0-9_]+)/);
+        if (binaryMatch) {
+          extractedPropName = binaryMatch[1];
+          foundBinaryRef = true;
+          delete params[key];
+          break;
+        }
+
+        // 2. Try to identify by referenced node type
+        const nodeMatch = val.match(/\$node\["([^"]+)"\]/) || val.match(/\$node\.([a-zA-Z0-9_]+)/);
+        if (nodeMatch) {
+          const refNodeName = nodeMatch[1];
+          const refNode = graphNodes?.find(n => n.label === refNodeName || n.id === refNodeName);
+          if (refNode) {
+            foundBinaryRef = true;
+            if (refNode.type.includes('emailReadImap') || refNode.type.includes('email_received') || refNode.type.includes('webhook')) {
+              extractedPropName = 'attachment_0';
+            } else {
+              extractedPropName = 'data';
+            }
+            delete params[key];
+            break;
+          }
+        }
+      }
+    }
+
+    if (foundBinaryRef || params.binaryPropertyName || configSource.binaryPropertyName) {
+      const propName = params.binaryPropertyName || configSource.binaryPropertyName || extractedPropName;
+      if (n8nType === 'n8n-nodes-base.emailSend' || n8nType === 'n8n-nodes-base.gmail') {
+        params.attachments = propName;
+      } else {
+        params.binaryData = true;
+        params.binaryPropertyName = propName;
+      }
+    }
   }
 
   // 2. Filter out internal metadata/leaks and keep ONLY registry-defined parameters
@@ -313,7 +375,7 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
       unmappedTypes.push(node.type);
     }
 
-    compiledNodes.push(compileNode(node, i, graph.nodes.length));
+    compiledNodes.push(compileNode(node, i, graph.nodes.length, graph.nodes));
   }
 
   if (unmappedTypes.length > 0) {
