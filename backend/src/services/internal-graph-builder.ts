@@ -131,8 +131,11 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
     const nodeId = nextNodeId();
     const config: Record<string, unknown> = { ...plan.trigger.config };
 
+    const metadataKeys = ['provider', 'credentials', 'resource', 'operation', 'binary_requirements', 'dependencies', 'trigger_type'];
     for (const req of triggerReqs) {
-      const configKey = TRIGGER_FIELD_MAP[req.field] ?? req.field;
+      const cleanField = req.field.replace(/^trigger_field_/, '').replace(/^trigger_/, '');
+      if (metadataKeys.includes(cleanField)) continue;
+      const configKey = TRIGGER_FIELD_MAP[cleanField] ?? cleanField;
       if (req.value !== undefined) config[configKey] = req.value;
     }
 
@@ -197,8 +200,10 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
         return !r.field.startsWith('action_') || r.field.startsWith(`action_${i}_`);
       });
 
+      const metadataKeys = ['provider', 'credentials', 'resource', 'operation', 'binary_requirements', 'dependencies', 'trigger_type'];
       for (const req of relevantReqs) {
-        const cleanField = req.field.replace(/^action_\d+_/, '').replace(/^actions\[\d+\]\.(config\.)?/, '');
+        const cleanField = req.field.replace(/^action_\d+_field_/, '').replace(/^action_\d+_/, '').replace(/^actions\[\d+\]\.(config\.)?/, '');
+        if (metadataKeys.includes(cleanField)) continue;
         const configKey = ACTION_FIELD_MAP[cleanField] ?? cleanField;
         if (req.value !== undefined) config[configKey] = req.value;
       }
