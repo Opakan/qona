@@ -155,9 +155,9 @@ export function validateDraftGraph(graph: InternalGraph): DraftWarning[] {
   const w: DraftWarning[] = [];
   if (!graph.nodes || graph.nodes.length === 0) { w.push({ path: 'nodes', message: 'Draft has no nodes', severity: 'warning' }); return w; }
   const ids = new Set(graph.nodes.map(n => n.id));
-  var triggers = ['webhook','schedule','cron','manual','form_submission','email_received','payment_received'];
+  const triggers = ['webhook','schedule','cron','manual','form_submission','email_received','payment_received'];
   if (!graph.nodes.some(n => triggers.includes(n.type))) w.push({ path: 'nodes', message: 'No trigger node', severity: 'warning' });
-  for (var edge of graph.edges || []) {
+  for (const edge of graph.edges || []) {
     if (!ids.has(edge.source)) w.push({ path: 'edges.'+edge.id, message: 'Orphan source: '+edge.source, severity: 'error' });
     if (!ids.has(edge.target)) w.push({ path: 'edges.'+edge.id, message: 'Orphan target: '+edge.target, severity: 'error' });
   }

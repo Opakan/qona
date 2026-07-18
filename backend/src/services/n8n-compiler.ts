@@ -123,7 +123,7 @@ function compileConnections(
       connections[edge.source] = { main: [[]] };
     }
 
-    let outputIndex = 0;
+    const outputIndex = 0;
 
     if (edge.type === 'conditional' && edge.conditions.length > 0) {
       connections[edge.source].main.push([{ node: edge.target, type: 'main', index: 0 }]);

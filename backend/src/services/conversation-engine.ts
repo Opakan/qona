@@ -203,7 +203,6 @@ export const conversationEngine = {
     log('info', 'STAGE: Extracting intent from user prompt');
 
     let intent;
-    let plan: WorkflowPlan;
 
     try {
       intent = await extractIntent(userMessage);
@@ -227,7 +226,7 @@ export const conversationEngine = {
     await planningSessionService.setExtractedIntent(sessionId, intent);
 
     // ── Build the WorkflowPlan from extracted intent ──
-    plan = buildInitialPlan(intent, userMessage);
+    const plan = buildInitialPlan(intent, userMessage);
 
     log('info', 'Plan built', {
       trigger: plan.trigger?.type,
@@ -412,7 +411,7 @@ export const conversationEngine = {
     const session = await planningSessionService.getById(sessionId);
     if (!session) throw new Error('Session not found');
 
-    let plan = readPlan(session);
+    const plan = readPlan(session);
     if (!plan) {
       throw new Error('No workflow plan found — cannot generate');
     }

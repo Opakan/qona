@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test('landing page loads and shows hero', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('h1')).toContainText('Build automations');
+  await expect(page.locator('h1')).toContainText('Build AI Automations');
 });
 
 test('navigation links are visible', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('text=Product').first()).toBeVisible();
   await expect(page.locator('text=Pricing').first()).toBeVisible();
-  await expect(page.locator('text=Try Qona').first()).toBeVisible();
+  await expect(page.locator('text=Try Qonace').first()).toBeVisible();
 });
 
 test('sign-in link navigates to sign-in page', async ({ page }) => {
@@ -23,9 +23,8 @@ test('sign-in page shows Google auth button', async ({ page }) => {
   await expect(page.locator('text=Continue with Google')).toBeVisible();
 });
 
-test('pricing section has three plans', async ({ page }) => {
-  await page.goto('/');
-  await page.locator('#pricing').scrollIntoViewIfNeeded();
+test('pricing page has three plans', async ({ page }) => {
+  await page.goto('/pricing');
   await expect(page.locator('text=Free').first()).toBeVisible();
   await expect(page.locator('text=Starter').first()).toBeVisible();
   await expect(page.locator('text=Pro').first()).toBeVisible();
@@ -33,8 +32,7 @@ test('pricing section has three plans', async ({ page }) => {
 
 test('features section renders', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#product').scrollIntoViewIfNeeded();
-  await expect(page.locator('text=Prompt to workflow')).toBeVisible();
+  await expect(page.locator('text=Meet Qonace').first()).toBeVisible();
 });
 
 test('footer has resource links', async ({ page }) => {
@@ -54,15 +52,14 @@ test('auth callback page shows spinner', async ({ page }) => {
   await expect(page.locator('text=Signing in')).toBeVisible();
 });
 
-test('workflows section exists', async ({ page }) => {
+test('suggestions are visible', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#workflows').scrollIntoViewIfNeeded();
-  await expect(page.locator('text=Popular automations')).toBeVisible();
+  await expect(page.locator('text=Design a database schema').first()).toBeVisible();
 });
 
-test('CTA section links to sign-in', async ({ page }) => {
+test('CTA section has Start Free button', async ({ page }) => {
   await page.goto('/');
-  const cta = page.getByRole('link', { name: /Try Qona free/i });
+  const cta = page.getByRole('button', { name: /Start Free/i });
   await cta.scrollIntoViewIfNeeded();
   await expect(cta).toBeVisible();
 });
