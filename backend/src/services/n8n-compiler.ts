@@ -3,6 +3,7 @@ import type { InternalGraph, GraphNode, GraphEdge } from '@qona/shared';
 import { validateGraphForCompilation } from './graph-validator.js';
 import { lookupRegistry } from './n8n-node-registry.js';
 import { validateExport } from './export-validator.js';
+import { validateNodeParameters, toExportErrors } from './n8n-param-validator.js';
 import { generateUUID } from './uuid.js';
 
 // ═══════════════════════════════════════════════════════════
@@ -51,10 +52,10 @@ export interface CompilationResult {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Node type mapping
+// PIPELINE STAGE 1: Node Registry & Type Mapping
 // ═══════════════════════════════════════════════════════════
 
-function mapNodeType(internalType: string, node?: GraphNode): string {
+export function mapNodeType(internalType: string, node?: GraphNode): string {
   if (internalType === 'email_received' && node) {
     const provider = String(node.config?.provider || '').toLowerCase();
     if (provider === 'gmail') return 'n8n-nodes-base.gmailTrigger';
@@ -73,20 +74,27 @@ function mapNodeType(internalType: string, node?: GraphNode): string {
   return 'n8n-nodes-base.noOp';
 }
 
-function isTriggerNode(type: string): boolean {
-  const triggerTypes = ['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'];
+export function isTriggerNode(type: string): boolean {
+  const triggerTypes = [
+    'webhook', 'schedule', 'cron', 'manual', 'form_submission',
+    'email_received', 'payment_received', 'rss_feed', 'rss', 'stripe_trigger',
+  ];
   if (triggerTypes.includes(type)) return true;
   const lower = type.toLowerCase();
-  return lower.includes('trigger') || lower.includes('webhook') || lower.includes('cron') || lower.includes('schedule');
+  return (
+    lower.includes('trigger') ||
+    lower.includes('webhook') ||
+    lower.includes('cron') ||
+    lower.includes('schedule') ||
+    lower.includes('rss')
+  );
 }
 
-// ═══════════════════════════════════════════════════════════
-// Credential stub emitter
-// Emits a placeholder credential reference that n8n will
-// prompt the user to replace, rather than silently missing it.
-// ═══════════════════════════════════════════════════════════
+export function lookupRegistryEntry(node: GraphNode) {
+  return lookupRegistry(node.type, node.config);
+}
 
-function buildCredentialsObject(
+export function buildCredentialsObject(
   registryEntry: ReturnType<typeof lookupRegistry>,
 ): Record<string, { id: string; name: string }> | undefined {
   if (!registryEntry?.credentials || registryEntry.credentials.length === 0) return undefined;
@@ -102,11 +110,16 @@ function buildCredentialsObject(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Node compiler
+// PIPELINE STAGE 2: Parameter Resolver
+// Maps config, resolves binary properties, injects defaults,
+// strips internal AI metadata, and handles fallbacks.
 // ═══════════════════════════════════════════════════════════
 
-function compileNode(node: GraphNode, index: number, totalNodes: number, graphNodes?: GraphNode[]): N8nNode {
-  const registryEntry = lookupRegistry(node.type, node.config);
+export function resolveNodeParameters(
+  node: GraphNode,
+  registryEntry: ReturnType<typeof lookupRegistry>,
+  graphNodes?: GraphNode[],
+): N8nNode {
   const n8nType = registryEntry?.n8nType ?? mapNodeType(node.type, node);
   const typeVersion = registryEntry?.typeVersion ?? 1;
 
@@ -118,7 +131,7 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
     params = { ...(node.config ?? {}) };
   }
 
-  // ── BINARY-AWARE CONFIG COMPILATION ──
+  // ── BINARY-AWARE CONFIG RESOLUTION ──
   const binaryUploadNodes = [
     'n8n-nodes-base.googleDrive',
     'n8n-nodes-base.dropbox',
@@ -189,7 +202,6 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
       ...registryEntry.optionalParams,
     ]);
 
-    // Also allow all params defined in paramSchema
     for (const s of registryEntry.paramSchema ?? []) {
       allowedParams.add(s.field);
     }
@@ -245,16 +257,28 @@ function compileNode(node: GraphNode, index: number, totalNodes: number, graphNo
 }
 
 // ═══════════════════════════════════════════════════════════
-// Connection compiler
-// IMPORTANT: n8n requires connection keys to be node NAMES, not IDs
+// PIPELINE STAGE 3: Connection Builder & Name Deduplication
 // ═══════════════════════════════════════════════════════════
 
-function compileConnections(
+export function deduplicateNodeNames(nodes: { id: string; label: string; [key: string]: unknown }[]): Map<string, string> {
+  const idToName = new Map<string, string>();
+  const usedNames = new Map<string, number>();
+
+  for (const node of nodes) {
+    const base = node.label?.trim() || node.id;
+    const count = usedNames.get(base) ?? 0;
+    const name = count === 0 ? base : `${base} ${count + 1}`;
+    usedNames.set(base, count + 1);
+    idToName.set(node.id, name);
+  }
+  return idToName;
+}
+
+export function buildConnections(
   nodes: N8nNode[],
   edges: GraphEdge[],
 ): Record<string, N8nConnectionMap> {
   const connections: Record<string, N8nConnectionMap> = {};
-  // Build name lookup: id → name
   const idToName = new Map<string, string>(nodes.map((n) => [n.id, n.name]));
 
   for (const node of nodes) {
@@ -300,10 +324,68 @@ function compileConnections(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Output validation (post-compilation structural checks)
+// PIPELINE STAGE 4: Schema Validator
+// Deep parameter schema validation against registered paramSchema
 // ═══════════════════════════════════════════════════════════
 
-function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
+export function validateWorkflowSchema(nodes: N8nNode[], originalNodes?: GraphNode[]): CompilationError[] {
+  const errors: CompilationError[] = [];
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const orig = originalNodes ? originalNodes[i] : undefined;
+    const registryEntry = lookupRegistry(orig?.type ?? node.type, orig?.config);
+
+    if (registryEntry?.paramSchema && registryEntry.paramSchema.length > 0) {
+      const paramErrors = validateNodeParameters(
+        node.id,
+        node.name,
+        node.type,
+        node.parameters,
+        registryEntry.paramSchema,
+      );
+      for (const err of paramErrors) {
+        if (err.severity === 'error') {
+          errors.push({
+            path: `nodes.${node.name}.${err.field}`,
+            message: err.message,
+            severity: 'error',
+          });
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIPELINE STAGE 5: JSON Generator
+// Constructs the top-level n8n workflow output JSON object
+// ═══════════════════════════════════════════════════════════
+
+export function generateWorkflowJSON(
+  nodes: N8nNode[],
+  connections: Record<string, N8nConnectionMap>,
+  metadata: { name?: string; tags?: string[] },
+): N8nWorkflowOutput {
+  return {
+    id: generateUUID(),
+    name: metadata.name ?? 'Untitled Workflow',
+    active: false,
+    nodes,
+    connections,
+    settings: { executionOrder: 'v1' },
+    pinData: {},
+    tags: metadata.tags ?? ['qona-ai-generated'],
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIPELINE STAGE 6: Structural & Output Validation
+// ═══════════════════════════════════════════════════════════
+
+export function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
   const errors: CompilationError[] = [];
 
   if (!wf.name || wf.name.trim().length === 0) {
@@ -331,13 +413,21 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
 
   const hasTrigger = wf.nodes.some((n) => {
     const lowerType = n.type?.toLowerCase() ?? '';
-    return lowerType.includes('trigger') || lowerType.includes('webhook') || lowerType.includes('cron') || lowerType.includes('schedule') || lowerType.includes('manual') || lowerType.includes('emailreadimap');
+    return (
+      lowerType.includes('trigger') ||
+      lowerType.includes('webhook') ||
+      lowerType.includes('cron') ||
+      lowerType.includes('schedule') ||
+      lowerType.includes('manual') ||
+      lowerType.includes('emailreadimap') ||
+      lowerType.includes('rssfeedread') ||
+      lowerType.includes('rss')
+    );
   });
   if (!hasTrigger) {
     errors.push({ path: 'nodes', message: 'Workflow has no trigger node', severity: 'error' });
   }
 
-  // Validate connections reference node names that exist
   for (const [sourceName, connData] of Object.entries(wf.connections)) {
     if (!nodeNames.has(sourceName)) {
       errors.push({ path: `connections.${sourceName}`, message: `Connection source "${sourceName}" is not a valid node name`, severity: 'error' });
@@ -355,33 +445,14 @@ function validateOutput(wf: N8nWorkflowOutput): CompilationError[] {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Name deduplication helper
-// n8n requires unique node names for connection keying
-// ═══════════════════════════════════════════════════════════
-
-function deduplicateNodeNames(nodes: { id: string; label: string; [key: string]: unknown }[]): Map<string, string> {
-  const idToName = new Map<string, string>();
-  const usedNames = new Map<string, number>(); // name → count
-
-  for (const node of nodes) {
-    const base = node.label?.trim() || node.id;
-    const count = usedNames.get(base) ?? 0;
-    const name = count === 0 ? base : `${base} ${count + 1}`;
-    usedNames.set(base, count + 1);
-    idToName.set(node.id, name);
-  }
-  return idToName;
-}
-
-// ═══════════════════════════════════════════════════════════
-// Main compiler function
+// PIPELINE ORCHESTRATOR: compileInternalGraph
 // ═══════════════════════════════════════════════════════════
 
 export function compileInternalGraph(graph: InternalGraph): CompilationResult {
   const errors: CompilationError[] = [];
   const warnings: string[] = [];
 
-  // ── VALIDATE graph before compilation ──
+  // ── PRE-VALIDATION: Validate graph before compilation ──
   const validation = validateGraphForCompilation(graph);
   if (!validation.valid) {
     return {
@@ -395,7 +466,7 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
     };
   }
 
-  // ── RUN SEMANTIC EXPORT VALIDATION ──
+  // ── EXPORT VALIDATION ──
   const isTest = typeof process !== 'undefined' && process.env.VITEST === 'true';
   if (!isTest) {
     const exportValidation = validateExport(graph);
@@ -420,41 +491,40 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
     };
   }
 
-  // Deduplicate node names before compilation (n8n keys connections by name)
+  // STAGE 3a: Deduplicate node names before compilation
   const nameMap = deduplicateNodeNames(graph.nodes);
   const patchedNodes = graph.nodes.map((n) => ({ ...n, label: nameMap.get(n.id) ?? n.label }));
 
+  // STAGE 1 & 2: Node Registry & Parameter Resolver
   const compiledNodes: N8nNode[] = [];
   const unmappedTypes: string[] = [];
 
   for (let i = 0; i < patchedNodes.length; i++) {
     const node = patchedNodes[i];
-    const n8nType = mapNodeType(node.type, node);
+    const registryEntry = lookupRegistryEntry(node);
 
     if (!INTERNAL_TO_N8N_TYPE_MAP[node.type] && !node.type.startsWith('n8n-nodes-base.')) {
       unmappedTypes.push(node.type);
     }
 
-    compiledNodes.push(compileNode(node, i, patchedNodes.length, patchedNodes));
+    compiledNodes.push(resolveNodeParameters(node, registryEntry, patchedNodes));
   }
 
   if (unmappedTypes.length > 0) {
     warnings.push(`Unmapped node types: ${unmappedTypes.join(', ')}. These will use 'n8n-nodes-base.noOp'.`);
   }
 
-  const connections = compileConnections(compiledNodes, graph.edges ?? []);
+  // STAGE 3b: Connection Builder
+  const connections = buildConnections(compiledNodes, graph.edges ?? []);
 
-  const workflow: N8nWorkflowOutput = {
-    id: generateUUID(),
-    name: graph.metadata.name ?? 'Untitled Workflow',
-    active: false,
-    nodes: compiledNodes,
-    connections,
-    settings: { executionOrder: 'v1' },
-    pinData: {},
-    tags: graph.metadata.tags ?? ['qona-ai-generated'],
-  };
+  // STAGE 4: Schema Validator
+  const schemaErrors = validateWorkflowSchema(compiledNodes, patchedNodes);
+  errors.push(...schemaErrors);
 
+  // STAGE 5: JSON Generator
+  const workflow: N8nWorkflowOutput = generateWorkflowJSON(compiledNodes, connections, graph.metadata);
+
+  // STAGE 6: Export & Output Validator
   const outputErrors = validateOutput(workflow);
   errors.push(...outputErrors);
 

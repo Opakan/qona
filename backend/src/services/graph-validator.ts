@@ -37,6 +37,7 @@ export interface GraphValidationResult {
 const FALLBACK_TRIGGERS = new Set([
   'schedule', 'cron', 'manual',
   'form_submission', 'email_received', 'payment_received',
+  'rss_feed', 'stripe_trigger',
 ]);
 
 const TRIGGER_TYPES = new Set([

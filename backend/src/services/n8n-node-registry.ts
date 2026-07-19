@@ -550,7 +550,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
         mapped.operation = 'sendPhoto';
       }
       if (config.parseMode) mapped.parseMode = config.parseMode;
-      if (config.disableNotification) mapped.disableNotification = config.disableNotification;
+      if (config.disableNotification !== undefined) mapped.disableNotification = config.disableNotification;
       return mapped;
     },
   },
@@ -837,6 +837,297 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+  // ─────────────────────────────────────────
+  // EXTENDED NODES
+  // ─────────────────────────────────────────
+  'n8n-nodes-base.airtable': {
+    n8nType: 'n8n-nodes-base.airtable',
+    category: 'action',
+    displayName: 'Airtable',
+    typeVersion: 2,
+    requiredParams: ['application', 'table'],
+    optionalParams: ['operation', 'fields', 'filterByFormula', 'returnAll', 'limit'],
+    defaults: { operation: 'list' },
+    paramSchema: [
+      { field: 'application', type: 'string', required: true, description: 'Airtable Base ID' },
+      { field: 'table', type: 'string', required: true, description: 'Table name or ID' },
+      {
+        field: 'operation',
+        type: 'options',
+        required: false,
+        allowedValues: ['list', 'read', 'create', 'update', 'delete', 'search'],
+        defaultValue: 'list',
+      },
+      { field: 'fields', type: 'array', required: false },
+      { field: 'filterByFormula', type: 'string', required: false },
+      { field: 'returnAll', type: 'boolean', required: false },
+      { field: 'limit', type: 'number', required: false },
+    ],
+    credentials: [
+      { name: 'airtableApi', type: 'airtableApi', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.baseId) mapped.application = config.baseId;
+      if (config.application) mapped.application = config.application;
+      if (config.tableName) mapped.table = config.tableName;
+      if (config.table) mapped.table = config.table;
+      if (config.operation) mapped.operation = config.operation;
+      if (config.fields) mapped.fields = config.fields;
+      if (config.filterByFormula) mapped.filterByFormula = config.filterByFormula;
+      if (config.returnAll !== undefined) mapped.returnAll = config.returnAll;
+      if (config.limit) mapped.limit = config.limit;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.notion': {
+    n8nType: 'n8n-nodes-base.notion',
+    category: 'action',
+    displayName: 'Notion',
+    typeVersion: 2,
+    requiredParams: ['resource', 'operation'],
+    optionalParams: ['databaseId', 'pageId', 'title', 'properties', 'filter', 'sort'],
+    defaults: { resource: 'page', operation: 'create' },
+    paramSchema: [
+      {
+        field: 'resource',
+        type: 'options',
+        required: true,
+        allowedValues: ['block', 'database', 'databasePage', 'page', 'user'],
+        defaultValue: 'page',
+      },
+      {
+        field: 'operation',
+        type: 'options',
+        required: true,
+        allowedValues: ['create', 'get', 'getAll', 'update', 'archive', 'search'],
+        defaultValue: 'create',
+      },
+      { field: 'databaseId', type: 'string', required: false },
+      { field: 'pageId', type: 'string', required: false },
+      { field: 'title', type: 'string', required: false },
+      { field: 'properties', type: 'object', required: false },
+      { field: 'filter', type: 'object', required: false },
+      { field: 'sort', type: 'array', required: false },
+    ],
+    credentials: [
+      { name: 'notionApi', type: 'notionApi', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.resource) mapped.resource = config.resource;
+      if (config.operation) mapped.operation = config.operation;
+      if (config.databaseId) mapped.databaseId = config.databaseId;
+      if (config.pageId) mapped.pageId = config.pageId;
+      if (config.title) mapped.title = config.title;
+      if (config.properties) mapped.properties = config.properties;
+      if (config.filter) mapped.filter = config.filter;
+      if (config.sort) mapped.sort = config.sort;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.discord': {
+    n8nType: 'n8n-nodes-base.discord',
+    category: 'action',
+    displayName: 'Discord',
+    typeVersion: 2,
+    requiredParams: ['guildId', 'channelId'],
+    optionalParams: ['operation', 'resource', 'content', 'embeds', 'username', 'avatarUrl', 'tts'],
+    defaults: { resource: 'message', operation: 'send' },
+    paramSchema: [
+      { field: 'resource', type: 'options', required: false, allowedValues: ['message', 'channel', 'guild', 'member', 'role', 'webhook'], defaultValue: 'message' },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['send', 'get', 'getAll', 'delete', 'update', 'pin', 'unpin', 'react'], defaultValue: 'send' },
+      { field: 'guildId', type: 'string', required: true },
+      { field: 'channelId', type: 'string', required: true },
+      { field: 'content', type: 'string', required: false },
+      { field: 'embeds', type: 'array', required: false },
+      { field: 'username', type: 'string', required: false },
+      { field: 'tts', type: 'boolean', required: false },
+    ],
+    credentials: [
+      { name: 'discordApi', type: 'discordApi', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.guildId) mapped.guildId = config.guildId;
+      if (config.channelId) mapped.channelId = config.channelId;
+      if (config.content) mapped.content = config.content;
+      if (config.message) mapped.content = config.message;
+      if (config.embeds) mapped.embeds = config.embeds;
+      if (config.username) mapped.username = config.username;
+      if (config.resource) mapped.resource = config.resource;
+      if (config.operation) mapped.operation = config.operation;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.rssFeedRead': {
+    n8nType: 'n8n-nodes-base.rssFeedRead',
+    category: 'trigger',
+    displayName: 'RSS Feed Read',
+    typeVersion: 1,
+    requiredParams: ['url'],
+    optionalParams: ['pollTimes'],
+    defaults: {},
+    paramSchema: [
+      { field: 'url', type: 'string', required: true, description: 'RSS/Atom feed URL' },
+      { field: 'pollTimes', type: 'object', required: false },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.url) mapped.url = config.url;
+      if (config.feedUrl) mapped.url = config.feedUrl;
+      if (config.pollTimes) mapped.pollTimes = config.pollTimes;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.googleCalendar': {
+    n8nType: 'n8n-nodes-base.googleCalendar',
+    category: 'action',
+    displayName: 'Google Calendar',
+    typeVersion: 1,
+    requiredParams: ['calendarId'],
+    optionalParams: ['operation', 'resource', 'eventId', 'summary', 'start', 'end', 'description', 'attendees'],
+    defaults: { resource: 'event', operation: 'getAll' },
+    paramSchema: [
+      { field: 'resource', type: 'options', required: false, allowedValues: ['calendar', 'event'], defaultValue: 'event' },
+      { field: 'operation', type: 'options', required: false, allowedValues: ['create', 'get', 'getAll', 'update', 'delete', 'quickAdd'], defaultValue: 'getAll' },
+      { field: 'calendarId', type: 'string', required: true },
+      { field: 'eventId', type: 'string', required: false },
+      { field: 'summary', type: 'string', required: false },
+      { field: 'start', type: 'object', required: false },
+      { field: 'end', type: 'object', required: false },
+      { field: 'description', type: 'string', required: false },
+      { field: 'attendees', type: 'array', required: false },
+    ],
+    credentials: [
+      { name: 'googleCalendarOAuth2Api', type: 'googleCalendarOAuth2Api', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.calendarId) mapped.calendarId = config.calendarId;
+      if (config.operation) mapped.operation = config.operation;
+      if (config.resource) mapped.resource = config.resource;
+      if (config.eventId) mapped.eventId = config.eventId;
+      if (config.summary) mapped.summary = config.summary;
+      if (config.start) mapped.start = config.start;
+      if (config.end) mapped.end = config.end;
+      if (config.description) mapped.description = config.description;
+      if (config.attendees) mapped.attendees = config.attendees;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.openAi': {
+    n8nType: 'n8n-nodes-base.openAi',
+    category: 'action',
+    displayName: 'OpenAI',
+    typeVersion: 1,
+    requiredParams: ['operation'],
+    optionalParams: ['resource', 'model', 'prompt', 'messages', 'temperature', 'maxTokens', 'n'],
+    defaults: { resource: 'text', operation: 'complete', model: 'gpt-3.5-turbo' },
+    paramSchema: [
+      {
+        field: 'resource',
+        type: 'options',
+        required: false,
+        allowedValues: ['text', 'chat', 'image', 'audio', 'file', 'assistant', 'embedding'],
+        defaultValue: 'text',
+      },
+      {
+        field: 'operation',
+        type: 'options',
+        required: true,
+        allowedValues: ['complete', 'message', 'generate', 'transcribe', 'translate', 'create', 'upload', 'list', 'get', 'delete', 'classify'],
+        defaultValue: 'complete',
+      },
+      { field: 'model', type: 'string', required: false, defaultValue: 'gpt-3.5-turbo' },
+      { field: 'prompt', type: 'string', required: false },
+      { field: 'messages', type: 'array', required: false },
+      { field: 'temperature', type: 'number', required: false },
+      { field: 'maxTokens', type: 'number', required: false },
+      { field: 'n', type: 'number', required: false },
+    ],
+    credentials: [
+      { name: 'openAiApi', type: 'openAiApi', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.resource) mapped.resource = config.resource;
+      if (config.operation) mapped.operation = config.operation;
+      if (config.model) mapped.model = config.model;
+      if (config.prompt) mapped.prompt = config.prompt;
+      if (config.messages) mapped.messages = config.messages;
+      if (config.temperature !== undefined) mapped.temperature = config.temperature;
+      if (config.maxTokens) mapped.maxTokens = config.maxTokens;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.postgres': {
+    n8nType: 'n8n-nodes-base.postgres',
+    category: 'action',
+    displayName: 'PostgreSQL',
+    typeVersion: 2,
+    requiredParams: ['operation'],
+    optionalParams: ['query', 'table', 'schema', 'columns', 'additionalFields', 'returnAll', 'limit'],
+    defaults: { operation: 'executeQuery', schema: 'public' },
+    paramSchema: [
+      {
+        field: 'operation',
+        type: 'options',
+        required: true,
+        allowedValues: ['executeQuery', 'insert', 'update', 'delete', 'select'],
+        defaultValue: 'executeQuery',
+      },
+      { field: 'query', type: 'string', required: false },
+      { field: 'table', type: 'string', required: false },
+      { field: 'schema', type: 'string', required: false, defaultValue: 'public' },
+      { field: 'columns', type: 'string', required: false },
+      { field: 'additionalFields', type: 'object', required: false },
+      { field: 'returnAll', type: 'boolean', required: false },
+      { field: 'limit', type: 'number', required: false },
+    ],
+    credentials: [
+      { name: 'postgres', type: 'postgres', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.operation) mapped.operation = config.operation;
+      if (config.query) mapped.query = config.query;
+      if (config.table) mapped.table = config.table;
+      if (config.schema) mapped.schema = config.schema;
+      if (config.columns) mapped.columns = config.columns;
+      if (config.returnAll !== undefined) mapped.returnAll = config.returnAll;
+      if (config.limit) mapped.limit = config.limit;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.stripeTrigger': {
+    n8nType: 'n8n-nodes-base.stripeTrigger',
+    category: 'trigger',
+    displayName: 'Stripe Trigger',
+    typeVersion: 1,
+    requiredParams: ['events'],
+    optionalParams: [],
+    defaults: {},
+    paramSchema: [
+      { field: 'events', type: 'array', required: true, description: 'Stripe event types to listen for' },
+    ],
+    credentials: [
+      { name: 'stripeApi', type: 'stripeApi', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {};
+      if (config.events) mapped.events = config.events;
+      if (config.event) mapped.events = [config.event];
+      return mapped;
+    },
+  },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -861,31 +1152,46 @@ export function lookupRegistry(internalType: string, config?: Record<string, unk
 
   // Internal type → n8n type mapping
   const typeMap: Record<string, string> = {
+    // Triggers
     webhook: 'n8n-nodes-base.webhook',
     schedule: 'n8n-nodes-base.scheduleTrigger',
     cron: 'n8n-nodes-base.cron',
     manual: 'n8n-nodes-base.manualTrigger',
     form_submission: 'n8n-nodes-base.webhook',
-    payment_received: 'n8n-nodes-base.webhook',
+    payment_received: 'n8n-nodes-base.stripeTrigger',
+    stripe_trigger: 'n8n-nodes-base.stripeTrigger',
+    rss_feed: 'n8n-nodes-base.rssFeedRead',
+    // Actions — communication
     send_email: 'n8n-nodes-base.emailSend',
     gmail: 'n8n-nodes-base.gmail',
-    http_request: 'n8n-nodes-base.httpRequest',
-    transform_data: 'n8n-nodes-base.noOp',
-    filter: 'n8n-nodes-base.if',
-    delay: 'n8n-nodes-base.wait',
-    create_record: 'n8n-nodes-base.googleSheets',
-    update_record: 'n8n-nodes-base.googleSheets',
-    send_notification: 'n8n-nodes-base.slack',
-    run_code: 'n8n-nodes-base.code',
-    google_sheets: 'n8n-nodes-base.googleSheets',
     slack: 'n8n-nodes-base.slack',
     telegram: 'n8n-nodes-base.telegram',
+    discord: 'n8n-nodes-base.discord',
+    // Actions — data
+    google_sheets: 'n8n-nodes-base.googleSheets',
+    create_record: 'n8n-nodes-base.googleSheets',
+    update_record: 'n8n-nodes-base.googleSheets',
     supabase: 'n8n-nodes-base.supabase',
+    airtable: 'n8n-nodes-base.airtable',
+    notion: 'n8n-nodes-base.notion',
+    postgres: 'n8n-nodes-base.postgres',
+    // Actions — files/storage
     google_drive: 'n8n-nodes-base.googleDrive',
     dropbox: 'n8n-nodes-base.dropbox',
     one_drive: 'n8n-nodes-base.oneDrive',
     s3: 'n8n-nodes-base.s3',
     ftp: 'n8n-nodes-base.ftp',
+    // Actions — calendar/scheduling
+    google_calendar: 'n8n-nodes-base.googleCalendar',
+    // Actions — AI
+    openai: 'n8n-nodes-base.openAi',
+    // Actions — HTTP / code / flow
+    http_request: 'n8n-nodes-base.httpRequest',
+    transform_data: 'n8n-nodes-base.noOp',
+    filter: 'n8n-nodes-base.if',
+    delay: 'n8n-nodes-base.wait',
+    run_code: 'n8n-nodes-base.code',
+    send_notification: 'n8n-nodes-base.slack',
   };
 
   const n8nType = typeMap[internalType];
@@ -900,3 +1206,4 @@ export function getTriggerTypes(): string[] {
     .filter((e) => e.category === 'trigger')
     .map((e) => e.n8nType);
 }
+
