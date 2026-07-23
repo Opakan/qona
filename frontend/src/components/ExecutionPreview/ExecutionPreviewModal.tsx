@@ -45,10 +45,15 @@ export const ExecutionPreviewModal: React.FC<ExecutionPreviewModalProps> = ({
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    setActiveTrace(initialTrace);
-  }, [initialTrace]);
+    if (initialTrace) {
+      setActiveTrace(initialTrace);
+    } else if (isOpen) {
+      const generated = simulateGraphClient(currentGraph);
+      setActiveTrace(generated);
+    }
+  }, [initialTrace, isOpen, currentGraph]);
 
-  const trace = activeTrace;
+  const trace = activeTrace || (isOpen ? simulateGraphClient(currentGraph) : null);
 
   const startPlayback = useCallback(() => {
     if (!trace || !trace.steps || trace.steps.length === 0) return;
@@ -83,10 +88,10 @@ export const ExecutionPreviewModal: React.FC<ExecutionPreviewModalProps> = ({
   }, [trace]);
 
   useEffect(() => {
-    if (isOpen && initialTrace) {
+    if (isOpen && trace) {
       startPlayback();
     }
-  }, [isOpen, initialTrace, startPlayback]);
+  }, [isOpen, trace, startPlayback]);
 
   if (!isOpen || !trace) return null;
 

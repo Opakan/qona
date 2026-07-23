@@ -1,43 +1,68 @@
 import type { InternalGraph, ExecutionTrace, NodeExecutionStep, ExecutionReport } from '@qona/shared';
 
 /**
+ * Default sample graph used for instant execution previews when no custom graph is loaded.
+ */
+export const DEFAULT_SAMPLE_GRAPH: InternalGraph = {
+  id: 'graph_sample_preview',
+  name: 'AI Article Summarizer & Telegram Alert',
+  description: 'Waits for incoming Webhook article data, summarizes content using OpenAI GPT, and posts summary into Telegram.',
+  version: 1,
+  nodes: [
+    {
+      id: 'node_wh',
+      type: 'webhook',
+      label: 'Article Webhook',
+      category: 'trigger',
+      position: { x: 100, y: 100 },
+      params: { method: 'POST', path: 'summarize' },
+    },
+    {
+      id: 'node_ai',
+      type: 'openai',
+      label: 'Summarize Article with AI',
+      category: 'action',
+      position: { x: 300, y: 100 },
+      params: { model: 'gpt-4o-mini' },
+    },
+    {
+      id: 'node_tg',
+      type: 'telegram',
+      label: 'Post to Telegram',
+      category: 'action',
+      position: { x: 500, y: 100 },
+      params: { chatId: '@mychannel' },
+    },
+  ],
+  edges: [
+    { id: 'e1', source: 'node_wh', target: 'node_ai' },
+    { id: 'e2', source: 'node_ai', target: 'node_tg' },
+  ],
+};
+
+/**
  * Client-Side Instant Workflow Playground Simulator
  * Runs synchronously in-browser (<1ms latency) with 0 network/API calls.
  */
-
 export function simulateGraphClient(
-  graph: InternalGraph,
+  graph?: InternalGraph | null,
   customTriggerPayload?: Record<string, unknown>
 ): ExecutionTrace {
+  const activeGraph = (graph && graph.nodes && graph.nodes.length > 0) ? graph : DEFAULT_SAMPLE_GRAPH;
+
   const startTime = new Date();
   const steps: NodeExecutionStep[] = [];
   const summary: string[] = [];
   const nodeOutputs = new Map<string, Record<string, unknown>>();
 
-  if (!graph.nodes || graph.nodes.length === 0) {
-    const endTime = new Date();
-    return {
-      id: `sim_trace_${Date.now()}`,
-      graphId: graph.id,
-      graphName: graph.name || 'Untitled Graph',
-      status: 'failed',
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      totalDurationMs: 0,
-      steps: [],
-      simulatedTriggerPayload: {},
-      summary: ['Error: Graph contains no nodes'],
-    };
-  }
-
   // Topological ordering
-  const orderedNodes = [...graph.nodes];
+  const orderedNodes = [...activeGraph.nodes];
   let simulatedTriggerPayload: Record<string, unknown> = {};
 
   let totalMs = 0;
   for (let i = 0; i < orderedNodes.length; i++) {
     const node = orderedNodes[i];
-    const incomingEdges = (graph.edges || []).filter((e) => e.target === node.id);
+    const incomingEdges = (activeGraph.edges || []).filter((e) => e.target === node.id);
 
     let stepInputData: Record<string, unknown> = {};
 
@@ -86,7 +111,7 @@ export function simulateGraphClient(
   const endTime = new Date();
 
   const report: ExecutionReport = {
-    workflowSummary: graph.description || `Automates data pipeline with ${graph.nodes.length} nodes.`,
+    workflowSummary: activeGraph.description || `Automates data pipeline with ${activeGraph.nodes.length} nodes.`,
     trigger: `${steps[0]?.nodeLabel || 'Trigger'} (${steps[0]?.nodeType || 'trigger'})`,
     actions: steps.slice(1).map((s) => `${s.nodeLabel} (${s.nodeType})`),
     estimatedRuntimeMs: totalMs,
@@ -111,8 +136,8 @@ export function simulateGraphClient(
 
   return {
     id: `sim_trace_${Date.now()}`,
-    graphId: graph.id,
-    graphName: graph.name || 'Untitled Graph',
+    graphId: activeGraph.id,
+    graphName: activeGraph.name || 'Untitled Graph',
     status: 'success',
     startTime: startTime.toISOString(),
     endTime: endTime.toISOString(),

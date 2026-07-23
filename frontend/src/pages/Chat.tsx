@@ -51,21 +51,22 @@ export default function ChatPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleSimulateExecution = async (customPayload?: Record<string, unknown>) => {
-    if (!currentWorkflow) return;
     setSimulating(true);
     try {
-      const { data } = await apiClient.post('/workflows/simulate', {
-        graph: currentWorkflow,
-        customTriggerPayload: customPayload,
-      });
-      if (data.trace) {
-        setSimulationTrace(data.trace);
-        setShowSimulationModal(true);
+      if (currentWorkflow) {
+        const { data } = await apiClient.post('/workflows/simulate', {
+          graph: currentWorkflow,
+          customTriggerPayload: customPayload,
+        });
+        if (data.trace) {
+          setSimulationTrace(data.trace);
+        }
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || err.message || 'Simulation failed');
+      console.warn('Backend simulation call failed, falling back to client simulation:', err);
     } finally {
       setSimulating(false);
+      setShowSimulationModal(true);
     }
   };
 
@@ -498,17 +499,15 @@ export default function ChatPage() {
           <Workflow className="h-4 w-4 text-slate-400" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Workflow Canvas</span>
           <div className="ml-auto flex items-center gap-2">
-            {currentWorkflow && (
-              <button
-                onClick={handleSimulateExecution}
-                disabled={simulating}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800 shadow-2xs transition-all hover:bg-emerald-100 cursor-pointer"
-                title="Simulate step-by-step workflow execution with mock data before exporting"
-              >
-                {simulating ? <Loader2 className="h-3 w-3 animate-spin text-emerald-700" /> : <Play className="h-3 w-3 fill-current text-emerald-700" />}
-                {simulating ? 'Simulating...' : 'Simulate Run'}
-              </button>
-            )}
+            <button
+              onClick={() => handleSimulateExecution()}
+              disabled={simulating}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800 shadow-2xs transition-all hover:bg-emerald-100 cursor-pointer"
+              title="Simulate step-by-step workflow execution with mock data before exporting"
+            >
+              {simulating ? <Loader2 className="h-3 w-3 animate-spin text-emerald-700" /> : <Play className="h-3 w-3 fill-current text-emerald-700" />}
+              {simulating ? 'Simulating...' : 'Simulate Run'}
+            </button>
 
             {sessionId && (
               <>
