@@ -1,0 +1,55 @@
+{
+  "id": "tpl_webhook_telegram",
+  "slug": "webhook-to-telegram",
+  "name": "Instant Webhook to Telegram Bot Notification",
+  "description": "Receives incoming webhooks from any app or website and instantly forwards notifications to your Telegram chat or group.",
+  "category": "Messaging & Alerts",
+  "icon": "telegram",
+  "difficulty": "Beginner",
+  "tags": ["Webhook", "Telegram", "Bot", "Instant Alerts"],
+  "plainEnglishSummary": [
+    "Listens for incoming webhooks at your unique n8n URL.",
+    "Formats incoming data payload.",
+    "Sends an instant alert directly to your Telegram chat or group."
+  ],
+  "requiredUserInputs": [
+    {
+      "nodeId": "node_telegram",
+      "field": "chatId",
+      "label": "Telegram Chat ID or @channel",
+      "placeholder": "@mychannel or 123456789",
+      "setupGuide": "Search for @BotFather in Telegram, create a bot to get your API Token, then put your Chat ID or @channel username here!"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node_webhook",
+        "type": "webhook",
+        "label": "Receive Webhook Event",
+        "category": "trigger",
+        "params": {
+          "method": "POST",
+          "path": "alert-webhook"
+        }
+      },
+      {
+        "id": "node_telegram",
+        "type": "telegram",
+        "label": "Send Telegram Alert",
+        "category": "action",
+        "params": {
+          "text": "New Webhook Notification Received!"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_webhook_telegram",
+        "source": "node_webhook",
+        "target": "node_telegram"
+      }
+    ]
+  },
+  "featured": true
+}

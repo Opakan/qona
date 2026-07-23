@@ -1157,7 +1157,76 @@ export function lookupRegistry(internalType: string, config?: Record<string, unk
     schedule: 'n8n-nodes-base.scheduleTrigger',
     cron: 'n8n-nodes-base.cron',
     manual: 'n8n-nodes-base.manualTrigger',
-    form_submission: 'n8n-nodes-base.webhook',
+    'n8n-nodes-base.openAi': {
+    n8nType: 'n8n-nodes-base.openAi',
+    category: 'action',
+    displayName: 'OpenAI',
+    typeVersion: 1,
+    requiredParams: ['prompt'],
+    optionalParams: ['resource', 'operation', 'model', 'options'],
+    defaults: {
+      resource: 'text',
+      operation: 'complete',
+      model: 'gpt-4o-mini',
+    },
+    paramSchema: [
+      { field: 'resource', type: 'options', required: false, defaultValue: 'text' },
+      { field: 'operation', type: 'options', required: false, defaultValue: 'complete' },
+      { field: 'prompt', type: 'string', required: true },
+      { field: 'model', type: 'string', required: false, defaultValue: 'gpt-4o-mini' },
+    ],
+    credentials: [
+      { name: 'openAiApi', type: 'openAiApi', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = {
+        resource: 'text',
+        operation: 'complete',
+        model: config.model || 'gpt-4o-mini',
+      };
+      if (config.prompt) mapped.prompt = config.prompt;
+      return mapped;
+    },
+  },
+
+  'n8n-nodes-base.cron': {
+    n8nType: 'n8n-nodes-base.cron',
+    category: 'trigger',
+    displayName: 'Schedule Trigger',
+    typeVersion: 1,
+    requiredParams: [],
+    optionalParams: ['triggerTimes', 'mode'],
+    defaults: {
+      triggerTimes: { item: [{ mode: 'everyDay', hour: 9, minute: 0 }] },
+    },
+    paramSchema: [],
+  },
+
+  'n8n-nodes-base.postgres': {
+    n8nType: 'n8n-nodes-base.postgres',
+    category: 'action',
+    displayName: 'PostgreSQL',
+    typeVersion: 1,
+    requiredParams: ['query'],
+    optionalParams: ['operation'],
+    defaults: {
+      operation: 'executeQuery',
+    },
+    paramSchema: [
+      { field: 'operation', type: 'options', required: false, defaultValue: 'executeQuery' },
+      { field: 'query', type: 'string', required: true },
+    ],
+    credentials: [
+      { name: 'postgres', type: 'postgres', required: true },
+    ],
+    mapConfig: (config) => {
+      const mapped: Record<string, unknown> = { operation: 'executeQuery' };
+      if (config.query) mapped.query = config.query;
+      return mapped;
+    },
+  },
+
+  form_submission: 'n8n-nodes-base.webhook',
     payment_received: 'n8n-nodes-base.stripeTrigger',
     stripe_trigger: 'n8n-nodes-base.stripeTrigger',
     rss_feed: 'n8n-nodes-base.rssFeedRead',

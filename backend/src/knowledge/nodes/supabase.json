@@ -1,75 +1,44 @@
 {
   "nodeType": "supabase",
   "displayName": "Supabase",
-  "description": "Interacts with a Supabase database. Can insert, update, select, or delete rows from tables.",
+  "description": "Performs database operations (insert, select, update) on your Supabase Postgres tables.",
   "category": "action",
+  "setupGuide": {
+    "title": "Connecting Supabase (2 Quick Steps)",
+    "summary": "You need your Supabase Project URL and Service Role API Key.",
+    "steps": [
+      "Log into your Supabase Dashboard and select your project.",
+      "Go to Project Settings -> API to copy your Project URL and service_role secret key!"
+    ],
+    "docUrl": "https://supabase.com/docs/guides/api"
+  },
   "requiredFields": [
     {
-      "field": "tableName",
+      "field": "table",
       "label": "Table Name",
       "type": "string",
-      "description": "The name of the Supabase table to operate on",
-      "required": true,
-      "placeholder": "users"
-    }
-  ],
-  "optionalFields": [
+      "description": "Name of the target database table (e.g. users, orders)",
+      "required": true
+    },
     {
       "field": "operation",
       "label": "Operation",
       "type": "select",
-      "description": "The database operation to perform",
-      "options": ["select", "insert", "update", "delete"],
+      "description": "Database operation (insert, select, update, delete)",
+      "required": true,
+      "options": ["insert", "select", "update", "delete"],
       "defaultValue": "insert"
-    },
-    {
-      "field": "filters",
-      "label": "Filters",
-      "type": "json",
-      "description": "JSON object with column:value pairs for filtering, e.g. {\"status\": \"active\"}"
-    },
-    {
-      "field": "columns",
-      "label": "Columns",
-      "type": "string",
-      "description": "Comma-separated column names to select (for select operation)",
-      "placeholder": "id,name,email"
-    },
-    {
-      "field": "orderBy",
-      "label": "Order By",
-      "type": "string",
-      "description": "Column to sort results by",
-      "placeholder": "created_at"
-    },
-    {
-      "field": "limit",
-      "label": "Limit",
-      "type": "number",
-      "description": "Maximum number of rows to return",
-      "defaultValue": "100"
     }
   ],
+  "optionalFields": [],
   "outputs": [
     {
       "field": "data",
-      "label": "Result Data",
+      "label": "Records Data",
       "type": "array",
-      "description": "The rows returned or affected by the operation"
-    },
-    {
-      "field": "count",
-      "label": "Row Count",
-      "type": "number",
-      "description": "The number of rows returned"
-    },
-    {
-      "field": "error",
-      "label": "Error",
-      "type": "object",
-      "description": "Supabase error object if the operation failed"
+      "description": "Returned rows"
     }
   ],
   "n8nType": "n8n-nodes-base.supabase",
-  "keywords": ["supabase", "database", "db", "postgres", "insert", "select", "update", "delete", "table"]
+  "keywords": ["supabase", "database", "postgres", "sql", "table", "insert", "rows"]
 }

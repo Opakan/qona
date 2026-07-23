@@ -3,6 +3,7 @@
   "displayName": "Webhook",
   "description": "Receives HTTP requests from external services. Used as a trigger to start workflows when data is posted to a URL.",
   "category": "trigger",
+  "plainEnglishExplanation": "This node waits for an incoming HTTP request.",
   "requiredFields": [],
   "optionalFields": [
     {

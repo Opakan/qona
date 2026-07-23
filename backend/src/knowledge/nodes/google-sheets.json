@@ -1,64 +1,43 @@
 {
-  "nodeType": "google_sheets",
+  "nodeType": "google-sheets",
   "displayName": "Google Sheets",
-  "description": "Reads from or writes to Google Sheets spreadsheets. Can append rows, update cells, or read sheet data.",
+  "description": "Reads, appends, and updates data in Google Sheets spreadsheets.",
   "category": "action",
+  "setupGuide": {
+    "title": "Finding your Google Sheet ID (2 Simple Steps)",
+    "summary": "To connect Google Sheets, you just need the Spreadsheet ID from your web browser URL.",
+    "steps": [
+      "Open your Google Sheet in your web browser.",
+      "Look at the URL bar at the top (e.g., https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKbB.../edit). Copy the long string of characters between /d/ and /edit - that is your Spreadsheet ID!"
+    ],
+    "docUrl": "https://developers.google.com/sheets/api/guides/concepts"
+  },
   "requiredFields": [
     {
-      "field": "spreadsheetId",
+      "field": "documentId",
       "label": "Spreadsheet ID",
       "type": "string",
-      "description": "The ID of the Google Sheets spreadsheet (found in the URL)",
-      "required": true,
-      "placeholder": "1BxiMVs0XRA5nFMdKvBdBZjgm..."
-    }
-  ],
-  "optionalFields": [
+      "description": "The ID of the spreadsheet from the URL",
+      "required": true
+    },
     {
       "field": "sheetName",
       "label": "Sheet Name",
       "type": "string",
-      "description": "The name of the specific sheet/tab within the spreadsheet",
+      "description": "The name of the worksheet tab (e.g. Sheet1)",
+      "required": true,
       "defaultValue": "Sheet1"
-    },
-    {
-      "field": "operation",
-      "label": "Operation",
-      "type": "select",
-      "description": "What operation to perform on the sheet",
-      "options": ["append", "read", "update", "clear"],
-      "defaultValue": "append"
-    },
-    {
-      "field": "range",
-      "label": "Range",
-      "type": "string",
-      "description": "The cell range to read/write (e.g. A1:C10)",
-      "placeholder": "A1:C10"
-    },
-    {
-      "field": "dataMode",
-      "label": "Data Input Mode",
-      "type": "select",
-      "description": "How to map incoming data to sheet columns",
-      "options": ["autoMap", "defineEach", "raw"],
-      "defaultValue": "autoMap"
     }
   ],
+  "optionalFields": [],
   "outputs": [
     {
-      "field": "updatedRange",
-      "label": "Updated Range",
-      "type": "string",
-      "description": "The range that was updated"
-    },
-    {
-      "field": "rows",
-      "label": "Rows",
-      "type": "array",
-      "description": "The data rows read or written"
+      "field": "row",
+      "label": "Sheet Row Data",
+      "type": "object",
+      "description": "The row contents"
     }
   ],
   "n8nType": "n8n-nodes-base.googleSheets",
-  "keywords": ["google sheets", "spreadsheet", "sheet", "google", "table", "rows", "excel"]
+  "keywords": ["google sheets", "sheets", "spreadsheet", "csv", "excel", "rows", "cell"]
 }

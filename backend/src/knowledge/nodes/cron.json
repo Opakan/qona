@@ -1,0 +1,36 @@
+{
+  "nodeType": "cron",
+  "displayName": "Schedule (Cron)",
+  "description": "Triggers your automation automatically on a recurring schedule (e.g., every hour, daily, weekly).",
+  "category": "trigger",
+  "setupGuide": {
+    "title": "Setting up Scheduled Timers",
+    "summary": "Choose how often you want this workflow to run automatically.",
+    "steps": [
+      "Select a schedule frequency (every minute, every hour, daily at a set time, or weekly).",
+      "No 3rd-party configuration needed—n8n manages the background timer automatically!"
+    ]
+  },
+  "requiredFields": [
+    {
+      "field": "mode",
+      "label": "Frequency",
+      "type": "select",
+      "description": "How often the workflow should trigger",
+      "required": true,
+      "options": ["everyMinute", "everyHour", "everyDay", "everyWeek"],
+      "defaultValue": "everyDay"
+    }
+  ],
+  "optionalFields": [],
+  "outputs": [
+    {
+      "field": "timestamp",
+      "label": "Trigger Time",
+      "type": "string",
+      "description": "ISO timestamp when trigger ran"
+    }
+  ],
+  "n8nType": "n8n-nodes-base.cron",
+  "keywords": ["cron", "schedule", "timer", "recurring", "daily", "hourly", "every"]
+}

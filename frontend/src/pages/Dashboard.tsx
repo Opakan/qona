@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Workflow, BarChart3, Plus, History, Sparkles } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { TemplateGallery } from '../components/TemplateGallery';
 
 export default function Dashboard() {
   const { user, dbUser, signOut, toggleDeveloperRole } = useAuth();
@@ -117,6 +118,22 @@ export default function Dashboard() {
               <span className="text-sm font-semibold text-slate-955">Analytics</span>
               <span className="mt-2 text-xs leading-relaxed text-slate-500">Track and monitor your execution rates and triggers.</span>
             </button>
+          </div>
+
+          {/* Ready-Made Automation Templates Section */}
+          <div className="mt-12">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-indigo-600" />
+                  Ready-Made Automation Templates
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Launch pre-configured n8n workflows instantly instead of starting from scratch.
+                </p>
+              </div>
+            </div>
+            <TemplateGallery />
           </div>
 
           {/* Stats Overview */}

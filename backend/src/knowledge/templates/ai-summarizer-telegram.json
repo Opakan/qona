@@ -1,0 +1,73 @@
+{
+  "id": "tpl_ai_telegram",
+  "slug": "ai-summarizer-telegram",
+  "name": "AI Text Summarizer & Telegram Publisher",
+  "description": "Receives incoming articles or text via Webhook, summarizes content using OpenAI GPT, and posts the summary to Telegram.",
+  "category": "AI & Automation",
+  "icon": "openai",
+  "difficulty": "Intermediate",
+  "tags": ["AI", "OpenAI", "Telegram", "Summarizer"],
+  "plainEnglishSummary": [
+    "Receives input text via incoming HTTP POST webhook.",
+    "Processes content with OpenAI GPT to generate a concise summary.",
+    "Publishes the AI summary directly to your Telegram chat automatically."
+  ],
+  "requiredUserInputs": [
+    {
+      "nodeId": "node_telegram",
+      "field": "chatId",
+      "label": "Telegram Chat ID",
+      "placeholder": "@mychannel or 123456789",
+      "setupGuide": "Search for @BotFather in Telegram to get your bot token, then enter your Chat ID or @channel username here!"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node_webhook",
+        "type": "webhook",
+        "label": "Receive Article Webhook",
+        "category": "trigger",
+        "params": {
+          "method": "POST",
+          "path": "summarize"
+        }
+      },
+      {
+        "id": "node_openai",
+        "type": "openai",
+        "label": "Generate AI Summary",
+        "category": "action",
+        "params": {
+          "resource": "text",
+          "operation": "complete",
+          "prompt": "={{ $json.body.text ?? $json.text }}",
+          "model": "gpt-4o-mini"
+        }
+      },
+      {
+        "id": "node_telegram",
+        "type": "telegram",
+        "label": "Post Summary to Telegram",
+        "category": "action",
+        "params": {
+          "chatId": "{{USER_CONFIGURED}}",
+          "text": "🤖 AI Executive Summary:\n\n={{ $json.message?.content ?? $json.text }}"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node_webhook",
+        "target": "node_openai"
+      },
+      {
+        "id": "e2",
+        "source": "node_openai",
+        "target": "node_telegram"
+      }
+    ]
+  },
+  "featured": true
+}

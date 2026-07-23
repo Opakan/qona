@@ -1,0 +1,48 @@
+{
+  "id": "tpl_webhook_openai",
+  "slug": "webhook-to-openai",
+  "name": "Smart AI Webhook Assistant",
+  "description": "Exposes an n8n Webhook endpoint that feeds incoming user requests directly to OpenAI GPT and returns the AI answer.",
+  "category": "AI & Automation",
+  "icon": "openai",
+  "difficulty": "Beginner",
+  "tags": ["Webhook", "OpenAI", "AI Assistant", "API"],
+  "plainEnglishSummary": [
+    "Listens for user prompts via HTTP POST webhook.",
+    "Queries OpenAI GPT model with the prompt.",
+    "Returns the AI generated response."
+  ],
+  "requiredUserInputs": [],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node_webhook",
+        "type": "webhook",
+        "label": "Receive User Prompt",
+        "category": "trigger",
+        "params": {
+          "method": "POST",
+          "path": "ai-assistant"
+        }
+      },
+      {
+        "id": "node_openai",
+        "type": "openai",
+        "label": "Generate AI Response",
+        "category": "action",
+        "params": {
+          "prompt": "Answer the user question accurately and concisely.",
+          "model": "gpt-4o-mini"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node_webhook",
+        "target": "node_openai"
+      }
+    ]
+  },
+  "featured": false
+}

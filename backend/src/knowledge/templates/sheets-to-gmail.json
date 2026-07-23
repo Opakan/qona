@@ -1,0 +1,61 @@
+{
+  "id": "tpl_sheets_gmail",
+  "slug": "google-sheets-to-gmail",
+  "name": "Google Sheets Lead Collector & Email Alert",
+  "description": "Monitors a Google Sheet for new row entries and automatically sends an email notification via Gmail.",
+  "category": "Lead Generation",
+  "icon": "sheets",
+  "difficulty": "Beginner",
+  "tags": ["Google Sheets", "Gmail", "Alerts", "Leads"],
+  "plainEnglishSummary": [
+    "Monitors your Google Sheet every minute for new rows.",
+    "Formats the new row data into a clean email message.",
+    "Sends an instant email notification to your inbox."
+  ],
+  "requiredUserInputs": [
+    {
+      "nodeId": "node_trigger",
+      "field": "documentId",
+      "label": "Google Sheet ID",
+      "placeholder": "1BxiMVs0XRA5nFMdKbB...",
+      "setupGuide": "Open your Google Sheet, look at the URL in your browser, and copy the string between /d/ and /edit!"
+    },
+    {
+      "nodeId": "node_action",
+      "field": "to",
+      "label": "Recipient Email",
+      "placeholder": "admin@example.com",
+      "setupGuide": "Enter the email address where notifications should be sent."
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node_trigger",
+        "type": "google-sheets",
+        "label": "When New Row Added",
+        "category": "trigger",
+        "params": {
+          "sheetName": "Sheet1"
+        }
+      },
+      {
+        "id": "node_action",
+        "type": "gmail",
+        "label": "Send Gmail Notification",
+        "category": "action",
+        "params": {
+          "subject": "New Lead Added in Google Sheets"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_trigger_action",
+        "source": "node_trigger",
+        "target": "node_action"
+      }
+    ]
+  },
+  "featured": true
+}

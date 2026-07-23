@@ -64,7 +64,10 @@ export const nodeRegistry = {
 
   /** Get a single node definition by its nodeType */
   getNode(nodeType: string): NodeDefinition | undefined {
-    return loadAllNodes().find((n) => n.nodeType === nodeType);
+    const norm = nodeType.replace(/_/g, '-');
+    return loadAllNodes().find(
+      (n) => n.nodeType === nodeType || n.nodeType === norm || n.nodeType.replace(/_/g, '-') === norm
+    );
   },
 
   /** Return all loaded node definitions */
@@ -106,7 +109,7 @@ export const nodeRegistry = {
 
   /** Check if a node type is registered */
   isRegistered(nodeType: string): boolean {
-    return loadAllNodes().some((n) => n.nodeType === nodeType);
+    return !!this.getNode(nodeType);
   },
 
   /** Get required fields for a given node type */

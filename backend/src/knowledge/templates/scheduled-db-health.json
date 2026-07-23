@@ -1,0 +1,68 @@
+{
+  "id": "tpl_scheduled_db",
+  "slug": "scheduled-db-health",
+  "name": "Scheduled Database Health Check & Email Report",
+  "description": "Runs on a daily timer to query a PostgreSQL database and email a health status report to system administrators.",
+  "category": "Database & CRM",
+  "icon": "postgres",
+  "difficulty": "Advanced",
+  "tags": ["Cron", "PostgreSQL", "Gmail", "Database"],
+  "plainEnglishSummary": [
+    "Triggers automatically every day at a scheduled time.",
+    "Executes a SQL query to check database counts and health status.",
+    "Sends an executive status report email via Gmail."
+  ],
+  "requiredUserInputs": [
+    {
+      "nodeId": "node_email",
+      "field": "to",
+      "label": "Admin Email",
+      "placeholder": "sysadmin@example.com",
+      "setupGuide": "Enter the administrator email address to receive daily reports."
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node_cron",
+        "type": "cron",
+        "label": "Daily Timer",
+        "category": "trigger",
+        "params": {
+          "mode": "everyDay"
+        }
+      },
+      {
+        "id": "node_postgres",
+        "type": "postgres",
+        "label": "Run DB Health Check SQL",
+        "category": "action",
+        "params": {
+          "query": "SELECT count(*) as total_users FROM users;"
+        }
+      },
+      {
+        "id": "node_email",
+        "type": "gmail",
+        "label": "Send Health Status Email",
+        "category": "action",
+        "params": {
+          "subject": "Daily Database Health Status Report"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "node_cron",
+        "target": "node_postgres"
+      },
+      {
+        "id": "e2",
+        "source": "node_postgres",
+        "target": "node_email"
+      }
+    ]
+  },
+  "featured": false
+}

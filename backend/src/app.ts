@@ -14,6 +14,8 @@ import { sessionsRouter } from './routes/sessions.js';
 import { debugRouter } from './routes/debug.js';
 import { plannerRouter } from './routes/planner.js';
 import { adminRouter } from './routes/admin.js';
+import { templateRouter } from './routes/template.routes.js';
+import { simulationRouter } from './routes/simulation.routes.js';
 
 export function createApp() {
   const app = express();
@@ -27,7 +29,9 @@ export function createApp() {
   app.use('/api/workflows', workflowsRouter);
   app.use('/api/conversations', conversationsRouter);
   app.use('/api/payments', paymentsRouter);
+  app.use('/api/templates', templateRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api', simulationRouter);
   app.use('/api', sessionsRouter);
   app.use('/api', debugRouter);
   app.use('/api', plannerRouter);

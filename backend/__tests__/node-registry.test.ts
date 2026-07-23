@@ -179,7 +179,7 @@ describe('nodeRegistry', () => {
       expect(ctx).toContain('telegram');
       expect(ctx).toContain('http_request');
       expect(ctx).toContain('supabase');
-      expect(ctx).toContain('google_sheets');
+      expect(ctx.includes('google-sheets') || ctx.includes('google_sheets')).toBe(true);
     });
 
     it('includes IMPORTANT RULES section', () => {

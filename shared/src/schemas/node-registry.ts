@@ -18,6 +18,19 @@ export const NodeOutputSchema = z.object({
   description: z.string().max(500).default(''),
 });
 
+export const SetupGuideStepSchema = z.object({
+  title: z.string().optional(),
+  instruction: z.string(),
+  tip: z.string().optional(),
+});
+
+export const SetupGuideSchema = z.object({
+  title: z.string(),
+  summary: z.string().optional(),
+  steps: z.array(z.union([z.string(), SetupGuideStepSchema])),
+  docUrl: z.string().optional(),
+});
+
 export const NodeDefinitionSchema = z.object({
   nodeType: z.string().min(1),
   displayName: z.string().min(1).max(200),
@@ -28,6 +41,8 @@ export const NodeDefinitionSchema = z.object({
   outputs: z.array(NodeOutputSchema).default([]),
   n8nType: z.string().optional(),
   keywords: z.array(z.string()).default([]),
+  plainEnglishExplanation: z.string().optional(),
+  setupGuide: SetupGuideSchema.optional(),
 });
 
 export const NodeRegistrySchema = z.object({
@@ -37,5 +52,8 @@ export const NodeRegistrySchema = z.object({
 
 export type NodeField = z.infer<typeof NodeFieldSchema>;
 export type NodeOutput = z.infer<typeof NodeOutputSchema>;
+export type SetupGuideStep = z.infer<typeof SetupGuideStepSchema>;
+export type SetupGuide = z.infer<typeof SetupGuideSchema>;
 export type NodeDefinition = z.infer<typeof NodeDefinitionSchema>;
 export type NodeRegistry = z.infer<typeof NodeRegistrySchema>;
+

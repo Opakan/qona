@@ -1,63 +1,44 @@
 {
   "nodeType": "telegram",
   "displayName": "Telegram",
-  "description": "Sends messages, photos, or documents to Telegram chats or channels via a bot.",
+  "description": "Sends messages and alerts to Telegram chats or channels via a bot.",
   "category": "action",
+  "plainEnglishExplanation": "This node posts the generated summary into your selected Telegram chat.",
+  "setupGuide": {
+    "title": "Setting up your Telegram Bot (3 Easy Steps)",
+    "summary": "To send Telegram notifications, you need a free Bot Token from Telegram.",
+    "steps": [
+      "Open Telegram on your device and search for @BotFather.",
+      "Start a chat with BotFather, send /newbot, and choose a name for your bot.",
+      "Copy the HTTP API Token provided (e.g., 123456789:ABCdefGhI...) and paste it into Qonace!"
+    ],
+    "docUrl": "https://core.telegram.org/bots#get-a-token"
+  },
   "requiredFields": [
     {
       "field": "chatId",
-      "label": "Chat ID",
+      "label": "Chat ID or Channel Name",
       "type": "string",
-      "description": "The Telegram chat or channel ID to send the message to",
-      "required": true,
-      "placeholder": "-1001234567890"
-    }
-  ],
-  "optionalFields": [
+      "description": "The target Chat ID or channel username (e.g., @mychannel or 12345678)",
+      "required": true
+    },
     {
       "field": "text",
-      "label": "Message Text",
+      "label": "Message Content",
       "type": "text",
-      "description": "The message text to send (supports Markdown)",
-      "placeholder": "Hello from Qona!"
-    },
-    {
-      "field": "parseMode",
-      "label": "Parse Mode",
-      "type": "select",
-      "description": "How to parse the message text",
-      "options": ["HTML", "MarkdownV2", "Markdown", "plain"],
-      "defaultValue": "Markdown"
-    },
-    {
-      "field": "disableNotification",
-      "label": "Disable Notification",
-      "type": "boolean",
-      "description": "Send the message silently without notification",
-      "defaultValue": "false"
-    },
-    {
-      "field": "photo",
-      "label": "Photo URL",
-      "type": "url",
-      "description": "URL of a photo to attach to the message",
-      "placeholder": "https://example.com/image.jpg"
+      "description": "The message text to send",
+      "required": true
     }
   ],
+  "optionalFields": [],
   "outputs": [
     {
       "field": "messageId",
       "label": "Message ID",
-      "type": "number",
-      "description": "The Telegram message ID"
-    },
-    {
-      "field": "chat",
-      "label": "Chat Object",
-      "type": "object",
-      "description": "The Telegram chat object where the message was sent"
+      "type": "string",
+      "description": "Unique ID of sent message"
     }
   ],
   "n8nType": "n8n-nodes-base.telegram",
-  "keywords": ["telegram", "chat", "bot", "message", "send telegram", "notify telegram"]
+  "keywords": ["telegram", "bot", "chat", "alert", "channel", "notify", "message"]
 }

@@ -591,6 +591,14 @@ export function generateNextQuestion(
         : 'integration',
   };
 
+  const nodeType = plan?.trigger?.type ?? plan?.actions?.[0]?.type;
+  if (nodeType) {
+    const nodeDef = nodeRegistry.getNode(nodeType);
+    if (nodeDef?.setupGuide) {
+      question.description = `💡 Setup Guide: ${nodeDef.setupGuide.title} - ${nodeDef.setupGuide.steps.join(' ')}`;
+    }
+  }
+
   if (req.field === 'trigger_provider' && plan.trigger?.type === 'email_received') {
     question.question = 'Which email provider do you use?';
     question.options = ['Gmail', 'Microsoft Outlook', 'IMAP', 'POP3', 'Exchange', 'Yahoo'];

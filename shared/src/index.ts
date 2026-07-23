@@ -10,4 +10,6 @@ export * from './schemas/missing-info.js';
 export * from './schemas/planning.js';
 export * from './schemas/workflow-plan.js';
 export * from './schemas/node-registry.js';
+export * from './schemas/template.js';
+export * from './schemas/execution-trace.js';
 export * from './constants.js';

@@ -1,0 +1,62 @@
+{
+  "id": "tpl_supabase_slack",
+  "slug": "supabase-to-slack",
+  "name": "Supabase Database Record to Slack Channel Alert",
+  "description": "Monitors Supabase table insertions (e.g. new users, new orders) and broadcasts real-time alerts to a Slack channel.",
+  "category": "Database & CRM",
+  "icon": "slack",
+  "difficulty": "Intermediate",
+  "tags": ["Supabase", "Slack", "Database", "Real-time"],
+  "plainEnglishSummary": [
+    "Monitors your Supabase database table for newly inserted records.",
+    "Formats record details into a Slack block card.",
+    "Posts the update directly into your team's Slack channel."
+  ],
+  "requiredUserInputs": [
+    {
+      "nodeId": "node_supabase",
+      "field": "table",
+      "label": "Supabase Table Name",
+      "placeholder": "users",
+      "setupGuide": "Enter the table name in Supabase (e.g., users, orders, feedback)."
+    },
+    {
+      "nodeId": "node_slack",
+      "field": "channel",
+      "label": "Slack Channel",
+      "placeholder": "#general",
+      "setupGuide": "Enter the channel name where alerts should be posted (e.g. #sales or #dev-logs)."
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "node_supabase",
+        "type": "supabase",
+        "label": "When Record Inserted",
+        "category": "trigger",
+        "params": {
+          "operation": "select",
+          "table": "users"
+        }
+      },
+      {
+        "id": "node_slack",
+        "type": "slack",
+        "label": "Post Slack Alert",
+        "category": "action",
+        "params": {
+          "message": "New record created in Supabase database!"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_supabase_slack",
+        "source": "node_supabase",
+        "target": "node_slack"
+      }
+    ]
+  },
+  "featured": true
+}

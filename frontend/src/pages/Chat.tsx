@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
-  Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow,
-  LogOut, History, Loader2, LayoutDashboard, Download,
+  Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow, Play,
+  LogOut, History, Loader2, LayoutDashboard, Download, Copy, Check,
   PanelRightClose, PanelRightOpen, Lightbulb
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
+import { SetupGuideCard } from '../components/SetupGuideCard';
+import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionPreviewModal';
 import { useAuth } from '../context/AuthContext';
 
 interface ConversationItem {
@@ -38,11 +40,50 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [leftTab, setLeftTab] = useState<'conversations' | 'history'>('conversations');
   const [exporting, setExporting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [showVisualizer, setShowVisualizer] = useState(true);
+  const [simulating, setSimulating] = useState(false);
+  const [simulationTrace, setSimulationTrace] = useState<any | null>(null);
+  const [showSimulationModal, setShowSimulationModal] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleSimulateExecution = async (customPayload?: Record<string, unknown>) => {
+    if (!currentWorkflow) return;
+    setSimulating(true);
+    try {
+      const { data } = await apiClient.post('/workflows/simulate', {
+        graph: currentWorkflow,
+        customTriggerPayload: customPayload,
+      });
+      if (data.trace) {
+        setSimulationTrace(data.trace);
+        setShowSimulationModal(true);
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || err.message || 'Simulation failed');
+    } finally {
+      setSimulating(false);
+    }
+  };
+
+  const handleCopyForN8n = async () => {
+    if (!sessionId || exporting) return;
+    try {
+      const { data } = await apiClient.post(`/sessions/${sessionId}/compile`);
+      if (data.compiled && data.n8n) {
+        await navigator.clipboard.writeText(JSON.stringify(data.n8n, null, 2));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      } else {
+        alert(data.message || 'Cannot copy workflow yet. Please answer the clarification questions first!');
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Copy failed');
+    }
+  };
 
   const handleExportSession = async () => {
     if (!sessionId || exporting) return;
@@ -98,6 +139,19 @@ export default function ChatPage() {
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
   useEffect(() => { if (activeId) fetchMessages(activeId); }, [activeId, fetchMessages]);
+
+  useEffect(() => {
+    const selectedTemplate = location.state?.selectedTemplate;
+    const initialPrompt = location.state?.initialPrompt;
+    if (selectedTemplate) {
+      const prompt = `I want to use the ready-made template: "${selectedTemplate.name}". ${selectedTemplate.description}`;
+      sendMessage(prompt);
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (initialPrompt) {
+      sendMessage(initialPrompt);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   // Live graph sync
   useEffect(() => {
@@ -443,20 +497,45 @@ export default function ChatPage() {
         <div className="flex h-16 items-center gap-2 border-b border-slate-200/60 px-6 flex-shrink-0">
           <Workflow className="h-4 w-4 text-slate-400" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Workflow Canvas</span>
-          {sessionId && (
-            <button
-              onClick={handleExportSession}
-              disabled={exporting}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
-            >
-              {exporting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Download className="h-3 w-3" />
-              )}
-              {exporting ? 'Exporting...' : 'Export JSON'}
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {currentWorkflow && (
+              <button
+                onClick={handleSimulateExecution}
+                disabled={simulating}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800 shadow-2xs transition-all hover:bg-emerald-100 cursor-pointer"
+                title="Simulate step-by-step workflow execution with mock data before exporting"
+              >
+                {simulating ? <Loader2 className="h-3 w-3 animate-spin text-emerald-700" /> : <Play className="h-3 w-3 fill-current text-emerald-700" />}
+                {simulating ? 'Simulating...' : 'Simulate Run'}
+              </button>
+            )}
+
+            {sessionId && (
+              <>
+                <button
+                  onClick={handleCopyForN8n}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-700 shadow-2xs transition-all hover:bg-indigo-100 cursor-pointer"
+                  title="Copy n8n JSON directly to clipboard so you can paste (Ctrl+V) onto any n8n canvas!"
+                >
+                  {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3 text-indigo-600" />}
+                  {copied ? 'Copied for n8n!' : 'Copy for n8n'}
+                </button>
+
+                <button
+                  onClick={handleExportSession}
+                  disabled={exporting}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+                >
+                  {exporting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  {exporting ? 'Exporting...' : 'Export JSON'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex-1 relative bg-slate-100">
           {currentWorkflow ? (
@@ -474,6 +553,16 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      {/* Execution Simulation Trace Modal */}
+      <ExecutionPreviewModal
+        trace={simulationTrace}
+        currentGraph={currentWorkflow}
+        isOpen={showSimulationModal}
+        onClose={() => setShowSimulationModal(false)}
+        onExport={handleExportSession}
+        onRerunSimulation={(customPayload) => handleSimulateExecution(customPayload)}
+      />
     </div>
   );
 }

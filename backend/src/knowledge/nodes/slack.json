@@ -1,60 +1,43 @@
 {
   "nodeType": "slack",
   "displayName": "Slack",
-  "description": "Sends messages to Slack channels or users. Can send text messages, rich blocks, and files.",
+  "description": "Sends channel messages, direct notifications, and updates to Slack.",
   "category": "action",
+  "setupGuide": {
+    "title": "Setting up Slack Notifications",
+    "summary": "You can send Slack messages using an Incoming Webhook or a Bot User OAuth Token.",
+    "steps": [
+      "Go to api.slack.com/apps and create a new Slack App for your workspace.",
+      "Enable 'Incoming Webhooks' or add the 'chat:write' bot permission scope.",
+      "Copy your Webhook URL or Bot Token and paste it into Qonace!"
+    ],
+    "docUrl": "https://api.slack.com/messaging/webhooks"
+  },
   "requiredFields": [
     {
-      "field": "channelId",
-      "label": "Channel",
+      "field": "channel",
+      "label": "Channel Name or ID",
       "type": "string",
-      "description": "The Slack channel ID or name to post to",
-      "required": true,
-      "placeholder": "#general"
-    }
-  ],
-  "optionalFields": [
+      "description": "Target channel (e.g., #general or C12345678)",
+      "required": true
+    },
     {
-      "field": "text",
+      "field": "message",
       "label": "Message Text",
       "type": "text",
-      "description": "The message text to post",
-      "placeholder": "Hello from Qona!"
-    },
-    {
-      "field": "blocks",
-      "label": "Message Blocks",
-      "type": "json",
-      "description": "Slack Block Kit JSON for rich message formatting"
-    },
-    {
-      "field": "username",
-      "label": "Bot Username",
-      "type": "string",
-      "description": "Custom display name for the bot message",
-      "placeholder": "Qona Bot"
-    },
-    {
-      "field": "threadTs",
-      "label": "Thread Timestamp",
-      "type": "string",
-      "description": "Post as a reply in a thread (provide the parent message timestamp)"
+      "description": "Content of the Slack notification",
+      "required": true
     }
   ],
+  "optionalFields": [],
   "outputs": [
     {
       "field": "ts",
-      "label": "Message Timestamp",
+      "label": "Message Timestamp ID",
       "type": "string",
-      "description": "The Slack timestamp of the posted message"
-    },
-    {
-      "field": "channel",
-      "label": "Channel ID",
-      "type": "string",
-      "description": "The channel where the message was posted"
+      "description": "Slack message ID timestamp"
     }
   ],
   "n8nType": "n8n-nodes-base.slack",
-  "keywords": ["slack", "chat", "message", "notify slack", "notification", "send slack"]
+  "keywords": ["slack", "chat", "channel", "notification", "notify", "message", "alert"]
 }
