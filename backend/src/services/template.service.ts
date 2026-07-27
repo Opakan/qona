@@ -26,16 +26,64 @@ class TemplateService {
 
       const files = fs.readdirSync(templatesDir);
       for (const file of files) {
-        if (file.endsWith('.json')) {
+        if (file === 'catalog.json') {
+          try {
+            const catalogRaw = fs.readFileSync(path.join(templatesDir, file), 'utf-8');
+            const catalogItems = JSON.parse(catalogRaw) as Array<Record<string, any>>;
+            for (const item of catalogItems) {
+              const templateObj: any = {
+                id: String(item.id),
+                slug: `n8n-${item.id}`,
+                name: item.title,
+                title: item.title,
+                description: item.description,
+                category: item.categories?.[0] ?? 'Automation',
+                tags: [...(item.categories ?? []), ...(item.toolsUsed ?? []), ...(item.nodeTypes ?? [])],
+                toolsUsed: item.toolsUsed ?? [],
+                featured: Boolean(item.featured),
+                platform: item.platform ?? 'n8n',
+                tutorialUrl: item.tutorialUrl,
+                contributorName: item.contributorName,
+                n8nDefinition: item.n8nDefinition,
+                nodeTypes: item.nodeTypes ?? [],
+                triggerTypes: item.triggerTypes ?? [],
+                graph: {
+                  id: `graph_${item.id}`,
+                  name: item.title,
+                  description: item.description,
+                  version: 1,
+                  nodes: (item.n8nDefinition?.nodes ?? []).map((n: any) => ({
+                    id: n.id ?? n.name,
+                    name: n.name ?? n.type,
+                    type: n.type,
+                    params: n.parameters ?? {},
+                    position: n.position ? (Array.isArray(n.position) ? { x: n.position[0], y: n.position[1] } : n.position) : { x: 200, y: 300 },
+                  })),
+                  edges: [],
+                  metadata: { n8nDefinition: item.n8nDefinition },
+                  status: 'DRAFT',
+                  updatedAt: new Date().toISOString(),
+                },
+              };
+              this.templates.set(templateObj.id, templateObj);
+              this.templatesBySlug.set(templateObj.slug, templateObj);
+            }
+            console.log(`[TemplateService] Ingested ${catalogItems.length} n8n templates from catalog.json`);
+          } catch (cErr) {
+            console.warn('[TemplateService] Failed to load catalog.json:', cErr);
+          }
+        } else if (file.endsWith('.json')) {
           const filePath = path.join(templatesDir, file);
           const raw = fs.readFileSync(filePath, 'utf-8');
           const parsed = JSON.parse(raw) as Template;
-          this.templates.set(parsed.id, parsed);
-          this.templatesBySlug.set(parsed.slug, parsed);
+          if (parsed.id) {
+            this.templates.set(parsed.id, parsed);
+            if (parsed.slug) this.templatesBySlug.set(parsed.slug, parsed);
+          }
         }
       }
       this.isLoaded = true;
-      console.log(`[TemplateService] Loaded ${this.templates.size} automation templates`);
+      console.log(`[TemplateService] Loaded ${this.templates.size} total automation templates`);
     } catch (err) {
       console.error('[TemplateService] Failed to load templates:', err);
     }

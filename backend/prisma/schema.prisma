@@ -308,3 +308,26 @@ enum WorkflowStatus {
   PUBLISHED
   ARCHIVED
 }
+
+model TemplateWorkflow {
+  id              String   @id
+  title           String
+  description     String   @default("")
+  toolsUsed       Json     @default("[]")
+  categories      Json     @default("[]")
+  tutorialUrl     String?
+  templateUrl     String?
+  platform        String   @default("n8n")
+  featured        Boolean  @default(false)
+  contributorName String?
+  n8nDefinition   Json
+  nodeTypes       Json     @default("[]")
+  triggerTypes    Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([title])
+  @@index([featured])
+  @@map("template_workflows")
+}
+
