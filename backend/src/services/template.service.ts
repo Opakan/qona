@@ -129,17 +129,27 @@ class TemplateService {
 
     const clonedGraph: InternalGraph = JSON.parse(JSON.stringify(template.graph));
     clonedGraph.id = `graph_${Date.now()}`;
-    clonedGraph.name = template.name;
-    clonedGraph.description = template.description;
+    if (!clonedGraph.metadata) {
+      clonedGraph.metadata = {
+        name: template.name,
+        description: template.description || '',
+        version: 1,
+        tags: [],
+      };
+    } else {
+      clonedGraph.metadata.name = template.name;
+      clonedGraph.metadata.description = template.description || '';
+    }
     clonedGraph.updatedAt = new Date().toISOString();
 
     for (const node of clonedGraph.nodes) {
+      if (!node.config) node.config = {};
       for (const [key, value] of Object.entries(customInputs)) {
         if (key.startsWith(`${node.id}_`)) {
           const paramName = key.replace(`${node.id}_`, '');
-          node.params[paramName] = value;
-        } else if (node.params[key] !== undefined || key in (node.params ?? {})) {
-          node.params[key] = value;
+          node.config[paramName] = value;
+        } else if (node.config[key] !== undefined || key in node.config) {
+          node.config[key] = value;
         }
       }
     }

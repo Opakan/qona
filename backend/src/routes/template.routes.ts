@@ -21,7 +21,7 @@ templateRouter.get('/', (req: Request, res: Response) => {
 
 // GET /api/templates/:id - get single template details
 templateRouter.get('/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const template = templateService.getTemplateById(id) ?? templateService.getTemplateBySlug(id);
 
   if (!template) {
@@ -34,7 +34,7 @@ templateRouter.get('/:id', (req: Request, res: Response) => {
 
 // POST /api/templates/:id/clone - clone template into internal graph
 templateRouter.post('/:id/clone', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { inputs } = req.body ?? {};
 
   const result = templateService.cloneTemplate(id, inputs ?? {});

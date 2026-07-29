@@ -28,6 +28,6 @@ describe('TemplateService', () => {
     expect(cloned).toBeDefined();
     expect(cloned?.graph.nodes.length).toBe(2);
     const triggerNode = cloned?.graph.nodes.find((n) => n.id === 'node_trigger');
-    expect(triggerNode?.params.documentId).toBe('1BxiMVs0XRA5nFMdKbB_test');
+    expect(triggerNode?.config.documentId).toBe('1BxiMVs0XRA5nFMdKbB_test');
   });
 });

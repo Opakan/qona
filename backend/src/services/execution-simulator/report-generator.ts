@@ -62,7 +62,7 @@ export function generateExecutionReport(graph: InternalGraph, trace: ExecutionTr
   const exportReadiness: ExecutionReport['exportReadiness'] =
     confidenceScore >= 85 ? 'READY' : confidenceScore >= 65 ? 'NEEDS_ATTENTION' : 'BLOCKED';
 
-  const workflowSummary = graph.description ||
+  const workflowSummary = graph.metadata?.description ||
     `Automates data flow starting from ${triggerStep?.nodeLabel || 'Trigger'} through ${actionSteps.length} downstream action(s).`;
 
   return {

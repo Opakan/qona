@@ -25,7 +25,7 @@ simulationRouter.post('/sessions/:id/simulate', async (req: Request, res: Respon
 
   try {
     const session = await prisma.workflowPlanningSession.findUnique({
-      where: { id },
+      where: { id: id as string },
     });
 
     if (!session || !session.workflowDraft) {

@@ -115,16 +115,22 @@ function workflowDefinitionToInternalGraph(def: WorkflowDefinition): InternalGra
       label: (n.data as any)?.label ?? n.id,
       config: (n.data as any)?.config ?? {},
       position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
+      connections: [],
+      description: '',
     })),
     edges: (def.edges ?? []).map((e) => ({
       id: e.id,
       source: e.source,
       target: e.target,
-      label: e.label,
+      label: e.label ?? '',
+      type: 'direct',
+      conditions: [],
     })),
     metadata: {
-      name: def.metadata?.name,
-      description: def.metadata?.description,
+      name: def.metadata?.name ?? 'Untitled Workflow',
+      description: def.metadata?.description ?? '',
+      version: 1,
+      tags: [],
     },
   };
 }

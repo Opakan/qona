@@ -44,6 +44,7 @@ export const WorkflowPlanIntegrationSchema = z.object({
 export const WorkflowPlanQuestionSchema = z.object({
   id: z.string(),
   question: z.string().min(1).max(500),
+  description: z.string().optional(),
   field: z.string(),
   severity: z.enum(['required', 'recommended']).default('required'),
   options: z.array(z.string()).optional(),

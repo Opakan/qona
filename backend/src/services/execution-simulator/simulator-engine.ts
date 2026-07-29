@@ -15,8 +15,8 @@ export class ExecutionSimulator {
       const endTime = new Date();
       return {
         id: `sim_trace_${Date.now()}`,
-        graphId: graph.id,
-        graphName: graph.name || 'Untitled Graph',
+        graphId: graph.id || '',
+        graphName: graph.metadata?.name || 'Untitled Graph',
         status: 'failed',
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
@@ -39,7 +39,7 @@ export class ExecutionSimulator {
       let stepInputData: Record<string, unknown> = {};
 
       if (incomingEdges.length === 0 && i === 0) {
-        const defaultTrigger = generateMockTriggerOutput(node.type, node.params || {});
+        const defaultTrigger = generateMockTriggerOutput(node.type, node.config || {});
         stepInputData = customTriggerPayload ? { ...defaultTrigger, ...customTriggerPayload } : defaultTrigger;
         simulatedTriggerPayload = stepInputData;
       } else {
@@ -52,13 +52,13 @@ export class ExecutionSimulator {
       }
 
       const expressions: Record<string, string> = {};
-      for (const [k, v] of Object.entries(node.params || {})) {
+      for (const [k, v] of Object.entries(node.config || {})) {
         if (typeof v === 'string' && v.includes('{{')) {
           expressions[k] = v;
         }
       }
 
-      const resolvedParams = this.resolveParameters(node.params || {}, stepInputData);
+      const resolvedParams = this.resolveParameters(node.config || {}, stepInputData);
       const { warnings, credentialRequirements, validationStatus } = this.inspectNodeRequirements(node);
 
       let stepOutputData: Record<string, unknown> = {};
@@ -83,7 +83,7 @@ export class ExecutionSimulator {
 
       nodeOutputs.set(node.id, stepOutputData);
 
-      const registryEntry = lookupRegistry(node.type, node.params);
+      const registryEntry = lookupRegistry(node.type, node.config);
       const plainEnglishExplanation = (registryEntry as any)?.plainEnglishExplanation || this.getFallbackExplanation(node.type);
 
       steps.push({
@@ -104,15 +104,15 @@ export class ExecutionSimulator {
         logs,
       });
 
-      summary.push(`Step ${i + 1}: ${node.label} (${node.category}) -> ${stepStatus.toUpperCase()}`);
+      summary.push(`Step ${i + 1}: ${node.label} (${node.type}) -> ${stepStatus.toUpperCase()}`);
     }
 
     const endTime = new Date();
 
     const partialTrace: ExecutionTrace = {
       id: `sim_trace_${Date.now()}`,
-      graphId: graph.id,
-      graphName: graph.name || 'Untitled Graph',
+      graphId: graph.id || '',
+      graphName: graph.metadata?.name || 'Untitled Graph',
       status: steps.some((s) => s.status === 'failed') ? 'partial' : 'success',
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
@@ -155,7 +155,7 @@ export class ExecutionSimulator {
       warnings.push(`Credential link needed upon import: ${credentialRequirements.join(', ')}`);
     }
 
-    for (const [k, v] of Object.entries(node.params || {})) {
+    for (const [k, v] of Object.entries(node.config || {})) {
       if (typeof v === 'string' && (v.includes('USER_CONFIGURED') || v.includes('REPLACE_WITH'))) {
         warnings.push(`Parameter '${k}' requires user configuration.`);
       }
