@@ -44,4 +44,4 @@ RUN npx prisma generate --schema=backend/prisma/schema.prisma
 ENV PORT=4000
 EXPOSE 4000
 
-CMD ["npm", "run", "start", "-w", "backend"]
+CMD ["sh", "-c", "npx prisma db push --schema=backend/prisma/schema.prisma && npm run start -w backend"]

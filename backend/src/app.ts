@@ -25,6 +25,13 @@ export function createApp() {
   app.use(express.json({ limit: '5mb' }));
   if (config.NODE_ENV !== 'test') { app.use(morgan('dev')); }
   app.use('/api/health', healthRouter);
+  app.get('/', (_req, res) => {
+    res.json({
+      status: 'ok',
+      message: 'Qona API is running',
+      timestamp: new Date().toISOString(),
+    });
+  });
   app.use('/api/auth', authRouter);
   app.use('/api/workflows', workflowsRouter);
   app.use('/api/conversations', conversationsRouter);
