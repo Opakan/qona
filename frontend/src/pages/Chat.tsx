@@ -10,6 +10,7 @@ import WorkflowGraph from '../components/chat/WorkflowGraph';
 import { SetupGuideCard } from '../components/SetupGuideCard';
 import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionPreviewModal';
 import { useAuth } from '../context/AuthContext';
+import type { InternalGraph } from '@qona/shared';
 
 interface ConversationItem {
   id: string;
@@ -36,7 +37,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [typing, setTyping] = useState(false);
-  const [currentWorkflow, setCurrentWorkflow] = useState<Record<string, unknown> | null>(null);
+  const [currentWorkflow, setCurrentWorkflow] = useState<InternalGraph | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [leftTab, setLeftTab] = useState<'conversations' | 'history'>('conversations');
   const [exporting, setExporting] = useState(false);
@@ -133,7 +134,7 @@ export default function ChatPage() {
       for (const msg of msgs) {
         const meta = msg.metadata as Record<string, unknown> | undefined;
         if (meta?.sessionId) setSessionId(meta.sessionId as string);
-        if (meta?.graph) { setCurrentWorkflow(meta.graph as Record<string, unknown>); return; }
+        if (meta?.graph) { setCurrentWorkflow(meta.graph as InternalGraph); return; }
       }
     } catch { /* ignore */ }
   }, []);
@@ -161,7 +162,7 @@ export default function ChatPage() {
     pollRef.current = setInterval(async () => {
       try {
         const { data } = await apiClient.get(`/sessions/${sessionId}/draft`);
-        if (data.draft) setCurrentWorkflow(data.draft as Record<string, unknown>);
+        if (data.draft) setCurrentWorkflow(data.draft as InternalGraph);
       } catch { /* */ }
     }, 2000);
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
@@ -190,7 +191,7 @@ export default function ChatPage() {
       if (data.type === 'clarification' && data.questions) meta.questions = data.questions;
       if (data.type === 'workflow' && data.graph) {
         meta.graph = data.graph;
-        setCurrentWorkflow(data.graph as Record<string, unknown>);
+        setCurrentWorkflow(data.graph as InternalGraph);
       }
 
       setTyping(false);
@@ -556,7 +557,7 @@ export default function ChatPage() {
       {/* Execution Simulation Trace Modal */}
       <ExecutionPreviewModal
         trace={simulationTrace}
-        currentGraph={currentWorkflow}
+        currentGraph={(currentWorkflow as any) || undefined}
         isOpen={showSimulationModal}
         onClose={() => setShowSimulationModal(false)}
         onExport={handleExportSession}

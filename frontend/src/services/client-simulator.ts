@@ -5,38 +5,44 @@ import type { InternalGraph, ExecutionTrace, NodeExecutionStep, ExecutionReport 
  */
 export const DEFAULT_SAMPLE_GRAPH: InternalGraph = {
   id: 'graph_sample_preview',
-  name: 'AI Article Summarizer & Telegram Alert',
-  description: 'Waits for incoming Webhook article data, summarizes content using OpenAI GPT, and posts summary into Telegram.',
-  version: 1,
+  metadata: {
+    name: 'AI Article Summarizer & Telegram Alert',
+    description: 'Waits for incoming Webhook article data, summarizes content using OpenAI GPT, and posts summary into Telegram.',
+    version: 1,
+    tags: [],
+  },
   nodes: [
     {
       id: 'node_wh',
       type: 'webhook',
       label: 'Article Webhook',
-      category: 'trigger',
+      description: '',
       position: { x: 100, y: 100 },
-      params: { method: 'POST', path: 'summarize' },
+      config: { method: 'POST', path: 'summarize' },
+      connections: [],
     },
     {
       id: 'node_ai',
       type: 'openai',
       label: 'Summarize Article with AI',
-      category: 'action',
+      description: '',
       position: { x: 300, y: 100 },
-      params: { model: 'gpt-4o-mini' },
+      config: { model: 'gpt-4o-mini' },
+      connections: [],
     },
     {
       id: 'node_tg',
       type: 'telegram',
       label: 'Post to Telegram',
-      category: 'action',
+      description: '',
       position: { x: 500, y: 100 },
-      params: { chatId: '@mychannel' },
+      config: { chatId: '@mychannel' },
+      connections: [],
     },
   ],
   edges: [
-    { id: 'e1', source: 'node_wh', target: 'node_ai' },
-    { id: 'e2', source: 'node_ai', target: 'node_tg' },
+    { id: 'e1', source: 'node_wh', target: 'node_ai', type: 'direct', label: '', conditions: [] },
+    { id: 'e2', source: 'node_ai', target: 'node_tg', type: 'direct', label: '', conditions: [] },
   ],
 };
 
@@ -79,7 +85,7 @@ export function simulateGraphClient(
       }
     }
 
-    const stepOutputData = generateClientMockOutput(node.type, node.params || {}, stepInputData);
+    const stepOutputData = generateClientMockOutput(node.type, node.config || {}, stepInputData);
     nodeOutputs.set(node.id, stepOutputData);
 
     const stepDuration = Math.floor(Math.random() * 8 + 4); // 4-12ms
@@ -94,7 +100,7 @@ export function simulateGraphClient(
       nodeLabel: node.label || node.id,
       status: 'success',
       inputData: stepInputData,
-      resolvedParameters: node.params || {},
+      resolvedParameters: node.config || {},
       expressions: {},
       outputData: stepOutputData,
       warnings: [],
@@ -111,7 +117,7 @@ export function simulateGraphClient(
   const endTime = new Date();
 
   const report: ExecutionReport = {
-    workflowSummary: activeGraph.description || `Automates data pipeline with ${activeGraph.nodes.length} nodes.`,
+    workflowSummary: activeGraph.metadata?.description || `Automates data pipeline with ${activeGraph.nodes.length} nodes.`,
     trigger: `${steps[0]?.nodeLabel || 'Trigger'} (${steps[0]?.nodeType || 'trigger'})`,
     actions: steps.slice(1).map((s) => `${s.nodeLabel} (${s.nodeType})`),
     estimatedRuntimeMs: totalMs,
@@ -136,8 +142,8 @@ export function simulateGraphClient(
 
   return {
     id: `sim_trace_${Date.now()}`,
-    graphId: activeGraph.id,
-    graphName: activeGraph.name || 'Untitled Graph',
+    graphId: activeGraph.id || '',
+    graphName: activeGraph.metadata?.name || 'Untitled Graph',
     status: 'success',
     startTime: startTime.toISOString(),
     endTime: endTime.toISOString(),

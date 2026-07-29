@@ -3,7 +3,7 @@ import {
   CheckCircle2, Clock, ChevronDown, ChevronUp, X, Sparkles,
   ArrowDown, Code2, Cpu, FileJson, Check, Activity, AlertTriangle,
   ShieldCheck, Info, Sliders, RotateCcw, Loader2, FileText, CheckSquare, Gauge,
-  Network, Radio, Server, Workflow
+  Network, Radio, Server, Workflow, Play
 } from 'lucide-react';
 import type { ExecutionTrace, InternalGraph } from '@qona/shared';
 import { simulateGraphClient } from '../../services/client-simulator';
