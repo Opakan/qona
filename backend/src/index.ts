@@ -3,9 +3,10 @@ import { createApp } from './app.js';
 import { config } from './config.js';
 
 const app = createApp();
+const port = Number.isInteger(config.PORT) && config.PORT > 0 ? config.PORT : 4000;
 
-app.listen(config.PORT, '0.0.0.0', () => {
-  console.log(`[Qona API] Server running on http://0.0.0.0:${config.PORT}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`[Qona API] Server running on http://0.0.0.0:${port}`);
   console.log(`[Qona API] Environment: ${config.NODE_ENV}`);
 
   if (process.env.DATABASE_URL) {

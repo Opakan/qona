@@ -25,6 +25,8 @@ export function createApp() {
   app.use(express.json({ limit: '5mb' }));
   if (config.NODE_ENV !== 'test') { app.use(morgan('dev')); }
   app.use('/api/health', healthRouter);
+  app.use('/health', healthRouter);
+  app.use('/healthz', healthRouter);
   app.get('/', (_req, res) => {
     res.json({
       status: 'ok',

@@ -8,9 +8,18 @@ import type { NodeDefinition, NodeField } from '@qona/shared';
 // Resolve knowledge directory path
 // ═══════════════════════════════════════════════════════════
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const KNOWLEDGE_DIR = join(__dirname, '..', 'knowledge', 'nodes');
+function getKnowledgeDir(): string {
+  const candidates = [
+    join(__dirname, '..', 'knowledge', 'nodes'),
+    join(__dirname, '..', 'src', 'knowledge', 'nodes'),
+    join(process.cwd(), 'backend', 'src', 'knowledge', 'nodes'),
+    join(process.cwd(), 'src', 'knowledge', 'nodes'),
+  ];
+  for (const cand of candidates) {
+    if (existsSync(cand)) return cand;
+  }
+  return candidates[0];
+}
 
 // ═══════════════════════════════════════════════════════════
 // Service
@@ -22,7 +31,7 @@ function loadAllNodes(): NodeDefinition[] {
   if (registry) return registry;
 
   const nodes: NodeDefinition[] = [];
-  const dir = KNOWLEDGE_DIR;
+  const dir = getKnowledgeDir();
 
   if (!existsSync(dir)) {
     console.warn(`[NodeRegistry] Knowledge directory not found: ${dir}`);

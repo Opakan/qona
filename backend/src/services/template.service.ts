@@ -18,7 +18,19 @@ class TemplateService {
   public loadTemplates(): void {
     if (this.isLoaded) return;
     try {
-      const templatesDir = path.resolve(__dirname, '../knowledge/templates');
+      const candidates = [
+        path.resolve(__dirname, '../knowledge/templates'),
+        path.resolve(__dirname, '../src/knowledge/templates'),
+        path.resolve(process.cwd(), 'backend/src/knowledge/templates'),
+        path.resolve(process.cwd(), 'src/knowledge/templates'),
+      ];
+      let templatesDir = candidates[0];
+      for (const cand of candidates) {
+        if (fs.existsSync(cand)) {
+          templatesDir = cand;
+          break;
+        }
+      }
       if (!fs.existsSync(templatesDir)) {
         console.warn(`[TemplateService] Templates directory not found at ${templatesDir}`);
         return;

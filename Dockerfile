@@ -32,9 +32,11 @@ COPY backend/package*.json ./backend/
 # Install only production dependencies
 RUN npm ci --omit=dev
 
-# Copy compiled build outputs and Prisma schema
+# Copy compiled build outputs, knowledge data, and Prisma schema
 COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/backend/dist ./backend/dist
+COPY --from=builder /app/backend/src/knowledge ./backend/dist/knowledge
+COPY --from=builder /app/backend/src/knowledge ./backend/src/knowledge
 COPY --from=builder /app/backend/prisma ./backend/prisma
 
 # Re-generate Prisma Client in the runner stage for the target OS (Linux)

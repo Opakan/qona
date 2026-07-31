@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc && node -e \"import('node:fs').then(f => f.existsSync('src/knowledge') && f.cpSync('src/knowledge', 'dist/knowledge', {recursive: true, force: true}))\"",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
