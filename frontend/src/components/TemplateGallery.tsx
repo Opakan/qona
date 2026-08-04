@@ -34,14 +34,18 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
     fetchTemplates();
   }, [featuredOnly]);
 
-  const categories = ['All', ...Array.from(new Set(templates.map((t) => t.category)))];
+  const categories = ['All', ...Array.from(new Set(templates.map((t) => t.category || 'Automation')))];
 
   const filteredTemplates = templates.filter((t) => {
-    const matchesCategory = selectedCategory === 'All' || t.category === selectedCategory;
+    const category = t.category || 'Automation';
+    const matchesCategory = selectedCategory === 'All' || category === selectedCategory;
+    const name = t.name || '';
+    const description = t.description || '';
+    const tags = t.tags || [];
     const matchesSearch =
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tags.some((tag) => tag && String(tag).toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
 
@@ -107,22 +111,22 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
               <div className="flex items-center justify-between mb-3">
                 <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
                   <Zap className="h-3 w-3 text-indigo-600" />
-                  {template.category}
+                  {template.category || 'Automation'}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                  {template.difficulty}
+                  {template.difficulty || 'Intermediate'}
                 </span>
               </div>
 
               <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                {template.name}
+                {template.name || 'Untitled Automation'}
               </h4>
               <p className="mt-1.5 text-xs text-slate-500 leading-relaxed line-clamp-2">
-                {template.description}
+                {template.description || 'Ready-made n8n automation template.'}
               </p>
 
               {/* Plain English Bullet Highlights */}
-              {template.plainEnglishSummary.length > 0 && (
+              {Array.isArray(template.plainEnglishSummary) && template.plainEnglishSummary.length > 0 && (
                 <ul className="mt-3 space-y-1 text-[11px] text-slate-600 border-t border-slate-100 pt-2.5">
                   {template.plainEnglishSummary.slice(0, 2).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
@@ -136,7 +140,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
 
             <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3.5">
               <div className="flex flex-wrap gap-1">
-                {template.tags.slice(0, 2).map((tag) => (
+                {(template.tags || []).slice(0, 2).map((tag) => (
                   <span key={tag} className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                     {tag}
                   </span>

@@ -50,6 +50,11 @@ class TemplateService {
                 title: item.title,
                 description: item.description,
                 category: item.categories?.[0] ?? 'Automation',
+                difficulty: item.difficulty ?? 'Intermediate',
+                plainEnglishSummary: item.plainEnglishSummary ?? [
+                  `Triggers automatically via ${item.nodeTypes?.[0] ?? 'n8n Trigger'}`,
+                  `Automates pipeline with ${item.toolsUsed?.slice(0, 3).join(', ') || 'integrated tools'}`,
+                ],
                 tags: [...(item.categories ?? []), ...(item.toolsUsed ?? []), ...(item.nodeTypes ?? [])],
                 toolsUsed: item.toolsUsed ?? [],
                 featured: Boolean(item.featured),
