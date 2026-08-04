@@ -40,8 +40,19 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
     setDisplayCount(12);
   }, [selectedCategory, searchQuery]);
 
-  const rawCategories = Array.from(new Set(templates.map((t) => t.category || 'Automation')));
-  const categories = ['AI & Automation', 'All', ...rawCategories.filter((c) => c !== 'AI & Automation')];
+  const extractedCategories = Array.from(
+    new Set(
+      templates.flatMap((t) => {
+        const catList: string[] = [];
+        if (t.category) catList.push(t.category);
+        if (Array.isArray((t as any).categories)) catList.push(...(t as any).categories);
+        return catList;
+      })
+    )
+  ).filter(Boolean);
+
+  const knownCategories = ['AI', 'Automation', 'Communication', 'Data', 'Marketing', 'Sales', 'DevOps', 'Finance', 'CRM', 'Social Media'];
+  const categories = Array.from(new Set(['AI & Automation', 'All', ...knownCategories, ...extractedCategories]));
 
   const filteredTemplates = templates.filter((t) => {
     const category = t.category || 'Automation';
@@ -113,7 +124,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
 
           {/* Category Pills */}
           <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {categories.slice(0, 8).map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
