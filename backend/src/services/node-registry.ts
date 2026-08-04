@@ -8,6 +8,9 @@ import type { NodeDefinition, NodeField } from '@qona/shared';
 // Resolve knowledge directory path
 // ═══════════════════════════════════════════════════════════
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 function getKnowledgeDir(): string {
   const candidates = [
     join(__dirname, '..', 'knowledge', 'nodes'),
