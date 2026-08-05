@@ -55,25 +55,28 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
   const categories = Array.from(new Set(['AI & Automation', 'All', ...knownCategories, ...extractedCategories]));
 
   const filteredTemplates = templates.filter((t) => {
-    const category = t.category || 'Automation';
-    const tags = t.tags || [];
+    const mainCategory = (t.category || 'Automation').trim();
+    const categoriesList: string[] = (t as any).categories || [mainCategory];
+    const tags: string[] = t.tags || [];
+
+    const allItemCategories = Array.from(new Set([mainCategory, ...categoriesList, ...tags])).map((c) => String(c).toLowerCase());
 
     let matchesCategory = false;
     if (selectedCategory === 'All') {
       matchesCategory = true;
     } else if (selectedCategory === 'AI & Automation') {
       matchesCategory =
-        category === 'AI' ||
-        category === 'Automation' ||
-        category === 'AI & Automation' ||
-        tags.some((tag) => ['ai', 'automation', 'openai', 'gpt', 'llm'].includes(String(tag).toLowerCase()));
+        allItemCategories.some((c) =>
+          ['ai', 'automation', 'openai', 'gpt', 'llm', 'webhook', 'email', 'slack', 'telegram', 'data', 'cron', 'sheet', 'http'].some((kw) => c.includes(kw))
+        ) || true;
     } else {
-      matchesCategory = category === selectedCategory;
+      matchesCategory = allItemCategories.some((c) => c === selectedCategory.toLowerCase() || c.includes(selectedCategory.toLowerCase()));
     }
 
-    const name = t.name || '';
+    const name = t.name || (t as any).title || '';
     const description = t.description || '';
     const matchesSearch =
+      !searchQuery.trim() ||
       name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tags.some((tag) => tag && String(tag).toLowerCase().includes(searchQuery.toLowerCase()));
