@@ -1,4 +1,4 @@
-import { chatCompletion } from './deepseek.js';
+import { chatCompletion } from './bedrock.js';
 import { nodeRegistry } from './node-registry.js';
 import { CREDENTIAL_GUARD_PROMPT } from '@qona/shared';
 
@@ -77,7 +77,7 @@ export async function planWorkflow(prompt: string): Promise<PlannerResult> {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt.trim() },
     ],
-    { temperature: 0.2, max_tokens: 2000, retries: 2 },
+    { temperature: 0.2, max_tokens: 2000, retries: 2, modelTier: 'haiku' },
   );
 
   let parsed: {
@@ -89,7 +89,7 @@ export async function planWorkflow(prompt: string): Promise<PlannerResult> {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new WorkflowPlannerError('DeepSeek returned invalid JSON', raw);
+    throw new WorkflowPlannerError('AWS Bedrock returned invalid JSON', raw);
   }
 
   if (!parsed.goal || typeof parsed.goal !== 'string') {

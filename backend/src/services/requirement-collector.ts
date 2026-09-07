@@ -5,7 +5,7 @@ import type {
   IntentExtractionResult,
 } from '@qona/shared';
 import { CREDENTIAL_FIELDS, CREDENTIAL_GUARD_PROMPT } from '@qona/shared';
-import { chatCompletion } from './deepseek.js';
+import { chatCompletion } from './bedrock.js';
 import { nodeRegistry } from './node-registry.js';
 import { lookupRegistry } from './n8n-node-registry.js';
 

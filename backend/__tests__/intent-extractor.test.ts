@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { extractIntent, IntentExtractionError } from '../src/services/intent-extractor.js';
 import { IntentExtractionResultSchema } from '@qona/shared';
 
-vi.mock('../src/services/deepseek.js', async () => {
-  const actual = await vi.importActual('../src/services/deepseek.js');
+vi.mock('../src/services/bedrock.js', async () => {
+  const actual = await vi.importActual('../src/services/bedrock.js');
   return { ...actual, chatCompletion: vi.fn() };
 });
 
@@ -21,7 +21,7 @@ let mockChat: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  const mod = await import('../src/services/deepseek.js');
+  const mod = await import('../src/services/bedrock.js');
   mockChat = vi.mocked(mod.chatCompletion);
 });
 

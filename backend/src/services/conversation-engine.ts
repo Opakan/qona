@@ -1,4 +1,4 @@
-import { chatCompletion } from './deepseek.js';
+import { chatCompletion } from './bedrock.js';
 import { AI_PROMPTS } from './ai-prompts.js';
 import { conversationService } from './conversation.service.js';
 import { planningSessionService } from './planning-session.js';
@@ -73,7 +73,7 @@ export interface AIResponse {
 // ═══════════════════════════════════════════════════════
 
 async function parseAIResponse(rawContent: string | null | undefined, userMessage: string, allowRetry: boolean): Promise<Record<string, unknown>> {
-  if (!rawContent || rawContent.trim().length === 0) throw new Error('Empty response from DeepSeek');
+  if (!rawContent || rawContent.trim().length === 0) throw new Error('Empty response from AWS Bedrock');
 
   log('info', 'Received raw AI response', { responseLength: rawContent.length, responsePreview: rawContent.slice(0, 300) });
 
@@ -663,13 +663,13 @@ export const conversationEngine = {
       userContent += `\n\nAlready collected: ${JSON.stringify(collectedFields)}`;
     }
 
-    log('info', 'Sending prompt to DeepSeek', { promptLength: userMessage.length });
+    log('info', 'Sending prompt to AWS Bedrock', { promptLength: userMessage.length });
 
     try {
       const rawContent = await chatCompletion([
         { role: 'system', content: AI_PROMPTS.GENERATE_WORKFLOW },
         { role: 'user', content: userContent },
-      ]);
+      ], { modelTier: 'sonnet' });
 
       const parsed = await parseAIResponse(rawContent, userMessage, true);
 

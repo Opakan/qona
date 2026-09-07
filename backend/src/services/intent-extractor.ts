@@ -1,4 +1,4 @@
-import { chatCompletion } from './deepseek.js';
+import { chatCompletion } from './bedrock.js';
 import { IntentExtractionResultSchema, CREDENTIAL_GUARD_PROMPT } from '@qona/shared';
 import type { IntentExtractionResult } from '@qona/shared';
 import { nodeRegistry } from './node-registry.js';
@@ -100,14 +100,14 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt.trim() },
     ],
-    { temperature: 0.2, max_tokens: 3000, retries: 2 },
+    { temperature: 0.2, max_tokens: 3000, retries: 2, modelTier: 'haiku' },
   );
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new IntentExtractionError('DeepSeek returned invalid JSON', raw);
+    throw new IntentExtractionError('AWS Bedrock returned invalid JSON', raw);
   }
 
   const result = IntentExtractionResultSchema.safeParse(parsed);

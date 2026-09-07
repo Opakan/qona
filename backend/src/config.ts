@@ -59,6 +59,14 @@ export const config = {
   SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET ?? '',
 
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? '',
+
+  // AWS Bedrock Configuration
+  AWS_REGION: process.env.AWS_REGION ?? 'us-east-1',
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ?? '',
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ?? '',
+  BEDROCK_SONNET_MODEL_ID: process.env.BEDROCK_SONNET_MODEL_ID ?? 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  BEDROCK_HAIKU_MODEL_ID: process.env.BEDROCK_HAIKU_MODEL_ID ?? 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
 
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY ?? '',

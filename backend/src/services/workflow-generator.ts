@@ -1,4 +1,4 @@
-import { chatCompletion } from './deepseek.js';
+import { chatCompletion } from './bedrock.js';
 import type { WorkflowDefinition } from '@qona/shared';
 
 const VALID_NODE_TYPES = [
@@ -132,7 +132,7 @@ export async function generateN8nWorkflow(
       const content = await chatCompletion([
         { role: 'system', content: 'Fix this n8n workflow. Return valid JSON with name, nodes, and connections.' },
         { role: 'user', content: `Errors: ${JSON.stringify(errors)}\nWorkflow: ${JSON.stringify(workflow)}` },
-      ], { max_tokens: 4000 });
+      ], { max_tokens: 4000, modelTier: 'sonnet' });
 
       const fixed = JSON.parse(content);
       workflow = {
