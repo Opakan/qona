@@ -16,6 +16,7 @@
     "build:shared": "npm run build -w shared",
     "build:api": "npm run build -w backend",
     "build:web": "npm run build -w frontend",
+    "start": "npm run start -w backend",
     "test": "npm run test --workspaces --if-present",
     "test:api": "npm run test -w backend",
     "test:web": "npm run test -w frontend",
