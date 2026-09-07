@@ -10,28 +10,42 @@ if (fs.existsSync(stagingDir)) {
 }
 fs.mkdirSync(stagingDir, { recursive: true });
 
-// 1. Copy Root Files
-fs.copyFileSync(path.join(rootDir, 'package.json'), path.join(stagingDir, 'package.json'));
-fs.copyFileSync(path.join(rootDir, 'package-lock.json'), path.join(stagingDir, 'package-lock.json'));
-fs.copyFileSync(path.join(rootDir, 'tsconfig.base.json'), path.join(stagingDir, 'tsconfig.base.json'));
-fs.copyFileSync(path.join(rootDir, 'Procfile'), path.join(stagingDir, 'Procfile'));
+// 1. Build shared and backend first locally
+console.log('Building TypeScript workspaces locally...');
+execSync('npm run build:shared', { stdio: 'inherit' });
+execSync('npm run build:api', { stdio: 'inherit' });
 
-// 2. Copy Shared Workspace
-const sharedStaging = path.join(stagingDir, 'shared');
-fs.mkdirSync(sharedStaging, { recursive: true });
-fs.copyFileSync(path.join(rootDir, 'shared', 'package.json'), path.join(sharedStaging, 'package.json'));
-fs.copyFileSync(path.join(rootDir, 'shared', 'tsconfig.json'), path.join(sharedStaging, 'tsconfig.json'));
-fs.cpSync(path.join(rootDir, 'shared', 'dist'), path.join(sharedStaging, 'dist'), { recursive: true });
+// 2. Prepare Standalone package.json for Elastic Beanstalk
+const backendPkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'backend', 'package.json'), 'utf8'));
 
-// 3. Copy Backend Workspace
-const backendStaging = path.join(stagingDir, 'backend');
-fs.mkdirSync(backendStaging, { recursive: true });
-fs.copyFileSync(path.join(rootDir, 'backend', 'package.json'), path.join(backendStaging, 'package.json'));
-fs.copyFileSync(path.join(rootDir, 'backend', 'tsconfig.json'), path.join(backendStaging, 'tsconfig.json'));
-fs.cpSync(path.join(rootDir, 'backend', 'dist'), path.join(backendStaging, 'dist'), { recursive: true });
-fs.cpSync(path.join(rootDir, 'backend', 'prisma'), path.join(backendStaging, 'prisma'), { recursive: true });
+// Update scripts & remove workspace pointer for @qona/shared
+delete backendPkg.dependencies['@qona/shared'];
+backendPkg.scripts = {
+  start: 'node dist/index.js',
+  postinstall: 'npx prisma generate',
+};
 
-// 4. Create Zip Archive
+fs.writeFileSync(
+  path.join(stagingDir, 'package.json'),
+  JSON.stringify(backendPkg, null, 2),
+  'utf8'
+);
+
+// 3. Copy compiled dist and prisma schema
+fs.cpSync(path.join(rootDir, 'backend', 'dist'), path.join(stagingDir, 'dist'), { recursive: true });
+fs.cpSync(path.join(rootDir, 'backend', 'prisma'), path.join(stagingDir, 'prisma'), { recursive: true });
+
+// 4. Copy Procfile
+const procfileContent = 'web: node dist/index.js\n';
+fs.writeFileSync(path.join(stagingDir, 'Procfile'), procfileContent, 'utf8');
+
+// 5. Pre-package @qona/shared into node_modules/@qona/shared so it's guaranteed to resolve
+const sharedNodeModules = path.join(stagingDir, 'node_modules', '@qona', 'shared');
+fs.mkdirSync(sharedNodeModules, { recursive: true });
+fs.copyFileSync(path.join(rootDir, 'shared', 'package.json'), path.join(sharedNodeModules, 'package.json'));
+fs.cpSync(path.join(rootDir, 'shared', 'dist'), path.join(sharedNodeModules, 'dist'), { recursive: true });
+
+// 6. Create Zip Archive
 const zipPath = path.join(rootDir, 'qonace-backend.zip');
 if (fs.existsSync(zipPath)) {
   fs.unlinkSync(zipPath);
@@ -42,4 +56,4 @@ execSync('powershell -Command "Compress-Archive -Path .eb_staging/* -Destination
 });
 
 fs.rmSync(stagingDir, { recursive: true, force: true });
-console.log('✅ Successfully created clean qonace-backend.zip!');
+console.log('🎉 Successfully created standalone self-contained qonace-backend.zip!');
