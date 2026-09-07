@@ -20,8 +20,11 @@ import { simulationRouter } from './routes/simulation.routes.js';
 export function createApp() {
   const app = express();
   app.use(requestIdMiddleware);
-  app.use(helmet());
-  app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
+  app.use(helmet({ crossOriginResourcePolicy: false }));
+  app.use(cors({
+    origin: true,
+    credentials: true,
+  }));
   app.use(express.json({ limit: '5mb' }));
   if (config.NODE_ENV !== 'test') { app.use(morgan('dev')); }
   app.use('/api/health', healthRouter);
