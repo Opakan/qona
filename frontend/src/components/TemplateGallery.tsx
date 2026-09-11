@@ -113,6 +113,22 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
   useEffect(() => {
     let cancelled = false;
     const fetchTemplates = async () => {
+      // 1. Load instant static CDN catalog (2,903 templates available immediately)
+      try {
+        const staticRes = await fetch('/templates-catalog.json');
+        if (staticRes.ok) {
+          const staticData = await staticRes.json();
+          if (!cancelled && Array.isArray(staticData) && staticData.length > 0) {
+            const finalTemplates = featuredOnly ? staticData.filter((t: Template) => t.featured) : staticData;
+            setTemplates(finalTemplates);
+            return;
+          }
+        }
+      } catch {
+        /* fallback to backend API */
+      }
+
+      // 2. Fallback to API if available
       try {
         const url = featuredOnly ? '/templates?featured=true' : '/templates';
         const res = await apiClient.get(url);
