@@ -1,27 +1,19 @@
 version: 1
-applications:
-  - appRoot: frontend
-    env:
-      variables:
-        NODE_VERSION: '20'
-    frontend:
-      phases:
-        preBuild:
-          category: build
-          commands:
-            # Install root & workspace dependencies, then build @qona/shared
-            - cd ..
-            - npm ci
-            - npm run build:shared
-            - cd frontend
-        build:
-          commands:
-            - npm run build
-      artifacts:
-        baseDirectory: dist
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - node_modules/**/*
-          - ../node_modules/**/*
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+        - npm run build:shared
+    build:
+      commands:
+        - npm run build:web
+  artifacts:
+    baseDirectory: frontend/dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - frontend/node_modules/**/*
+      - shared/dist/**/*
