@@ -36,8 +36,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn('[Qonace API] Unauthorized — redirecting to login');
-      supabase.auth.signOut();
+      console.warn('[Qonace API] Unauthorized response received:', error.config?.url);
     }
     return Promise.reject(error);
   },

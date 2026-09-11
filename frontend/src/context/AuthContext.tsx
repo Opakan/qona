@@ -68,6 +68,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null);
         if (initialSession?.user) {
           fetchDbUser(cancelled);
+          if (window.location.hash && window.location.hash.includes('access_token=')) {
+            try {
+              window.history.replaceState(null, '', window.location.pathname === '/' ? '/dashboard' : window.location.pathname);
+              if (window.location.pathname === '/' || window.location.pathname === '/sign-in') {
+                window.location.href = '/dashboard';
+              }
+            } catch { /* ignore */ }
+          }
         } else {
           setDbUser(null);
         }
@@ -80,12 +88,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (cancelled) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
         fetchDbUser(cancelled);
+        // Clean URL hash and redirect to dashboard if returning from OAuth
+        if (window.location.hash && window.location.hash.includes('access_token=')) {
+          try {
+            window.history.replaceState(null, '', window.location.pathname === '/' ? '/dashboard' : window.location.pathname);
+            if (window.location.pathname === '/' || window.location.pathname === '/sign-in') {
+              window.location.href = '/dashboard';
+            }
+          } catch { /* ignore */ }
+        }
       } else {
         setDbUser(null);
       }
