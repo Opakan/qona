@@ -60,6 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    // Failsafe timeout so loading state never hangs
+    const failsafe = setTimeout(() => {
+      if (!cancelled) setIsLoading(false);
+    }, 1500);
+
+    const cleanHash = () => {
+      if (window.location.hash) {
+        try {
+          const cleanUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', cleanUrl);
+        } catch { /* ignore */ }
+      }
+    };
+
     supabase.auth
       .getSession()
       .then(({ data: { session: initialSession } }) => {
@@ -68,14 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null);
         if (initialSession?.user) {
           fetchDbUser(cancelled);
-          if (window.location.hash && window.location.hash.includes('access_token=')) {
-            try {
-              window.history.replaceState(null, '', window.location.pathname === '/' ? '/dashboard' : window.location.pathname);
-              if (window.location.pathname === '/' || window.location.pathname === '/sign-in') {
-                window.location.href = '/dashboard';
-              }
-            } catch { /* ignore */ }
-          }
+          cleanHash();
         } else {
           setDbUser(null);
         }
@@ -88,29 +95,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, newSession) => {
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (cancelled) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
         fetchDbUser(cancelled);
-        // Clean URL hash and redirect to dashboard if returning from OAuth
-        if (window.location.hash && window.location.hash.includes('access_token=')) {
-          try {
-            window.history.replaceState(null, '', window.location.pathname === '/' ? '/dashboard' : window.location.pathname);
-            if (window.location.pathname === '/' || window.location.pathname === '/sign-in') {
-              window.location.href = '/dashboard';
-            }
-          } catch { /* ignore */ }
-        }
+        cleanHash();
       } else {
         setDbUser(null);
       }
-      if (newSession) setIsLoading(false);
+      setIsLoading(false);
     });
 
     return () => {
       cancelled = true;
+      clearTimeout(failsafe);
       subscription.unsubscribe();
     };
   }, [fetchDbUser]);
