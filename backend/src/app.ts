@@ -38,15 +38,25 @@ export function createApp() {
     });
   });
   app.use('/api/auth', authRouter);
+  app.use('/auth', authRouter);
   app.use('/api/workflows', workflowsRouter);
+  app.use('/workflows', workflowsRouter);
   app.use('/api/conversations', conversationsRouter);
+  app.use('/conversations', conversationsRouter);
   app.use('/api/payments', paymentsRouter);
+  app.use('/payments', paymentsRouter);
   app.use('/api/templates', templateRouter);
+  app.use('/templates', templateRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/admin', adminRouter);
   app.use('/api', simulationRouter);
   app.use('/api', sessionsRouter);
   app.use('/api', debugRouter);
   app.use('/api', plannerRouter);
+  app.use('/', simulationRouter);
+  app.use('/', sessionsRouter);
+  app.use('/', debugRouter);
+  app.use('/', plannerRouter);
   app.use(errorHandler);
   return app;
 }

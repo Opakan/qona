@@ -9,30 +9,122 @@ interface TemplateGalleryProps {
   featuredOnly?: boolean;
 }
 
+const fallbackTemplates: Template[] = [
+  {
+    id: 'ai-lead-qualification',
+    slug: 'ai-lead-qualification',
+    name: 'AI Lead Qualification & CRM Routing',
+    description: 'Enriches inbound webhook submissions using Claude 3.5 Sonnet, scores intent, and notifies sales in Slack.',
+    category: 'AI & Automation',
+    icon: 'zap',
+    difficulty: 'Beginner',
+    plainEnglishSummary: ['Listens for new lead webhooks', 'Scores and qualifies lead with Claude AI', 'Routes qualified prospects to CRM and Slack'],
+    tags: ['ai', 'webhook', 'slack', 'crm', 'sales', 'Anthropic Claude', 'HubSpot'],
+    requiredUserInputs: [],
+    n8nVersion: '1.0',
+    featured: true,
+    graph: { metadata: { name: 'AI Lead Qualification', description: '', version: 1, tags: [] }, nodes: [], edges: [] },
+  },
+  {
+    id: 'gmail-to-slack-summarizer',
+    slug: 'gmail-to-slack-summarizer',
+    name: 'Gmail VIP Email AI Summarizer',
+    description: 'Scans inbox for high-priority executive emails, generates 2-bullet executive summaries, and sends to Slack.',
+    category: 'Communication',
+    icon: 'mail',
+    difficulty: 'Beginner',
+    plainEnglishSummary: ['Triggers on new Gmail threads', 'Extracts key action points with AI', 'Posts instant digest to dedicated channel'],
+    tags: ['gmail', 'slack', 'ai', 'email', 'Claude Haiku'],
+    requiredUserInputs: [],
+    n8nVersion: '1.0',
+    featured: true,
+    graph: { metadata: { name: 'Gmail Summarizer', description: '', version: 1, tags: [] }, nodes: [], edges: [] },
+  },
+  {
+    id: 'stripe-invoice-sync',
+    slug: 'stripe-invoice-sync',
+    name: 'Stripe Payment to Google Sheets Sync',
+    description: 'Automatically records completed Stripe checkout sessions and charges into financial tracking spreadsheets.',
+    category: 'Finance',
+    icon: 'credit-card',
+    difficulty: 'Beginner',
+    plainEnglishSummary: ['Receives Stripe charge webhooks', 'Formats currency and tax fields', 'Appends structured rows to Google Sheets'],
+    tags: ['stripe', 'finance', 'sheets', 'webhook', 'Google Sheets'],
+    requiredUserInputs: [],
+    n8nVersion: '1.0',
+    featured: true,
+    graph: { metadata: { name: 'Stripe Invoice Sync', description: '', version: 1, tags: [] }, nodes: [], edges: [] },
+  },
+  {
+    id: 'database-backup-notifier',
+    slug: 'database-backup-notifier',
+    name: 'Automated DB Health & Backup Watchdog',
+    description: 'Cron trigger runs hourly database health checks and alerts on query anomalies or failed snapshot backups.',
+    category: 'DevOps',
+    icon: 'database',
+    difficulty: 'Intermediate',
+    plainEnglishSummary: ['Runs on scheduled cron timer', 'Pings PostgreSQL replica health', 'Dispatches alerts on discord / pagerduty'],
+    tags: ['cron', 'devops', 'postgres', 'discord', 'PostgreSQL', 'Schedule Trigger'],
+    requiredUserInputs: [],
+    n8nVersion: '1.0',
+    featured: true,
+    graph: { metadata: { name: 'DB Backup Watchdog', description: '', version: 1, tags: [] }, nodes: [], edges: [] },
+  },
+  {
+    id: 'social-media-scheduler',
+    slug: 'social-media-scheduler',
+    name: 'Notion to Multi-Platform Social Publisher',
+    description: 'Watches Notion Content Calendar status changes and automatically drafts/publishes to Twitter and LinkedIn.',
+    category: 'Marketing',
+    icon: 'share-2',
+    difficulty: 'Intermediate',
+    plainEnglishSummary: ['Detects status=Ready in Notion', 'Formats social copy per platform', 'Publishes posts at optimal scheduled times'],
+    tags: ['notion', 'twitter', 'linkedin', 'marketing', 'Twitter/X'],
+    requiredUserInputs: [],
+    n8nVersion: '1.0',
+    featured: true,
+    graph: { metadata: { name: 'Social Publisher', description: '', version: 1, tags: [] }, nodes: [], edges: [] },
+  },
+  {
+    id: 'customer-support-triage',
+    slug: 'customer-support-triage',
+    name: 'Zendesk Ticket Triage & Auto-Reply Agent',
+    description: 'Analyzes incoming customer support inquiries, classifies urgency and sentiment, and drafts context-aware replies.',
+    category: 'CRM',
+    icon: 'life-buoy',
+    difficulty: 'Advanced',
+    plainEnglishSummary: ['Listens for new Zendesk tickets', 'Classifies intent and customer sentiment', 'Drafts personalized suggested responses'],
+    tags: ['zendesk', 'support', 'ai', 'crm', 'Claude 3.5 Sonnet', 'Webhook'],
+    requiredUserInputs: [],
+    n8nVersion: '1.0',
+    featured: true,
+    graph: { metadata: { name: 'Customer Support Triage', description: '', version: 1, tags: [] }, nodes: [], edges: [] },
+  }
+];
+
 export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTemplate, featuredOnly = false }) => {
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<Template[]>(fallbackTemplates);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('AI & Automation');
   const [displayCount, setDisplayCount] = useState<number>(12);
   const navigate = useNavigate();
 
   useEffect(() => {
+    let cancelled = false;
     const fetchTemplates = async () => {
       try {
-        setLoading(true);
         const url = featuredOnly ? '/templates?featured=true' : '/templates';
         const res = await apiClient.get(url);
-        if (res.data?.templates) {
+        if (!cancelled && res.data?.templates && res.data.templates.length > 0) {
           setTemplates(res.data.templates);
         }
       } catch (err) {
-        console.warn('[TemplateGallery] Failed to fetch templates:', err);
-      } finally {
-        setLoading(false);
+        console.warn('[TemplateGallery] Could not fetch remote templates, showing catalog defaults:', err);
       }
     };
     fetchTemplates();
+    return () => { cancelled = true; };
   }, [featuredOnly]);
 
   // Reset pagination when category or search changes

@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { supabase } from '../lib/supabase';
 
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+const baseURL = rawApiUrl
+  ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api`)
+  : '/api';
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
