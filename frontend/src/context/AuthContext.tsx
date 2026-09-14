@@ -228,9 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hasActiveSubscription =
-    dbUser?.role === 'ADMIN' ||
-    (user?.email && user.email.toLowerCase() === 'opadgiant@gmail.com') ||
-    (!!subscription && subscription.status === 'ACTIVE');
+    Boolean(subscription && subscription.status === 'ACTIVE');
 
   return (
     <AuthContext.Provider

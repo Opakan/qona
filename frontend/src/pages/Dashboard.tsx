@@ -20,7 +20,7 @@ interface WorkflowItem {
 }
 
 export default function Dashboard() {
-  const { user, dbUser, signOut, toggleDeveloperRole } = useAuth();
+  const { user, dbUser, hasActiveSubscription, signOut, toggleDeveloperRole } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'recent' | 'analytics'>('overview');
@@ -130,6 +130,25 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {!hasActiveSubscription && (
+        <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-900 text-white px-4 sm:px-8 py-3 shadow-sm">
+          <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-center sm:text-left">
+              <Sparkles className="h-5 w-5 text-yellow-300 flex-shrink-0 animate-pulse" />
+              <span className="text-xs sm:text-sm font-medium">
+                <strong>No Active Plan:</strong> Subscribe to Starter ($1) or Pro ($30/mo) to unlock AI workflow generation and exports.
+              </span>
+            </div>
+            <Link
+              to="/pricing"
+              className="rounded-xl bg-white px-4 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-50 transition-colors shadow-xs flex-shrink-0"
+            >
+              Choose a Plan →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Secondary Navigation Tab Bar */}
       <nav className="sticky top-[57px] z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm px-4 sm:px-8 py-2 shadow-2xs">
