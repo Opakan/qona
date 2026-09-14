@@ -39,13 +39,23 @@ export default function Billing() {
       ) : (
         <div className="mt-8 space-y-6">
           <div className="rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${sub.status === 'ACTIVE' ? 'bg-green-400' : 'bg-gray-300'}`} />
-              <span className="text-sm font-medium text-gray-900">{sub.plan.name}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${sub.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className="text-base font-semibold text-gray-900">{sub.plan.name} Plan</span>
+              </div>
+              <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 capitalize">
+                {sub.status.toLowerCase()}
+              </span>
             </div>
-            <p className="mt-1 text-sm text-gray-500">
-              via {sub.provider}
+            <p className="mt-2 text-xs text-gray-500">
+              Paid via {sub.provider} {sub.expiresAt ? `• Renews / Expires: ${new Date(sub.expiresAt).toLocaleDateString()}` : ''}
             </p>
+            <div className="mt-4">
+              <a href="/pricing" className="text-xs font-semibold text-indigo-600 hover:text-indigo-500">
+                Change or upgrade plan →
+              </a>
+            </div>
           </div>
 
           <div>
@@ -54,7 +64,7 @@ export default function Billing() {
               {sub.invoices.map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between rounded-lg border border-gray-100 px-4 py-3">
                   <div>
-                    <p className="text-sm text-gray-700">₦{inv.amount.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-gray-800">${inv.amount.toLocaleString()}</p>
                     <p className="text-xs text-gray-400">{new Date(inv.createdAt).toLocaleDateString()}</p>
                   </div>
                   {inv.status === 'PAID' ? (

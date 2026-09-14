@@ -74,6 +74,7 @@ export const config = {
 
   FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY ?? '',
   FLUTTERWAVE_PUBLIC_KEY: process.env.FLUTTERWAVE_PUBLIC_KEY ?? '',
+  FLUTTERWAVE_SECRET_HASH: process.env.FLUTTERWAVE_SECRET_HASH ?? '',
 
   APP_URL: process.env.APP_URL ?? 'http://localhost:5173',
 } as const;

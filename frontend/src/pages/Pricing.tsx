@@ -23,37 +23,37 @@ function useMediaQuery(query: string): boolean {
 
 const plans = [
   {
-    name: 'Free',
-    price: 0,
-    yearlyPrice: 0,
-    period: 'mo',
-    slug: 'free',
-    description: 'Start building workflows for free.',
-    features: ['3 workflow exports', 'Basic AI generation', 'n8n format', 'Community support'],
-    isPopular: false,
-    buttonText: 'Get started',
-  },
-  {
     name: 'Starter',
-    price: 29,
-    yearlyPrice: 23,
+    price: 1,
+    yearlyPrice: 1,
     period: 'mo',
     slug: 'starter',
-    description: 'For professionals and small teams.',
-    features: ['50 workflow exports', 'Advanced AI generation', 'All platform exports', 'Version history', 'Priority support'],
-    isPopular: true,
-    buttonText: 'Subscribe',
+    description: 'Start building workflows with essential tools.',
+    features: ['10 workflow exports', 'Standard AI generation', 'n8n format export', 'Community support'],
+    isPopular: false,
+    buttonText: 'Get Starter ($1)',
   },
   {
     name: 'Pro',
-    price: 99,
-    yearlyPrice: 79,
+    price: 30,
+    yearlyPrice: 24, // 20% off ($288/yr)
     period: 'mo',
     slug: 'pro',
-    description: 'For growing businesses and agencies.',
-    features: ['200 workflow exports', 'Custom AI training', 'All platform exports', 'Unlimited versions', 'API access', 'Dedicated support'],
+    description: 'For professionals and growing teams.',
+    features: ['100 workflow exports', 'Advanced Bedrock Claude AI', 'All platform exports', 'Version history', 'Priority email support'],
+    isPopular: true,
+    buttonText: 'Subscribe to Pro',
+  },
+  {
+    name: 'Enterprise',
+    price: 99,
+    yearlyPrice: 79, // 20% off ($948/yr)
+    period: 'mo',
+    slug: 'enterprise',
+    description: 'For growing businesses, agencies, and teams.',
+    features: ['Unlimited workflow exports', 'Custom AI fine-tuning', 'All platform exports', 'Unlimited versions', 'API access & webhooks', 'Dedicated 24/7 support'],
     isPopular: false,
-    buttonText: 'Subscribe',
+    buttonText: 'Subscribe to Enterprise',
   },
 ];
 
@@ -96,15 +96,19 @@ export default function PricingPage() {
 
   const handleCheckout = async (planSlug: string) => {
     if (!isAuthenticated) { navigate('/sign-in'); return; }
-    if (planSlug === 'free') { navigate('/dashboard'); return; }
 
     setLoading(planSlug);
 
     try {
-      const { data } = await apiClient.post('/payments/initialize', { plan: planSlug });
-      window.location.href = data.authorizationUrl;
-    } catch {
-      alert('Payment initialization failed. Please try again.');
+      const { data } = await apiClient.post('/payments/initialize', {
+        plan: planSlug,
+        billingInterval: isMonthly ? 'month' : 'year',
+      });
+      if (data?.authorizationUrl) {
+        window.location.href = data.authorizationUrl;
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Payment initialization failed. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -117,7 +121,7 @@ export default function PricingPage() {
           Simple, Transparent Pricing
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-          Start free. Upgrade when you need more. Pay with Flutterwave.
+          Choose the right plan for your workflow automation needs. Pay securely with Flutterwave.
         </p>
       </div>
 
@@ -175,7 +179,7 @@ export default function PricingPage() {
               {isPlanPopular && (
                 <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] py-1 px-3 rounded-bl-xl rounded-tr-xl flex items-center gap-1 font-semibold tracking-wider uppercase">
                   <Star className="h-3 w-3 fill-current text-indigo-200" />
-                  Popular
+                  Recommended
                 </div>
               )}
 
