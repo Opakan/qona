@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Star, Loader2 } from 'lucide-react';
+import { Check, Star, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import NumberFlow from '@number-flow/react';
 import { useAuth } from '../context/AuthContext';
@@ -58,12 +58,16 @@ const plans = [
 ];
 
 export default function PricingPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, subscription, hasActiveSubscription } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState<string | null>(null);
   const [isMonthly, setIsMonthly] = useState(true);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const switchRef = useRef<HTMLButtonElement>(null);
+
+  const requireSub = Boolean((location.state as any)?.requireSub);
+  const currentPlanSlug = subscription?.plan?.slug;
 
   const handleToggle = (checked: boolean) => {
     setIsMonthly(!checked);
@@ -116,12 +120,30 @@ export default function PricingPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 lg:px-6 lg:py-24">
+      {requireSub && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10 rounded-2xl border border-indigo-200 bg-indigo-50/90 p-4 text-center sm:text-left flex flex-col sm:flex-row items-center gap-3 shadow-sm"
+        >
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-indigo-950">Active Plan Required</h3>
+            <p className="text-xs text-indigo-700">
+              To start creating automated workflows with Claude AI, please select any plan below (starting at just $1).
+            </p>
+          </div>
+        </motion.div>
+      )}
+
       <div className="text-center space-y-4 mb-12">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
           Simple, Transparent Pricing
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-          Choose the right plan for your workflow automation needs. Pay securely with Flutterwave.
+          Choose any plan to unlock AI workflow automation. Upgrade or change plans anytime.
         </p>
       </div>
 
@@ -235,13 +257,17 @@ export default function PricingPage() {
                   onClick={() => handleCheckout(plan.slug)}
                   disabled={loading === plan.slug}
                   className={`w-full py-3.5 px-4 rounded-xl text-sm font-semibold shadow-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
-                    isPlanPopular
+                    currentPlanSlug === plan.slug
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                      : isPlanPopular
                       ? 'bg-indigo-600 text-white hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-600/20'
                       : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-md'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loading === plan.slug ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : currentPlanSlug === plan.slug ? (
+                    'Current Plan (Renew)'
                   ) : (
                     plan.buttonText
                   )}

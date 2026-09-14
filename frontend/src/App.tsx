@@ -27,6 +27,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import AuthCallback from './pages/AuthCallback';
 import AuthGuard from './components/auth/AuthGuard';
 import GuestGuard from './components/auth/GuestGuard';
+import SubscriptionGuard from './components/auth/SubscriptionGuard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminGuard from './components/auth/AdminGuard';
 
@@ -59,7 +60,7 @@ export default function App() {
 
         {/* Auth pages (no layout) */}
         <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-        <Route path="/chat" element={<AuthGuard><Chat /></AuthGuard>} />
+        <Route path="/chat" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
         <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
         <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
         <Route path="/auth/callback" element={<AuthCallback />} />

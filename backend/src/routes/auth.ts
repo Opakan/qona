@@ -56,7 +56,19 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
       user = await db.user.updateRole(user.id, 'ADMIN');
     }
 
-    res.json({ user });
+    const { getPrisma } = await import('../lib/prisma.js');
+    const prisma = getPrisma();
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: user.id,
+        status: 'ACTIVE',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ user, subscription });
   } catch (error) {
     next(error);
   }

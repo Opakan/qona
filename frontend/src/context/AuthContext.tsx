@@ -6,6 +6,8 @@ import apiClient from '../api/client';
 interface AuthState {
   user: User | null;
   dbUser: any | null;
+  subscription: any | null;
+  hasActiveSubscription: boolean;
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -13,6 +15,7 @@ interface AuthState {
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
   toggleDeveloperRole: () => void;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -20,17 +23,28 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<any | null>(null);
+  const [subscription, setSubscription] = useState<any | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDbUser = useCallback(async (cancelled = false) => {
     try {
       const response = await apiClient.get('/auth/me');
-      if (!cancelled && response.data?.user) {
-        setDbUser(response.data.user);
+      if (!cancelled && response.data) {
+        if (response.data.user) setDbUser(response.data.user);
+        if (response.data.subscription) setSubscription(response.data.subscription);
       }
     } catch (err) {
       console.warn('[AuthContext] Failed to fetch database profile:', err);
+    }
+  }, []);
+
+  const refreshSubscription = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get('/payments/subscription');
+      setSubscription(data?.subscription ?? null);
+    } catch {
+      // ignore
     }
   }, []);
 
@@ -213,11 +227,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const hasActiveSubscription =
+    dbUser?.role === 'ADMIN' ||
+    (user?.email && user.email.toLowerCase() === 'opadgiant@gmail.com') ||
+    (!!subscription && subscription.status === 'ACTIVE');
+
   return (
     <AuthContext.Provider
       value={{
         user,
         dbUser,
+        subscription,
+        hasActiveSubscription,
         session,
         isLoading,
         isAuthenticated: !!user,
@@ -225,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInAsGuest,
         signOut,
         toggleDeveloperRole,
+        refreshSubscription,
       }}
     >
       {children}

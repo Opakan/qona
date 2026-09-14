@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { WorkflowStatus } from '@prisma/client';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireSubscription } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { z } from 'zod';
 import { workflowService } from '../services/workflow.service.js';
@@ -50,7 +50,7 @@ workflowsRouter.get('/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-workflowsRouter.post('/', requireAuth, validate(CreateWorkflowSchema), async (req, res, next) => {
+workflowsRouter.post('/', requireAuth, requireSubscription, validate(CreateWorkflowSchema), async (req, res, next) => {
   try {
     const workflow = await workflowService.create({
       userId: req.user!.authId,
@@ -98,7 +98,7 @@ const ExportSchema = z.object({
   platform: z.enum(['n8n', 'zapier', 'make']),
 });
 
-workflowsRouter.post('/:id/export', requireAuth, validate(ExportSchema), async (req, res, next) => {
+workflowsRouter.post('/:id/export', requireAuth, requireSubscription, validate(ExportSchema), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const workflow = await workflowService.getById(id);

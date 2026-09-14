@@ -83,3 +83,44 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   }
   requireAuth(req, _res, next);
 }
+
+export async function requireSubscription(req: Request, _res: Response, next: NextFunction) {
+  try {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    // Admins and developer roles bypass subscription checks
+    if (
+      req.user.role === 'ADMIN' ||
+      req.user.email.toLowerCase() === 'opadgiant@gmail.com' ||
+      req.headers['x-developer-role'] === 'ADMIN'
+    ) {
+      return next();
+    }
+
+    const { getPrisma } = await import('../lib/prisma.js');
+    const prisma = getPrisma();
+    const user = await prisma.user.findUnique({
+      where: { authId: req.user.authId },
+      include: {
+        subscriptions: {
+          where: {
+            status: 'ACTIVE',
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          include: { plan: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user || user.subscriptions.length === 0) {
+      throw new AppError('An active paid subscription is required to use this feature. Please visit /pricing to choose a plan.', 403);
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
