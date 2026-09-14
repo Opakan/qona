@@ -63,31 +63,28 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({ isOpen, onClos
         {/* Pricing Card Footer */}
         <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200/80 mb-6 flex items-center justify-between">
           <div>
-            <div className="text-2xl font-black text-slate-900">$19<span className="text-xs font-bold text-slate-500"> / month</span></div>
+            <div className="text-2xl font-black text-slate-900">$1<span className="text-xs font-bold text-slate-500"> Starter / $30 Pro</span></div>
             <div className="text-[10px] font-semibold text-slate-400">Cancel or switch plans anytime</div>
           </div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
             <ShieldCheck className="h-4 w-4" />
-            7-Day Free Trial
+            Instant Activation
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={() => {
-              alert('Thank you for choosing Qonace Pro! Redirecting to payment checkout...');
-              onClose();
-            }}
-            className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-900 px-5 py-3 text-xs font-bold text-white shadow-md hover:opacity-95 transition-all cursor-pointer text-center"
+          <a
+            href="/pricing"
+            className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-900 px-5 py-3 text-xs font-bold text-white shadow-md hover:opacity-95 transition-all text-center"
           >
-            Upgrade to Pro Now
-          </button>
+            Choose Plan (from $1)
+          </a>
           <button
             onClick={onClose}
             className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
           >
-            Maybe Later
+            Close
           </button>
         </div>
       </div>
