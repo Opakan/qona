@@ -324,6 +324,34 @@ export const conversationEngine = {
   ): Promise<AIResponse> {
     log('info', 'STAGE: Extracting intent from user prompt');
 
+    const isSimpleGreeting = /^(hi|hello|hey|greetings|help|start|good (morning|afternoon|evening)|yo)[\s!.?]*$/i.test(userMessage.trim().toLowerCase());
+    if (isSimpleGreeting) {
+      const greetingText = `Hello! 👋 I'm **Qonace AI**, your workflow automation assistant.\n\nTell me what workflow or repetitive task you'd like to automate (e.g. *"Sync Stripe payments to Slack"* or *"AI Podcast Summarizer & Enhancer"*), and I'll design and build the complete n8n automation for you!`;
+      await conversationService.addMessage(conversationId, {
+        role: 'assistant',
+        content: greetingText,
+        metadata: { sessionId, sessionState: 'collecting_intent' },
+      });
+      return {
+        type: 'question',
+        sessionId,
+        sessionState: 'collecting_intent',
+        explanation: greetingText,
+        singleQuestion: {
+          id: 'q_starter_goal',
+          question: 'What workflow would you like to build today?',
+          field: 'workflow_goal',
+          options: [
+            'AI Podcast Summarizer & Enhancer',
+            'Customer Support & Ticket Auto-Responder',
+            'New Lead / Payment Notifications (Slack/Email)',
+            'Daily Database / Google Sheets Summary',
+          ],
+          required: true,
+        },
+      };
+    }
+
     let intent;
 
     try {
@@ -331,20 +359,7 @@ export const conversationEngine = {
       log('info', 'Intent extracted', { trigger: intent.trigger.type, actions: intent.actions.length, confidence: intent.confidence });
     } catch (err) {
       log('warn', 'Intent extraction failed', { error: (err as Error).message });
-      const friendlyHelp = `Hello! I'm **Qonace AI**, your workflow automation assistant.
-
-I can help you build custom **n8n automations** to connect your apps, process data, and automate repetitive tasks.
-
-### 💡 How It Works for Non-Technical Users:
-1. **⚡ Trigger (When something happens...)**: The starting event that kicks off the automation (e.g., *a new email arrives, a podcast audio is uploaded, a payment is made in Stripe, or a scheduled timer runs*).
-2. **⚙️ Actions (Do something with another app...)**: The automated steps that follow (e.g., *transcribing audio, summarizing with AI, saving to Google Sheets/Notion, or sending a Slack message*).
-
----
-
-**Try telling me what you'd like to automate!** For example:
-- *"Create an AI Podcast Summarizer and Enhancer"*
-- *"When a new user signs up, send a welcome email and alert Slack"*
-- *"Summarize daily Google Form responses and save to Notion"*`;
+      const friendlyHelp = `I'd love to help you build that! Could you tell me a bit more about what apps you want to connect and what the automation should do?`;
 
       await conversationService.addMessage(conversationId, {
         role: 'assistant',

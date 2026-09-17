@@ -12,6 +12,7 @@ import WorkflowGraph from '../components/chat/WorkflowGraph';
 import { SetupGuideCard } from '../components/SetupGuideCard';
 import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionPreviewModal';
 import { UpgradeProModal } from '../components/chat/UpgradeProModal';
+import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useAuth } from '../context/AuthContext';
 import type { InternalGraph } from '@qona/shared';
 
@@ -152,12 +153,17 @@ export default function ChatPage() {
     } catch { /* ignore */ }
   }, []);
 
+  const isSendingRef = useRef(false);
+
   const fetchMessages = useCallback(async (id: string) => {
+    if (isSendingRef.current) return;
     try {
       const { data } = await apiClient.get(`/conversations/${id}`);
       const conv = data.conversation;
       const msgs: Message[] = conv?.messages ?? [];
-      setMessages(msgs);
+      if (!isSendingRef.current) {
+        setMessages(msgs);
+      }
 
       for (const msg of msgs) {
         const meta = msg.metadata as Record<string, unknown> | undefined;
@@ -168,7 +174,7 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
-  useEffect(() => { if (activeId) fetchMessages(activeId); }, [activeId, fetchMessages]);
+  useEffect(() => { if (activeId && !isSendingRef.current) fetchMessages(activeId); }, [activeId, fetchMessages]);
 
   useEffect(() => {
     const selectedTemplate = location.state?.selectedTemplate;
@@ -197,6 +203,7 @@ export default function ChatPage() {
   }, [sessionId]);
 
   const sendMessage = async (text: string) => {
+    isSendingRef.current = true;
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
@@ -209,7 +216,6 @@ export default function ChatPage() {
         const { data } = await apiClient.post<{ conversation: { id: string } }>('/conversations', { title: text.slice(0, 80) || 'New conversation' });
         convId = data.conversation.id;
         setActiveId(convId);
-        fetchConversations();
       }
 
       const { data } = await apiClient.post(`/conversations/${convId}/messages`, { content: text });
@@ -235,7 +241,9 @@ export default function ChatPage() {
       setTyping(false);
       setMessages((prev) => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: err instanceof Error ? err.message : 'Something went wrong while compiling.' }]);
     } finally {
+      isSendingRef.current = false;
       setLoading(false);
+      setTyping(false);
       fetchConversations();
     }
   };
@@ -562,7 +570,11 @@ export default function ChatPage() {
                     }`}
                   >
                     {/* Message Text Content */}
-                    <div className="whitespace-pre-wrap leading-relaxed space-y-2">{msg.content}</div>
+                    {msg.role === 'user' ? (
+                      <div className="whitespace-pre-wrap leading-relaxed font-medium">{msg.content}</div>
+                    ) : (
+                      <MarkdownRenderer content={msg.content} />
+                    )}
 
                     {/* Interactive Clickable Option Pills for Non-Technical Users */}
                     {Boolean((msg.metadata?.singleQuestion as any)?.options?.length || (msg.metadata?.question as any)?.options?.length) && (
@@ -607,17 +619,17 @@ export default function ChatPage() {
               ))}
 
               {typing && (
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-start">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-2xs">
                     <Workflow className="h-4 w-4 animate-spin" />
                   </div>
-                  <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-5 py-3.5 border border-slate-200/70 shadow-2xs">
-                    <div className="flex gap-1.5">
+                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 px-5 py-3.5 border border-slate-200/80 shadow-2xs">
+                    <div className="flex gap-1.5 items-center">
                       <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-600" />
                       <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-600" style={{ animationDelay: '0.15s' }} />
                       <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-600" style={{ animationDelay: '0.3s' }} />
                     </div>
-                    <span className="text-xs font-medium text-slate-500 ml-2">Compiling workflow nodes...</span>
+                    <span className="text-xs font-semibold text-slate-600">Qonace AI is architecting your workflow...</span>
                   </div>
                 </div>
               )}
