@@ -6,8 +6,18 @@ const LOG_PREFIX = '[Planning]';
 async function resolveUserId(authId: string, email?: string, name?: string): Promise<string> {
   const p = getPrisma();
   let u = await p.user.findUnique({ where: { authId } });
-  if (!u) { u = await p.user.create({ data: { authId, email: email ?? authId+'@unknown', name: name ?? email ?? authId.slice(0,8) } }); console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'created' }); }
-  else { console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'resolved' }); }
+  if (!u) {
+    u = await p.user.create({
+      data: {
+        authId,
+        email: email ?? authId + '@unknown',
+        name: name ?? email ?? authId.slice(0, 8),
+      },
+    });
+    console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'created' });
+  } else {
+    console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'resolved' });
+  }
   return u.id;
 }
 
@@ -79,6 +89,20 @@ export const planningSessionService = {
       console.log(LOG_PREFIX, { sessionId: s.id, recovery: 'auto→', internalGraphId: s.internalGraphId });
       await this.recoverSession(s.id);
     }
+  },
+
+  async getActiveForConversation(conversationId: string, authId: string) {
+    await this.scanAndRecover();
+    const prisma = getPrisma();
+    const userId = await resolveUserId(authId);
+    return prisma.workflowPlanningSession.findFirst({
+      where: {
+        conversationId,
+        userId,
+        state: { notIn: [PLANNING_STATES.COMPLETED, PLANNING_STATES.FAILED] },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
   },
 
   async getActiveForUser(authId: string) {

@@ -333,20 +333,25 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     displayName: 'Slack',
     typeVersion: 2,
     requiredParams: ['channel'],
-    optionalParams: ['message', 'blocks', 'username', 'threadTs', 'select', 'options', 'binaryData', 'binaryPropertyName', 'resource', 'operation'],
+    optionalParams: ['message', 'text', 'blocks', 'username', 'threadTs', 'select', 'options', 'binaryData', 'binaryPropertyName', 'resource', 'operation'],
     defaults: {
+      resource: 'message',
+      operation: 'post',
       select: 'channel',
+      channel: '#general',
+      message: 'Automated notification from Qonace workflow',
       options: {},
     },
     paramSchema: [
       { field: 'resource', type: 'options', required: false, allowedValues: ['message', 'channel', 'file', 'reaction', 'star', 'userGroup', 'user'], defaultValue: 'message' },
       { field: 'operation', type: 'options', required: false, allowedValues: ['post', 'postEphemeral', 'update', 'delete', 'get', 'getAll'], defaultValue: 'post' },
-      { field: 'channel', type: 'string', required: true },
-      { field: 'message', type: 'string', required: false },
+      { field: 'channel', type: 'string', required: true, defaultValue: '#general' },
+      { field: 'message', type: 'string', required: false, defaultValue: 'Automated notification from Qonace workflow' },
+      { field: 'text', type: 'string', required: false },
       { field: 'blocks', type: 'array', required: false },
       { field: 'username', type: 'string', required: false },
       { field: 'threadTs', type: 'string', required: false },
-      { field: 'select', type: 'options', required: false, allowedValues: ['channel', 'user'] },
+      { field: 'select', type: 'options', required: false, allowedValues: ['channel', 'user'], defaultValue: 'channel' },
       { field: 'options', type: 'object', required: false },
       { field: 'binaryData', type: 'boolean', required: false },
       { field: 'binaryPropertyName', type: 'string', required: false },
@@ -358,8 +363,10 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       const mapped: Record<string, unknown> = {};
       if (config.channelId) mapped.channel = config.channelId;
       if (config.channel) mapped.channel = config.channel;
+      if (!mapped.channel) mapped.channel = '#general';
       if (config.text) mapped.message = config.text;
       if (config.message) mapped.message = config.message;
+      if (!mapped.message) mapped.message = 'Automated notification from Qonace workflow';
       if (config.blocks) mapped.blocks = config.blocks;
       if (config.username) mapped.username = config.username;
       if (config.threadTs) mapped.threadTs = config.threadTs;
@@ -504,6 +511,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
       return mapped;
     },
   },
+
 
   'n8n-nodes-base.telegram': {
     n8nType: 'n8n-nodes-base.telegram',

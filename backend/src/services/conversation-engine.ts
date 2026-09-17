@@ -277,15 +277,24 @@ export const conversationEngine = {
 
     await conversationService.addMessage(conversationId, { role: 'user', content: userMessage });
 
-    // ── Get or create planning session ──
-    let session = await planningSessionService.getActiveForUser(authId);
+    // ── Get or create planning session scoped to this conversation ──
+    let session = await planningSessionService.getActiveForConversation(conversationId, authId);
     if (!session) {
       session = await planningSessionService.create(authId, conversationId);
-      log('info', 'Created new planning session', { sessionId: session.id });
+      log('info', 'Created new planning session', { sessionId: session.id, conversationId });
     }
 
     const state = session.state;
     log('info', 'CONVERSATION RECEIVED', { sessionId: session.id, state, stage: session.stage, userMessage: userMessage.slice(0, 100) });
+
+    // ── Check if user is greeting / saying hello ──
+    const isGreeting = /^(hi|hello|hey|greetings|help|start|good (morning|afternoon|evening)|yo)[\s!.?]*$/i.test(userMessage.trim().toLowerCase());
+    if (isGreeting) {
+      if (session.state !== PLANNING_STATES.COLLECTING_INTENT) {
+        await planningSessionService.transition(session.id, PLANNING_STATES.COLLECTING_INTENT);
+      }
+      return await this.handleCollectingIntent(session.id, userMessage, conversationId);
+    }
 
     // ── Check if user wants to generate directly ──
     if (isConfirmationToGenerate(userMessage)) {
@@ -294,6 +303,9 @@ export const conversationEngine = {
 
     // ── Check if user is asking for a new workflow or choosing a starter card ──
     if (isNewWorkflowIntent(userMessage)) {
+      if (session.state !== PLANNING_STATES.COLLECTING_INTENT) {
+        await planningSessionService.transition(session.id, PLANNING_STATES.COLLECTING_INTENT);
+      }
       return await this.handleCollectingIntent(session.id, userMessage, conversationId);
     }
 

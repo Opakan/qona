@@ -225,6 +225,10 @@ export function resolveNodeParameters(
           finalParams.table = 'REPLACE_WITH_TABLE_NAME';
         } else if (req === 'chatId' && n8nType.includes('telegram')) {
           finalParams.chatId = 'REPLACE_WITH_CHAT_ID';
+        } else if ((req === 'channel' || req === 'channelId') && n8nType.includes('slack')) {
+          finalParams[req] = '#general';
+        } else if ((req === 'text' || req === 'message') && n8nType.includes('slack')) {
+          finalParams[req] = 'Automated notification from Qonace workflow';
         } else {
           finalParams[req] = `REPLACE_WITH_${req.toUpperCase()}`;
         }
