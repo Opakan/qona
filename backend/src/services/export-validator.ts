@@ -111,7 +111,9 @@ export function validateExport(graph: InternalGraph): ExportValidationResult {
       const knownSchemaFields = new Set<string>(registryEntry.paramSchema.map((s) => s.field));
       // Add common mapped aliases (e.g. 'method' → 'httpMethod') accepted as input
       const mapAliases = new Set<string>([
-        'method', 'to', 'body', 'code', 'spreadsheetId', 'tableName', 'channelId', 'text',
+        'method', 'httpMethod', 'to', 'body', 'code', 'spreadsheetId', 'tableName', 'channelId', 'text',
+        'type', 'label', 'name', 'id', 'description', 'options', 'responseData', 'prompt', 'model',
+        'workflow_goal', 'service', 'url', 'json', 'data',
         // internal/qona fields that are always allowed
         'credentials', 'provider', 'resource', 'operation', 'dependencies',
         'binaryRequirements', 'triggerType', 'email_provider',

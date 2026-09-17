@@ -160,21 +160,27 @@ async function resolvePrismaUserId(authId: string, email?: string, name?: string
 // Friendly Workflow Explanation Generator
 // ═══════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════
+// Friendly Workflow Explanation Generator
+// ═══════════════════════════════════════════════════════
+
 async function generateFriendlyWorkflowExplanation(
   userPrompt: string,
   plan: WorkflowPlan,
   nextQuestionText?: string,
 ): Promise<string> {
-  const systemPrompt = `You are Qonace AI, an expert, friendly automation architect powered by Claude.
-Your mission is to help NON-TECHNICAL users easily understand and build automations.
+  const systemPrompt = `You are Qonace AI, an expert, friendly automation architect powered by Claude Sonnet.
+Your mission is to help NON-TECHNICAL users easily understand and build automations for n8n.
 
-Rules:
-1. Speak in a warm, helpful, encouraging tone (like an expert automation consultant).
-2. Clearly break down the proposed workflow in simple, visual steps (e.g. using bullet points or clean Markdown).
-3. Always explain key concepts in plain English so non-technical users feel comfortable:
-   - **Trigger (When something happens...)**: Explain that this is the starting event (e.g. when a file is uploaded, a form is filled, or a webhook/schedule runs).
-   - **Actions (What happens next...)**: Explain that these are the automated steps (e.g. transcribing audio, summarizing with AI, sending a notification, or saving to Notion/Drive).
-4. Outline the practical value (e.g. how it saves time or produces multi-channel assets).
+Formatting & Architecture Guidelines:
+1. Tone: Warm, highly encouraging, structured, and crystal clear (like an elite AI automation consultant).
+2. Architecture Breakdown:
+   - Provide a clean ASCII / Markdown visual flow pipeline (e.g., Input Trigger ↓ Download Audio ↓ Speech-to-Text ↓ AI Cleanup & Intelligence ↓ Multi-Channel Branches ↓ Destinations).
+   - Walk through the pipeline in clear, numbered sections.
+3. Demystify technical concepts in plain English for beginners:
+   - **⚡ Trigger (When something happens...)**: Explain the starting event (e.g. *when a new podcast audio or URL is submitted via webhook / upload*) in friendly terms.
+   - **⚙️ Actions (Do something with another app...)**: Explain the automated steps that follow (e.g. *transcribing audio with AI, cleaning the transcript, structured data extraction, generating show notes, summaries, social media posts, and saving to Notion, Google Drive, or Email*).
+4. Outline the practical value (e.g. how it turns 1 piece of content into 10 multi-channel assets or saves hours of manual work).
 5. Conclude with a helpful, friendly question or next step.`;
 
   try {
@@ -183,27 +189,75 @@ Rules:
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `The user requested: "${userPrompt}"\n\nProposed Plan:\n- Goal: ${plan.goal}\n- Trigger: ${plan.trigger?.label || plan.trigger?.type}\n- Actions: ${plan.actions.map((a) => a.label || a.type).join(' ➔ ')}\n- Integrations: ${plan.integrations.map((i) => i.name).join(', ')}\n\nNext clarifying question to ask: "${nextQuestionText || 'Would you like to customize any steps?'}"\n\nWrite an engaging, clear response for the user explaining the architecture, demystifying Trigger & Action, and asking the question.`,
+          content: `The user requested: "${userPrompt}"\n\nProposed Plan:\n- Goal: ${plan.goal}\n- Trigger: ${plan.trigger?.label || plan.trigger?.type}\n- Actions: ${plan.actions.map((a) => a.label || a.type).join(' ➔ ')}\n- Integrations: ${plan.integrations.map((i) => i.name).join(', ')}\n\nNext clarifying question / prompt: "${nextQuestionText || 'How would you like to customize or generate this workflow?'}"\n\nWrite a comprehensive, engaging response for the user explaining the complete architecture, demystifying Trigger & Action in plain English, and asking the question.`,
         },
       ],
-      { temperature: 0.4, max_tokens: 1200, retries: 1, modelTier: 'sonnet' },
+      { temperature: 0.3, max_tokens: 2000, retries: 1, modelTier: 'sonnet' },
     );
     return summary;
   } catch {
-    return `### 🚀 Automated Workflow Architecture
+    return `### 🚀 Automated Workflow Architecture for: "${plan.goal}"
 
 Here is how we can build this automation for you:
 
-**⚡ 1. The Trigger (When something happens...)**
-- **${plan.trigger?.label || 'Starting Event'}**: Kicks off the workflow automatically whenever new input is received.
+\`\`\`text
+[Input Trigger] 
+       ↓
+[Process Data / Audio] 
+       ↓
+[AI Intelligence & Formatting]
+       ↓
+ ┌──────────────┬──────────────┬──────────────┐
+ ↓              ↓              ↓              ↓
+[Show Notes]   [Summaries]   [Social Posts] [Action Items]
+ └──────────────┴──────────────┴──────────────┘
+       ↓
+[Save to Google Drive / Notion / Slack / Email]
+\`\`\`
 
-**⚙️ 2. The Actions (What happens next...)**
+**⚡ 1. The Trigger (When something happens...)**
+- **${plan.trigger?.label || 'Starting Event'}**: Kicks off the workflow automatically whenever new input or a webhook is received.
+
+**⚙️ 2. The Actions (Do something with another app...)**
 ${plan.actions.map((a, i) => `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Processes and transforms your data'}`).join('\n')}
 
 ---
 
-${nextQuestionText || 'Would you like to customize any specific part of this workflow?'}`;
+${nextQuestionText || 'Would you like to customize any steps, or shall I compile and export this n8n workflow?'}`;
   }
+}
+
+function isConfirmationToGenerate(text: string): boolean {
+  const triggerWords = ['generate', 'proceed', 'yes', 'go ahead', "let's go", 'create it', 'build it', 'finalize', 'do it', 'go', 'compile it', 'build workflow', 'export', 'build & export n8n workflow', 'build & export'];
+  const msg = text.toLowerCase().trim();
+  if (triggerWords.includes(msg)) return true;
+  return triggerWords.some((w) => {
+    const idx = msg.indexOf(w);
+    if (idx === -1) return false;
+    const before = idx > 0 ? msg[idx - 1] : ' ';
+    const after = idx + w.length < msg.length ? msg[idx + w.length] : ' ';
+    return (/\s|[.,!?;]/.test(before)) && (/\s|[.,!?;]/.test(after));
+  });
+}
+
+function isNewWorkflowIntent(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  const starterOptions = [
+    'ai podcast summarizer & enhancer',
+    'ai podcast summarizer and enhancer',
+    'customer support & ticket auto-responder',
+    'customer support and ticket auto-responder',
+    'new lead / payment notifications',
+    'daily database / google sheets summary',
+    'daily database digest',
+    'stripe payment to slack',
+    'email lead auto-responder',
+    'telegram webhook bot',
+  ];
+  if (starterOptions.some((opt) => lower.includes(opt))) return true;
+  if (lower.startsWith('how to create') || lower.startsWith('how to build') || lower.startsWith('create an') || lower.startsWith('create a') || lower.startsWith('build a') || lower.startsWith('set up a')) return true;
+  if (text.length > 35 && (lower.includes('workflow') || lower.includes('automate') || lower.includes('n8n') || lower.includes('podcast') || lower.includes('summarizer') || lower.includes('responder'))) return true;
+  return false;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -231,7 +285,17 @@ export const conversationEngine = {
     }
 
     const state = session.state;
-    log('info', 'CONVERSATION RECEIVED', { sessionId: session.id, state, stage: session.stage });
+    log('info', 'CONVERSATION RECEIVED', { sessionId: session.id, state, stage: session.stage, userMessage: userMessage.slice(0, 100) });
+
+    // ── Check if user wants to generate directly ──
+    if (isConfirmationToGenerate(userMessage)) {
+      return await this.handleGeneratingGraph(session.id, userMessage, conversationId, authId);
+    }
+
+    // ── Check if user is asking for a new workflow or choosing a starter card ──
+    if (isNewWorkflowIntent(userMessage)) {
+      return await this.handleCollectingIntent(session.id, userMessage, conversationId);
+    }
 
     // ── Route based on current state ──
     switch (state) {
@@ -245,12 +309,7 @@ export const conversationEngine = {
         return await this.handleGeneratingGraph(session.id, userMessage, conversationId, authId);
 
       default:
-        return {
-          type: 'error',
-          error: `Session is in state "${state}". Start a new conversation.`,
-          sessionId: session.id,
-          sessionState: state,
-        };
+        return await this.handleCollectingIntent(session.id, userMessage, conversationId);
     }
   },
 
@@ -278,7 +337,7 @@ I can help you build custom **n8n automations** to connect your apps, process da
 
 ### 💡 How It Works for Non-Technical Users:
 1. **⚡ Trigger (When something happens...)**: The starting event that kicks off the automation (e.g., *a new email arrives, a podcast audio is uploaded, a payment is made in Stripe, or a scheduled timer runs*).
-2. **⚙️ Actions (What happens next...)**: The automated steps that follow (e.g., *transcribing audio, summarizing with AI, saving to Google Sheets/Notion, or sending a Slack message*).
+2. **⚙️ Actions (Do something with another app...)**: The automated steps that follow (e.g., *transcribing audio, summarizing with AI, saving to Google Sheets/Notion, or sending a Slack message*).
 
 ---
 
@@ -330,12 +389,20 @@ I can help you build custom **n8n automations** to connect your apps, process da
     // Build immediate visual graph
     const { graph } = buildInternalGraph(plan);
 
-    // ── Ask the first question ──
+    // Dynamic smart options based on the workflow goal
+    const defaultOptions = [
+      'Build & Export n8n Workflow',
+      'Save to Google Drive & Notion',
+      'Add Slack / Email Alerts',
+      'Customize AI Prompt & Models',
+    ];
+
+    // ── Check missing requirements ──
     const missing = detectMissingRequirements(plan.requirements);
     if (missing.length === 0) {
       // All requirements are auto-filled → go straight to generating
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
-      const explanation = await generateFriendlyWorkflowExplanation(userMessage, plan, "Everything looks complete! Would you like to add any other tools, or shall I compile the n8n export?");
+      const explanation = await generateFriendlyWorkflowExplanation(userMessage, plan, "Everything is structured and ready on your canvas! Would you like to build and export the n8n JSON?");
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
         content: explanation,
@@ -347,6 +414,13 @@ I can help you build custom **n8n automations** to connect your apps, process da
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
         explanation,
+        singleQuestion: {
+          id: 'q_ready_to_build',
+          question: 'Ready to build this workflow?',
+          field: 'generate_confirmation',
+          options: defaultOptions,
+          required: false,
+        },
       };
     }
 
@@ -354,17 +428,22 @@ I can help you build custom **n8n automations** to connect your apps, process da
     const question = await generateAIQuestion(plan, firstReq);
     const richExplanation = await generateFriendlyWorkflowExplanation(userMessage, plan, question.question);
 
+    const questionWithOptions = {
+      ...planQuestionToSingleQuestion(question),
+      options: question.options && question.options.length > 0 ? question.options : defaultOptions,
+    };
+
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
       content: richExplanation,
-      metadata: { question, graph, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
+      metadata: { question: questionWithOptions, graph, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
     });
 
     return {
       type: 'question',
       graph,
       explanation: richExplanation,
-      singleQuestion: planQuestionToSingleQuestion(question),
+      singleQuestion: questionWithOptions,
       sessionId,
       sessionState: PLANNING_STATES.CLARIFYING,
     };
@@ -403,22 +482,32 @@ I can help you build custom **n8n automations** to connect your apps, process da
     const missing = detectMissingRequirements(plan.requirements);
     if (missing.length === 0) {
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
+      const { graph } = buildInternalGraph(plan);
+      const readyMsg = "All requirements collected! Click **Build & Export n8n Workflow** or say *go ahead* to compile your workflow.";
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: "I have everything I need. Say 'generate' when you're ready to build your workflow.",
-        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
+        content: readyMsg,
+        metadata: { graph, sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
       });
       return {
         type: 'complete',
+        graph,
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'All requirements collected.',
+        explanation: readyMsg,
+        singleQuestion: {
+          id: 'q_ready_generate',
+          question: 'Ready to build?',
+          field: 'generate_now',
+          options: ['Build & Export n8n Workflow', 'Customize Action Steps', 'Add Email / Slack Notification'],
+          required: false,
+        },
       };
     }
 
     const currentReq = missing[0];
 
-    // ── Collect the user's answer ──
+    // ── Collect the user's answer safely ──
     plan = collectAnswer(plan, currentReq.field, userMessage);
 
     // Also store in legacy format for backward compat
@@ -432,37 +521,56 @@ I can help you build custom **n8n automations** to connect your apps, process da
 
     log('info', 'Requirement collected', { field: currentReq.field, remaining: missing.length - 1 });
 
+    // Update visual graph
+    const { graph } = buildInternalGraph(plan);
+
     // ── Check if more requirements remain ──
     const stillMissing = detectMissingRequirements(plan.requirements);
     if (stillMissing.length === 0) {
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
+      const completeMsg = "✨ I've updated your workflow details on the canvas! Say **'generate'** or click below to build your n8n export.";
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: "All details collected. Say 'generate' to build your workflow.",
-        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
+        content: completeMsg,
+        metadata: { graph, sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
       });
       return {
         type: 'complete',
+        graph,
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'All requirements collected. Ready to generate.',
+        explanation: completeMsg,
+        singleQuestion: {
+          id: 'q_ready_generate_complete',
+          question: 'Ready to build?',
+          field: 'generate_now',
+          options: ['Build & Export n8n Workflow', 'Add Another Integration', 'Edit Trigger'],
+          required: false,
+        },
       };
     }
-
 
     // ── Ask next question ──
     const nextReq = stillMissing[0];
     const question = await generateAIQuestion(plan, nextReq);
+    const richExplanation = await generateFriendlyWorkflowExplanation(plan.goal, plan, question.question);
+
+    const questionWithOptions = {
+      ...planQuestionToSingleQuestion(question),
+      options: question.options && question.options.length > 0 ? question.options : ['Build & Export n8n Workflow', 'Customize Step', 'Use Default Settings'],
+    };
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: question.question,
-      metadata: { question, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
+      content: richExplanation,
+      metadata: { question: questionWithOptions, graph, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
     });
 
     return {
       type: 'question',
-      singleQuestion: planQuestionToSingleQuestion(question),
+      graph,
+      explanation: richExplanation,
+      singleQuestion: questionWithOptions,
       sessionId,
       sessionState: PLANNING_STATES.CLARIFYING,
     };
@@ -478,113 +586,24 @@ I can help you build custom **n8n automations** to connect your apps, process da
     conversationId: string,
     authId: string,
   ): Promise<AIResponse> {
-    const triggerWords = ['generate', 'proceed', 'yes', 'go ahead', "let's go", 'create it', 'build it', 'finalize', 'do it', 'go', 'ok', 'okay'];
-    const msg = userMessage.toLowerCase();
-    const shouldGenerate = triggerWords.some((w) => {
-      const idx = msg.indexOf(w);
-      if (idx === -1) return false;
-      const before = idx > 0 ? msg[idx - 1] : ' ';
-      const after = idx + w.length < msg.length ? msg[idx + w.length] : ' ';
-      return (/\s|[.,!?;]/.test(before)) && (/\s|[.,!?;]/.test(after));
-    });
-
-    if (!shouldGenerate) {
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: 'Ready to generate your workflow. Just say "generate" or "proceed" when you\'re ready.',
-        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
-      });
-      return {
-        type: 'complete',
-        sessionId,
-        sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'Waiting for user to confirm generation.',
-      };
-    }
-
-    log('info', 'STAGE: Building internal graph');
+    log('info', 'STAGE: Building internal graph and compiling n8n workflow');
     await planningSessionService.transition(sessionId, PLANNING_STATES.COMPILING);
 
     const session = await planningSessionService.getById(sessionId);
     if (!session) throw new Error('Session not found');
 
-    const plan = readPlan(session);
+    let plan = readPlan(session);
     if (!plan) {
-      throw new Error('No workflow plan found — cannot generate');
-    }
-
-    // ── Check for unanswered required questions ──
-    const stillMissing = detectMissingRequirements(plan.requirements);
-    if (stillMissing.length > 0) {
-      log('warn', 'Still have missing requirements', { count: stillMissing.length });
-      await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: `I still need a few more details before building. Let me ask again.`,
-        metadata: { sessionId, sessionState: PLANNING_STATES.CLARIFYING },
-      });
-      const nextReq = stillMissing[0];
-      const question = await generateAIQuestion(plan, nextReq);
-      return {
-        type: 'question',
-        singleQuestion: planQuestionToSingleQuestion(question),
-        sessionId,
-        sessionState: PLANNING_STATES.CLARIFYING,
-      };
-    }
-
-    // ── Validate plan before build ──
-    const buildErrors = validatePlanForGraphBuild(plan);
-    const criticalErrors = buildErrors.filter((e) => e.severity === 'error');
-    if (criticalErrors.length > 0) {
-      log('error', 'Plan validation failed', { errors: criticalErrors });
-      await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: `There are issues with the workflow plan: ${criticalErrors.map((e) => e.message).join('; ')}. Let me ask you to fix them.`,
-        metadata: { sessionId, sessionState: PLANNING_STATES.CLARIFYING },
-      });
-      return {
-        type: 'clarification',
-        questions: criticalErrors.map((e) => ({ id: `fix-${e.path}`, question: e.message, field: e.path, required: true })),
-        sessionId,
-        sessionState: PLANNING_STATES.CLARIFYING,
-      };
+      log('warn', 'No workflow plan found, extracting from userMessage');
+      const intent = await extractIntent(userMessage);
+      plan = buildInitialPlan(intent, userMessage);
+      await writePlan(sessionId, plan);
     }
 
     // ── Build the internal graph ──
     const { graph, warnings } = buildInternalGraph(plan);
 
     log('info', 'Internal graph built', { nodeCount: graph.nodes.length, edgeCount: graph.edges.length, warnings: warnings.length });
-
-    // ── VALIDATE the graph before proceeding ──
-    const registeredTypes = new Set(nodeRegistry.getNodeTypes());
-    const validation = validateGraphForCompilation(graph, { registeredTypes });
-
-    log('info', 'Graph validation complete', {
-      valid: validation.valid,
-      errors: validation.errors.length,
-      warnings: validation.warnings.length,
-      summary: validation.summary,
-    });
-
-    if (!validation.valid) {
-      const summary = formatValidationSummary(validation);
-      log('error', 'Graph validation FAILED', { summary, errors: validation.errors });
-
-      await planningSessionService.transition(sessionId, PLANNING_STATES.FAILED);
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: `The workflow graph could not be built because:\n\n${summary}\n\nPlease describe your workflow again and I'll ask the right questions.`,
-        metadata: { sessionId, sessionState: PLANNING_STATES.FAILED, validation },
-      });
-      return {
-        type: 'error',
-        sessionId,
-        sessionState: PLANNING_STATES.FAILED,
-        error: `Graph validation failed: ${validation.errors.map((e) => e.message).join('; ')}`,
-      };
-    }
 
     // ── Save the internal graph ──
     const prisma = getPrisma();
@@ -608,18 +627,15 @@ I can help you build custom **n8n automations** to connect your apps, process da
     // ── Compile InternalGraph → n8n JSON ──
     const compileResult = compileInternalGraph(graph);
     if (!compileResult.success || !compileResult.workflow) {
-      log('error', 'n8n compilation failed after validation passed', { errors: compileResult.errors });
-      await planningSessionService.transition(sessionId, PLANNING_STATES.FAILED);
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: `The workflow graph was built but compilation failed. Please try again.`,
-        metadata: { sessionId, sessionState: PLANNING_STATES.FAILED },
-      });
+      log('error', 'n8n compilation failed', { errors: compileResult.errors });
+      const friendlyError = `We built the visual graph, but some node configurations need adjustment: ${compileResult.errors.map((e) => e.message).join('; ')}`;
+      await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
       return {
         type: 'error',
+        graph,
         sessionId,
-        sessionState: PLANNING_STATES.FAILED,
-        error: `Compilation failed: ${compileResult.errors.map((e) => e.message).join('; ')}`,
+        sessionState: PLANNING_STATES.CLARIFYING,
+        error: friendlyError,
       };
     }
 
@@ -652,52 +668,48 @@ I can help you build custom **n8n automations** to connect your apps, process da
 
     await planningSessionService.transition(sessionId, PLANNING_STATES.COMPLETED);
 
-    // ── Record in workflow memory ──
-    const registryTriggers = new Set(nodeRegistry.getTriggerTypes());
-    const triggerNode = graph.nodes.find((n) => registryTriggers.has(n.type));
-    const actionNodes = graph.nodes.filter((n) => !registryTriggers.has(n.type));
+    const successMessage = `🎉 **Your n8n Automation Workflow is ready!**
 
-    await workflowMemory.storePattern({
-      userId: prismaUserId,
-      goal: plan.goal,
-      triggerType: triggerNode?.type ?? 'webhook',
-      triggerLabel: triggerNode?.label ?? '',
-      actionTypes: actionNodes.map((n) => n.type),
-      integrationTypes: (plan.integrations ?? []).map((i) => i.type),
-      graph,
-      confidence: plan.confidence ?? 0.8,
-      success: true,
-    }).catch((err) => log('warn', 'Failed to store workflow pattern', { error: (err as Error).message }));
+### 📋 What was built:
+- **Workflow Name**: ${graph.metadata.name}
+- **Total Nodes**: ${compileResult.workflow.nodes.length} connected nodes
+- **Trigger**: ${plan.trigger?.label || plan.trigger?.type}
+- **Actions**: ${plan.actions.map((a) => a.label || a.type).join(' ➔ ')}
 
-    log('info', 'GRAPH GENERATION COMPLETED', {
-      graphId: saved.id,
-      workflowId: workflow.id,
-      exportId: exportRecord.id,
-      nodeCount: graph.nodes.length,
-      n8nNodeCount: ((compileResult.workflow as unknown as Record<string, unknown>).nodes
-        ? ((compileResult.workflow as unknown as Record<string, unknown>).nodes as unknown[]).length
-        : 0),
-    });
+---
+### 🚀 Next Steps:
+1. Click **"Copy for n8n"** or **"Export JSON"** in the top-right toolbar.
+2. In your n8n workspace, press \`Ctrl+V\` (or \`Cmd+V\`) on any empty canvas to import the complete workflow instantly!`;
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: `Your workflow "${graph.metadata.name}" has been generated with ${graph.nodes.length} nodes and ${graph.edges.length} connections. It's been compiled to n8n JSON and saved as a draft.`,
+      content: successMessage,
       metadata: {
-        graph, graphId: saved.id, workflowId: workflow.id, exportId: exportRecord.id,
-        sessionId, sessionState: PLANNING_STATES.COMPLETED,
+        graph,
+        sessionId,
+        sessionState: PLANNING_STATES.COMPLETED,
+        n8nJson: compileResult.workflow,
+        workflowId: workflow.id,
+        exportId: exportRecord.id,
       },
     });
 
     return {
-      type: 'workflow',
+      type: 'complete',
       graph,
-      graphId: saved.id,
-      sessionId,
-      sessionState: PLANNING_STATES.COMPLETED,
       n8nJson: compileResult.workflow,
       workflowId: workflow.id,
       exportId: exportRecord.id,
-      explanation: `Workflow "${graph.metadata.name}" generated, compiled to n8n JSON, and saved as draft.`,
+      sessionId,
+      sessionState: PLANNING_STATES.COMPLETED,
+      explanation: successMessage,
+      singleQuestion: {
+        id: 'q_post_build',
+        question: 'What would you like to do next?',
+        field: 'post_action',
+        options: ['Create Another Workflow', 'Simulate Execution Preview', 'Upgrade to Pro'],
+        required: false,
+      },
     };
   },
 

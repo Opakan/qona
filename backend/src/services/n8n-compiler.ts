@@ -232,6 +232,18 @@ export function resolveNodeParameters(
     }
   }
 
+  // 3b. Sanitize options/enum fields to ensure valid values (e.g. httpMethod must be POST/GET etc)
+  if (registryEntry?.paramSchema) {
+    for (const schema of registryEntry.paramSchema) {
+      if (schema.type === 'options' && schema.allowedValues && schema.allowedValues.length > 0) {
+        const currentVal = String(finalParams[schema.field] ?? '');
+        if (!schema.allowedValues.includes(currentVal)) {
+          finalParams[schema.field] = schema.allowedValues[0];
+        }
+      }
+    }
+  }
+
   // 4. Build credentials stub
   const credentials = buildCredentialsObject(registryEntry);
 
@@ -493,15 +505,18 @@ export function compileInternalGraph(graph: InternalGraph): CompilationResult {
   if (!isTest) {
     const exportValidation = validateExport(graph);
     if (!exportValidation.valid) {
-      return {
-        success: false,
-        errors: exportValidation.errors.map((e) => ({
-          path: e.nodeId ?? 'export',
-          message: e.message,
-          severity: e.severity,
-        })),
-        warnings: [],
-      };
+      const realErrors = exportValidation.errors.filter((e) => e.severity === 'error');
+      if (realErrors.length > 0) {
+        return {
+          success: false,
+          errors: realErrors.map((e) => ({
+            path: e.nodeId ?? 'export',
+            message: e.message,
+            severity: e.severity,
+          })),
+          warnings: exportValidation.errors.filter((e) => e.severity === 'warning').map((w) => w.message),
+        };
+      }
     }
   }
 

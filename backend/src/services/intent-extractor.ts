@@ -157,6 +157,19 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
       config: {},
     };
   }
+
+  // Normalize trigger type
+  if (typeof parsed.trigger.type === 'string') {
+    const t = parsed.trigger.type.trim();
+    if (!t.startsWith('n8n-nodes-base.')) {
+      if (['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'].includes(t.toLowerCase())) {
+        parsed.trigger.type = t.toLowerCase();
+      } else {
+        parsed.trigger.type = `n8n-nodes-base.${t.replace(/^n8n-nodes-base\./, '')}`;
+      }
+    }
+  }
+
   if (!Array.isArray(parsed.actions) || parsed.actions.length === 0) {
     parsed.actions = [
       {
@@ -168,6 +181,41 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
       },
     ];
   }
+
+  // Normalize action types
+  parsed.actions = parsed.actions.map((act: any, idx: number) => {
+    let actType = typeof act.type === 'string' ? act.type.trim() : 'n8n-nodes-base.httpRequest';
+    const lower = actType.toLowerCase();
+    const knownActions = [
+      'send_email', 'http_request', 'transform_data', 'filter', 'delay',
+      'create_record', 'update_record', 'send_notification', 'run_code', 'google_sheets',
+      'gmail', 'slack', 'telegram', 'supabase',
+    ];
+    if (!actType.startsWith('n8n-nodes-base.')) {
+      if (knownActions.includes(lower)) {
+        actType = lower;
+      } else if (lower === 'email' || lower === 'send email') {
+        actType = 'send_email';
+      } else if (lower === 'openai' || lower === 'ai' || lower === 'llm' || lower === 'claude' || lower === 'whisper') {
+        actType = 'n8n-nodes-base.openAi';
+      } else if (lower === 'notion') {
+        actType = 'n8n-nodes-base.notion';
+      } else if (lower === 'drive' || lower === 'google_drive') {
+        actType = 'n8n-nodes-base.googleDrive';
+      } else {
+        actType = `n8n-nodes-base.${actType}`;
+      }
+    }
+    return {
+      ...act,
+      type: actType,
+      label: act.label || `Action ${idx + 1}`,
+      description: act.description || '',
+      order: typeof act.order === 'number' ? act.order : idx + 1,
+      config: act.config || {},
+    };
+  });
+
   if (!Array.isArray(parsed.integrations)) {
     parsed.integrations = [];
   }

@@ -23,18 +23,18 @@ import type {
 // ═══════════════════════════════════════════════════════════
 
 const VALID_TRANSITIONS: Record<PlanningState, PlanningState[]> = {
-  collecting_intent:   ['clarifying', 'generating_graph', 'completed'],
-  clarifying:          ['clarifying', 'generating_graph', 'collecting_intent'],
-  generating_graph:    ['compiling', 'clarifying', 'collecting_intent'],
-  compiling:           ['completed', 'failed', 'clarifying', 'collecting_intent'],
-  completed:           ['collecting_intent'],
-  failed:              ['collecting_intent'],
+  collecting_intent:   ['clarifying', 'generating_graph', 'compiling', 'completed', 'failed'],
+  clarifying:          ['clarifying', 'generating_graph', 'compiling', 'completed', 'failed', 'collecting_intent'],
+  generating_graph:    ['compiling', 'clarifying', 'completed', 'failed', 'collecting_intent'],
+  compiling:           ['completed', 'failed', 'clarifying', 'generating_graph', 'collecting_intent'],
+  completed:           ['collecting_intent', 'clarifying', 'generating_graph', 'compiling', 'completed'],
+  failed:              ['collecting_intent', 'clarifying', 'generating_graph', 'compiling'],
 };
 
 function isValidTransition(from: PlanningState, to: string): to is PlanningState {
   const parsed = PlanningStateSchema.safeParse(to);
   if (!parsed.success) return false;
-  return VALID_TRANSITIONS[from].includes(parsed.data);
+  return VALID_TRANSITIONS[from]?.includes(parsed.data) ?? true;
 }
 
 export const planningSessionService = {
