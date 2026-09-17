@@ -4,12 +4,13 @@ import {
   Message as BedrockMessage,
   SystemContentBlock,
 } from '@aws-sdk/client-bedrock-runtime';
+import axios from 'axios';
 import { config } from '../config.js';
 
-let client: BedrockRuntimeClient | null = null;
+let bedrockClient: BedrockRuntimeClient | null = null;
 
 export function getBedrockClient(): BedrockRuntimeClient {
-  if (!client) {
+  if (!bedrockClient) {
     const clientConfig: { region: string; credentials?: { accessKeyId: string; secretAccessKey: string } } = {
       region: config.AWS_REGION || 'us-east-1',
     };
@@ -21,9 +22,9 @@ export function getBedrockClient(): BedrockRuntimeClient {
       };
     }
 
-    client = new BedrockRuntimeClient(clientConfig);
+    bedrockClient = new BedrockRuntimeClient(clientConfig);
   }
-  return client;
+  return bedrockClient;
 }
 
 export interface ChatMessage {
@@ -53,19 +54,71 @@ function cleanJsonOutput(text: string): string {
 }
 
 /**
- * Invoke Anthropic Claude via AWS Bedrock Converse API
+ * Call Anthropic Claude Messages API directly using ANTHROPIC_API_KEY
  */
-export async function chatCompletion(
+async function callAnthropicDirect(
   messages: ChatMessage[],
   options?: ChatCompletionOptions,
 ): Promise<string> {
-  const maxRetries = options?.retries ?? 2;
+  const systemMessage = messages
+    .filter((m) => m.role === 'system')
+    .map((m) => m.content)
+    .join('\n\n');
+
+  const conversationMessages = messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    }));
+
+  if (conversationMessages.length === 0) {
+    conversationMessages.push({ role: 'user', content: 'Generate the response in JSON format.' });
+  }
+
+  const model = options?.modelTier === 'haiku'
+    ? 'claude-3-5-haiku-20241022'
+    : (config.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022');
+
+  const response = await axios.post(
+    'https://api.anthropic.com/v1/messages',
+    {
+      model,
+      max_tokens: options?.max_tokens ?? 4096,
+      temperature: options?.temperature ?? 0.2,
+      system: systemMessage || undefined,
+      messages: conversationMessages,
+    },
+    {
+      headers: {
+        'x-api-key': config.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      timeout: 60000,
+    },
+  );
+
+  const text = response.data?.content?.[0]?.text;
+  if (!text) {
+    throw new Error('Empty response received from Anthropic API');
+  }
+
+  return cleanJsonOutput(text);
+}
+
+/**
+ * Call Anthropic Claude via AWS Bedrock Converse API
+ */
+async function callBedrock(
+  messages: ChatMessage[],
+  options?: ChatCompletionOptions,
+): Promise<string> {
   const modelTier = options?.modelTier ?? 'sonnet';
   const modelId =
     options?.modelId ??
     (modelTier === 'haiku' ? config.BEDROCK_HAIKU_MODEL_ID : config.BEDROCK_SONNET_MODEL_ID);
 
-  // Extract system messages
   const systemMessages: SystemContentBlock[] = [];
   const conversationMessages: BedrockMessage[] = [];
 
@@ -80,7 +133,6 @@ export async function chatCompletion(
     }
   }
 
-  // Ensure Bedrock receives valid conversation turns (at least one user message)
   if (conversationMessages.length === 0) {
     conversationMessages.push({
       role: 'user',
@@ -89,36 +141,59 @@ export async function chatCompletion(
   }
 
   const bedrock = getBedrockClient();
+  const command = new ConverseCommand({
+    modelId,
+    system: systemMessages.length > 0 ? systemMessages : undefined,
+    messages: conversationMessages,
+    inferenceConfig: {
+      temperature: options?.temperature ?? 0.2,
+      maxTokens: options?.max_tokens ?? 4096,
+    },
+  });
+
+  const response = await bedrock.send(command);
+  const text = response.output?.message?.content?.[0]?.text;
+
+  if (!text) {
+    throw new Error('Empty response received from AWS Bedrock');
+  }
+
+  return cleanJsonOutput(text);
+}
+
+/**
+ * Invoke Anthropic Claude with multiple retries and provider fallback
+ */
+export async function chatCompletion(
+  messages: ChatMessage[],
+  options?: ChatCompletionOptions,
+): Promise<string> {
+  const maxRetries = options?.retries ?? 2;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const command = new ConverseCommand({
-        modelId,
-        system: systemMessages.length > 0 ? systemMessages : undefined,
-        messages: conversationMessages,
-        inferenceConfig: {
-          temperature: options?.temperature ?? 0.2,
-          maxTokens: options?.max_tokens ?? 4096,
-        },
-      });
-
-      const response = await bedrock.send(command);
-      const text = response.output?.message?.content?.[0]?.text;
-
-      if (!text) {
-        throw new Error('Empty response received from AWS Bedrock');
+      if (config.ANTHROPIC_API_KEY) {
+        return await callAnthropicDirect(messages, options);
       }
 
-      return cleanJsonOutput(text);
+      if (config.AWS_ACCESS_KEY_ID && config.AWS_SECRET_ACCESS_KEY) {
+        return await callBedrock(messages, options);
+      }
+
+      // If neither key is configured, check if AWS default credential chain works
+      return await callBedrock(messages, options);
     } catch (err: unknown) {
       lastError = err as Error;
-      console.error(`[Bedrock LLM] Error on attempt ${attempt + 1}/${maxRetries + 1}:`, (err as Error).message);
+      console.error(`[Claude AI] Error on attempt ${attempt + 1}/${maxRetries + 1}:`, (err as Error).message);
       if (attempt < maxRetries) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
   }
 
-  throw lastError ?? new Error('AWS Bedrock request failed');
+  const errorMessage = lastError?.message || 'Claude AI request failed';
+  throw new Error(
+    `Claude AI is currently unavailable (${errorMessage}). Please ensure either ANTHROPIC_API_KEY or AWS Bedrock credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) are configured.`,
+  );
 }

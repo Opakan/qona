@@ -60,6 +60,9 @@ export const config = {
 
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? '',
 
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
+  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022',
+
   // AWS Bedrock Configuration
   AWS_REGION: process.env.AWS_REGION ?? 'us-east-1',
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ?? '',

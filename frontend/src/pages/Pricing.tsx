@@ -112,7 +112,8 @@ export default function PricingPage() {
         window.location.href = data.authorizationUrl;
       }
     } catch (err: any) {
-      alert(err?.response?.data?.error || 'Payment initialization failed. Please try again.');
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Payment initialization failed. Please check your network and try again.';
+      alert(msg);
     } finally {
       setLoading(null);
     }

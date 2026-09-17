@@ -24,7 +24,53 @@ const InitPaymentSchema = z.object({
 paymentsRouter.get('/plans', async (_req, res, next) => {
   try {
     const prisma = getPrisma();
-    const plans = await prisma.subscriptionPlan.findMany({ where: { active: true }, orderBy: { price: 'asc' } });
+    let plans = await prisma.subscriptionPlan.findMany({ where: { active: true }, orderBy: { price: 'asc' } });
+    if (plans.length === 0) {
+      plans = [
+        {
+          id: 'starter',
+          name: 'Starter',
+          slug: 'starter',
+          description: 'Start building workflows with essential tools.',
+          price: 1,
+          currency: 'USD',
+          interval: 'month',
+          exports: 10,
+          features: ['10 workflow exports', 'Standard AI generation', 'n8n format export', 'Community support'],
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any,
+        {
+          id: 'pro',
+          name: 'Pro',
+          slug: 'pro',
+          description: 'For professionals and growing teams.',
+          price: 30,
+          currency: 'USD',
+          interval: 'month',
+          exports: 100,
+          features: ['100 workflow exports', 'Advanced Claude 3.5 AI', 'All platform exports', 'Version history', 'Priority email support'],
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any,
+        {
+          id: 'enterprise',
+          name: 'Enterprise',
+          slug: 'enterprise',
+          description: 'For growing businesses, agencies, and teams.',
+          price: 99,
+          currency: 'USD',
+          interval: 'month',
+          exports: 1000,
+          features: ['Unlimited workflow exports', 'Custom AI fine-tuning', 'All platform exports', 'Unlimited versions', 'API access & webhooks', 'Dedicated 24/7 support'],
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any,
+      ];
+    }
     res.json({ plans });
   } catch (err) { next(err); }
 });
@@ -36,8 +82,14 @@ paymentsRouter.get('/keys', (_req, res) => {
 paymentsRouter.post('/initialize', requireAuth, validate(InitPaymentSchema), async (req, res, next) => {
   try {
     const prisma = getPrisma();
-    const user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
-    if (!user) throw new AppError('User not found', 404);
+    let user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
+    if (!user) {
+      user = await prisma.user.upsert({
+        where: { authId: req.user!.authId },
+        update: { email: req.user!.email, name: req.user!.name },
+        create: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name },
+      });
+    }
 
     const planSlug = req.body.plan as 'starter' | 'pro' | 'enterprise';
     const interval = (req.body.billingInterval as 'month' | 'year') || 'month';
@@ -87,8 +139,14 @@ paymentsRouter.get('/verify', requireAuth, async (req, res, next) => {
 paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
   try {
     const prisma = getPrisma();
-    const user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
-    if (!user) throw new AppError('User not found', 404);
+    let user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
+    if (!user) {
+      user = await prisma.user.upsert({
+        where: { authId: req.user!.authId },
+        update: { email: req.user!.email, name: req.user!.name },
+        create: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name },
+      });
+    }
 
     const subscription = await prisma.subscription.findFirst({
       where: { userId: user.id, status: 'ACTIVE' },

@@ -72,8 +72,28 @@ export const paymentService = {
 
   async createSubscription(userId: string, planSlug: string, provider: PaymentProvider, providerRef: string, interval: 'month' | 'year' = 'month') {
     const prisma = getPrisma();
-    const plan = await prisma.subscriptionPlan.findUnique({ where: { slug: planSlug } });
-    if (!plan) throw new Error(`Plan '${planSlug}' not found`);
+    let plan = await prisma.subscriptionPlan.findUnique({ where: { slug: planSlug } });
+    if (!plan) {
+      const defaultPlans: Record<string, { name: string; price: number; description: string; exports: number }> = {
+        starter: { name: 'Starter', price: 1, description: 'Start building workflows with essential tools.', exports: 10 },
+        pro: { name: 'Pro', price: 30, description: 'For professionals and growing teams.', exports: 100 },
+        enterprise: { name: 'Enterprise', price: 99, description: 'For growing businesses and agencies.', exports: 1000 },
+      };
+      const def = defaultPlans[planSlug] || { name: planSlug.toUpperCase(), price: 30, description: `${planSlug} plan`, exports: 100 };
+      plan = await prisma.subscriptionPlan.create({
+        data: {
+          name: def.name,
+          slug: planSlug,
+          description: def.description,
+          price: def.price,
+          currency: 'USD',
+          interval: interval,
+          exports: def.exports,
+          features: ['All workflow exports', 'Claude 3.5 AI workflow engine', 'n8n format export'],
+          active: true,
+        },
+      });
+    }
 
     // Check if subscription with this reference already exists (idempotency)
     const existingRef = await prisma.subscription.findUnique({
@@ -152,12 +172,18 @@ export const paymentService = {
     const tx = verifyData.data;
     const ref = tx.tx_ref || fallbackRef;
     const meta = tx.meta ?? {};
-    const userId = meta.userId as string;
-    const planSlug = meta.plan as string;
+    let userId = meta.userId as string;
+    const planSlug = (meta.plan as string) || 'pro';
     const interval = (meta.interval as 'month' | 'year') || 'month';
 
-    if (!userId || !planSlug) {
-      throw new Error('Transaction metadata is missing userId or plan');
+    const prisma = getPrisma();
+    if (!userId && tx.customer?.email) {
+      const user = await prisma.user.findFirst({ where: { email: tx.customer.email } });
+      if (user) userId = user.id;
+    }
+
+    if (!userId) {
+      throw new Error('Transaction is missing associated user information');
     }
 
     const subscription = await this.createSubscription(userId, planSlug, 'flutterwave', ref, interval);
@@ -180,11 +206,17 @@ export const paymentService = {
       const tx = payload.data;
       const ref = tx.tx_ref;
       const meta = tx.meta ?? {};
-      const userId = meta.userId as string;
-      const planSlug = meta.plan as string;
+      let userId = meta.userId as string;
+      const planSlug = (meta.plan as string) || 'pro';
       const interval = (meta.interval as 'month' | 'year') || 'month';
 
-      if (!userId || !planSlug) throw new Error('Missing metadata in webhook payload');
+      const prisma = getPrisma();
+      if (!userId && tx.customer?.email) {
+        const user = await prisma.user.findFirst({ where: { email: tx.customer.email } });
+        if (user) userId = user.id;
+      }
+
+      if (!userId) throw new Error('Missing user metadata in webhook payload');
 
       const subscription = await this.createSubscription(userId, planSlug, 'flutterwave', ref, interval);
       await this.createInvoice({
