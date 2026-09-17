@@ -217,7 +217,8 @@ export default function ChatPage() {
       const meta: Record<string, unknown> = {};
       if (data.sessionId) { meta.sessionId = data.sessionId; setSessionId(data.sessionId as string); }
       if (data.type === 'clarification' && data.questions) meta.questions = data.questions;
-      if (data.type === 'workflow' && data.graph) {
+      if (data.singleQuestion) meta.singleQuestion = data.singleQuestion;
+      if (data.graph) {
         meta.graph = data.graph;
         setCurrentWorkflow(data.graph as InternalGraph);
       }
@@ -560,7 +561,29 @@ export default function ChatPage() {
                         : 'bg-slate-50 text-slate-900 border border-slate-200/70 font-normal'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    {/* Message Text Content */}
+                    <div className="whitespace-pre-wrap leading-relaxed space-y-2">{msg.content}</div>
+
+                    {/* Interactive Clickable Option Pills for Non-Technical Users */}
+                    {Boolean((msg.metadata?.singleQuestion as any)?.options?.length || (msg.metadata?.question as any)?.options?.length) && (
+                      <div className="mt-3.5 pt-3 border-t border-slate-200/60">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          Quick Select Options:
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(((msg.metadata?.singleQuestion as any)?.options || (msg.metadata?.question as any)?.options) as string[]).map((opt, i) => (
+                            <button
+                              key={i}
+                              disabled={loading}
+                              onClick={() => sendMessage(opt)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Assistant Graph Summary Card */}
                     {Boolean(msg.metadata?.graph) && (

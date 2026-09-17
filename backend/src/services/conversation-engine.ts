@@ -135,12 +135,75 @@ function planQuestionToSingleQuestion(
 async function resolvePrismaUserId(authId: string, email?: string, name?: string): Promise<string> {
   const prisma = getPrisma();
   let user = await prisma.user.findUnique({ where: { authId } });
+  if (!user && email) {
+    user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { authId, name: name ?? user.name },
+      });
+    }
+  }
   if (!user) {
     user = await prisma.user.create({
-      data: { authId, email: email ?? authId + '@unknown', name: name ?? email ?? authId.slice(0, 8) },
+      data: {
+        authId,
+        email: email ?? `${authId}@qonace.internal`,
+        name: name ?? email?.split('@')[0] ?? authId.slice(0, 8),
+      },
     });
   }
   return user.id;
+}
+
+// ═══════════════════════════════════════════════════════
+// Friendly Workflow Explanation Generator
+// ═══════════════════════════════════════════════════════
+
+async function generateFriendlyWorkflowExplanation(
+  userPrompt: string,
+  plan: WorkflowPlan,
+  nextQuestionText?: string,
+): Promise<string> {
+  const systemPrompt = `You are Qonace AI, an expert, friendly automation architect powered by Claude.
+Your mission is to help NON-TECHNICAL users easily understand and build automations.
+
+Rules:
+1. Speak in a warm, helpful, encouraging tone (like an expert automation consultant).
+2. Clearly break down the proposed workflow in simple, visual steps (e.g. using bullet points or clean Markdown).
+3. Always explain key concepts in plain English so non-technical users feel comfortable:
+   - **Trigger (When something happens...)**: Explain that this is the starting event (e.g. when a file is uploaded, a form is filled, or a webhook/schedule runs).
+   - **Actions (What happens next...)**: Explain that these are the automated steps (e.g. transcribing audio, summarizing with AI, sending a notification, or saving to Notion/Drive).
+4. Outline the practical value (e.g. how it saves time or produces multi-channel assets).
+5. Conclude with a helpful, friendly question or next step.`;
+
+  try {
+    const summary = await chatCompletion(
+      [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `The user requested: "${userPrompt}"\n\nProposed Plan:\n- Goal: ${plan.goal}\n- Trigger: ${plan.trigger?.label || plan.trigger?.type}\n- Actions: ${plan.actions.map((a) => a.label || a.type).join(' ➔ ')}\n- Integrations: ${plan.integrations.map((i) => i.name).join(', ')}\n\nNext clarifying question to ask: "${nextQuestionText || 'Would you like to customize any steps?'}"\n\nWrite an engaging, clear response for the user explaining the architecture, demystifying Trigger & Action, and asking the question.`,
+        },
+      ],
+      { temperature: 0.4, max_tokens: 1200, retries: 1, modelTier: 'sonnet' },
+    );
+    return summary;
+  } catch {
+    return `### 🚀 Automated Workflow Architecture
+
+Here is how we can build this automation for you:
+
+**⚡ 1. The Trigger (When something happens...)**
+- **${plan.trigger?.label || 'Starting Event'}**: Kicks off the workflow automatically whenever new input is received.
+
+**⚙️ 2. The Actions (What happens next...)**
+${plan.actions.map((a, i) => `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Processes and transforms your data'}`).join('\n')}
+
+---
+
+${nextQuestionText || 'Would you like to customize any specific part of this workflow?'}`;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -209,17 +272,43 @@ export const conversationEngine = {
       log('info', 'Intent extracted', { trigger: intent.trigger.type, actions: intent.actions.length, confidence: intent.confidence });
     } catch (err) {
       log('warn', 'Intent extraction failed', { error: (err as Error).message });
+      const friendlyHelp = `Hello! I'm **Qonace AI**, your workflow automation assistant.
+
+I can help you build custom **n8n automations** to connect your apps, process data, and automate repetitive tasks.
+
+### 💡 How It Works for Non-Technical Users:
+1. **⚡ Trigger (When something happens...)**: The starting event that kicks off the automation (e.g., *a new email arrives, a podcast audio is uploaded, a payment is made in Stripe, or a scheduled timer runs*).
+2. **⚙️ Actions (What happens next...)**: The automated steps that follow (e.g., *transcribing audio, summarizing with AI, saving to Google Sheets/Notion, or sending a Slack message*).
+
+---
+
+**Try telling me what you'd like to automate!** For example:
+- *"Create an AI Podcast Summarizer and Enhancer"*
+- *"When a new user signs up, send a welcome email and alert Slack"*
+- *"Summarize daily Google Form responses and save to Notion"*`;
+
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: "I couldn't understand your workflow description. Could you rephrase it? Include what should trigger the workflow and what actions it should perform.",
-        metadata: { sessionId, sessionState: 'collecting_intent', error: (err as Error).message },
+        content: friendlyHelp,
+        metadata: { sessionId, sessionState: 'collecting_intent' },
       });
       return {
-        type: 'error',
+        type: 'question',
         sessionId,
         sessionState: 'collecting_intent',
-        error: `Could not parse intent: ${(err as Error).message}`,
-        explanation: 'Please rephrase your workflow description with a clear trigger and action.',
+        explanation: friendlyHelp,
+        singleQuestion: {
+          id: 'q_starter_goal',
+          question: 'What workflow would you like to build today?',
+          field: 'workflow_goal',
+          options: [
+            'AI Podcast Summarizer & Enhancer',
+            'Customer Support & Ticket Auto-Responder',
+            'New Lead / Payment Notifications (Slack/Email)',
+            'Daily Database / Google Sheets Summary',
+          ],
+          required: true,
+        },
       };
     }
 
@@ -238,35 +327,43 @@ export const conversationEngine = {
     await writePlan(sessionId, plan);
     await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
 
+    // Build immediate visual graph
+    const { graph } = buildInternalGraph(plan);
+
     // ── Ask the first question ──
     const missing = detectMissingRequirements(plan.requirements);
     if (missing.length === 0) {
       // All requirements are auto-filled → go straight to generating
       await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
+      const explanation = await generateFriendlyWorkflowExplanation(userMessage, plan, "Everything looks complete! Would you like to add any other tools, or shall I compile the n8n export?");
       await conversationService.addMessage(conversationId, {
         role: 'assistant',
-        content: "I understand your workflow. Let me ask: would you like to add any details, or shall I generate it now? Say 'generate' when you're ready.",
-        metadata: { sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
+        content: explanation,
+        metadata: { graph, sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
       });
       return {
-        type: 'complete',
+        type: 'workflow',
+        graph,
         sessionId,
         sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation: 'Intent collected. Ready to proceed.',
+        explanation,
       };
     }
 
     const firstReq = missing[0];
     const question = await generateAIQuestion(plan, firstReq);
+    const richExplanation = await generateFriendlyWorkflowExplanation(userMessage, plan, question.question);
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: question.question,
-      metadata: { question, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
+      content: richExplanation,
+      metadata: { question, graph, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
     });
 
     return {
       type: 'question',
+      graph,
+      explanation: richExplanation,
       singleQuestion: planQuestionToSingleQuestion(question),
       sessionId,
       sessionState: PLANNING_STATES.CLARIFYING,

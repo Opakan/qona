@@ -77,17 +77,55 @@ export class IntentExtractionError extends Error {
 }
 
 export async function extractIntent(prompt: string): Promise<IntentExtractionResult> {
-  if (!prompt || prompt.trim().length === 0) {
+  const cleanPrompt = prompt ? prompt.trim() : '';
+  if (!cleanPrompt) {
     throw new IntentExtractionError('Prompt cannot be empty');
   }
 
-  if (prompt.trim().length > 5000) {
+  if (cleanPrompt.length > 5000) {
     throw new IntentExtractionError('Prompt exceeds maximum length of 5000 characters');
+  }
+
+  // Handle simple greetings or very generic phrases gracefully by proposing a starter workflow
+  const lower = cleanPrompt.toLowerCase();
+  const isGreeting = /^(hi|hello|hey|greetings|help|start|good (morning|afternoon|evening))[\s!.?]*$/i.test(lower);
+  if (isGreeting) {
+    return {
+      trigger: {
+        type: 'n8n-nodes-base.webhook',
+        label: 'Webhook / Form Submission',
+        description: 'Receives an incoming request or form data to trigger automation',
+        config: {},
+      },
+      actions: [
+        {
+          type: 'n8n-nodes-base.openAi',
+          label: 'AI Content / Data Processor',
+          description: 'Uses AI to analyze, summarize, or extract insights from the input',
+          order: 1,
+          config: {},
+        },
+        {
+          type: 'n8n-nodes-base.slack',
+          label: 'Send Notification',
+          description: 'Sends the processed result to your team in Slack or Email',
+          order: 2,
+          config: {},
+        },
+      ],
+      integrations: [
+        { name: 'Webhook', type: 'api', purpose: 'Receives incoming events' },
+        { name: 'OpenAI / Claude', type: 'api', purpose: 'Analyzes and generates content' },
+        { name: 'Slack', type: 'slack', purpose: 'Delivers notifications' },
+      ],
+      confidence: 0.8,
+      missingDetails: ['What type of workflow would you like to build?'],
+    };
   }
 
   // Fetch similar successful workflows from memory
   const memoryCtx = await workflowMemory.buildMemoryContext({
-    goal: prompt.trim(),
+    goal: cleanPrompt,
     triggerType: '',
     actionTypes: [],
     integrationTypes: [],
@@ -98,16 +136,46 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
   const raw = await chatCompletion(
     [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: prompt.trim() },
+      { role: 'user', content: cleanPrompt },
     ],
-    { temperature: 0.2, max_tokens: 3000, retries: 2, modelTier: 'haiku' },
+    { temperature: 0.2, max_tokens: 3500, retries: 2, modelTier: 'sonnet' },
   );
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(raw);
   } catch {
     throw new IntentExtractionError('AWS Bedrock returned invalid JSON', raw);
+  }
+
+  // Ensure trigger and actions exist with fallback
+  if (!parsed.trigger || !parsed.trigger.type) {
+    parsed.trigger = {
+      type: 'n8n-nodes-base.webhook',
+      label: 'Webhook Trigger',
+      description: 'Triggers the workflow',
+      config: {},
+    };
+  }
+  if (!Array.isArray(parsed.actions) || parsed.actions.length === 0) {
+    parsed.actions = [
+      {
+        type: 'n8n-nodes-base.httpRequest',
+        label: 'Process Request',
+        description: 'Performs automated action',
+        order: 1,
+        config: {},
+      },
+    ];
+  }
+  if (!Array.isArray(parsed.integrations)) {
+    parsed.integrations = [];
+  }
+  if (typeof parsed.confidence !== 'number') {
+    parsed.confidence = 0.85;
+  }
+  if (!Array.isArray(parsed.missingDetails)) {
+    parsed.missingDetails = [];
   }
 
   const result = IntentExtractionResultSchema.safeParse(parsed);
