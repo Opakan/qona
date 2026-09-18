@@ -5,6 +5,7 @@ frontend:
       commands:
         - npm ci
         - npm run build:shared
+        - env | grep -e VITE_ >> frontend/.env
     build:
       commands:
         - npm run build:web
