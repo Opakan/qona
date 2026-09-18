@@ -54,8 +54,8 @@ export const config = {
   DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://qona:qona_dev@localhost:5432/qona_dev',
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
 
-  SUPABASE_URL: process.env.SUPABASE_URL ?? 'http://localhost:54321',
-  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? '',
+  SUPABASE_URL: process.env.SUPABASE_URL ?? 'https://icxlfpmldbpjjqxmjpol.supabase.co',
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? 'sb_publishable_n70nfEz0nzetwwsrtG3LYA_AuKWCLg4',
   SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET ?? '',
 
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? '',
@@ -64,20 +64,20 @@ export const config = {
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022',
 
   // AWS Bedrock Configuration
-  AWS_REGION: process.env.AWS_REGION ?? 'us-east-1',
+  AWS_REGION: process.env.AWS_REGION ?? 'us-west-2',
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ?? '',
   AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ?? '',
-  BEDROCK_SONNET_MODEL_ID: process.env.BEDROCK_SONNET_MODEL_ID ?? 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  BEDROCK_HAIKU_MODEL_ID: process.env.BEDROCK_HAIKU_MODEL_ID ?? 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+  BEDROCK_SONNET_MODEL_ID: process.env.BEDROCK_SONNET_MODEL_ID ?? 'us.anthropic.claude-opus-4-5-20251101-v1:0',
+  BEDROCK_HAIKU_MODEL_ID: process.env.BEDROCK_HAIKU_MODEL_ID ?? 'us.anthropic.claude-opus-4-5-20251101-v1:0',
 
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
 
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY ?? '',
   PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY ?? '',
 
-  FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY ?? '',
-  FLUTTERWAVE_PUBLIC_KEY: process.env.FLUTTERWAVE_PUBLIC_KEY ?? '',
+  FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY ?? 'FLWSECK-c61dd59bcc5d5b2b6b648ef3236e3398-19e4ce5c768vt-X',
+  FLUTTERWAVE_PUBLIC_KEY: process.env.FLUTTERWAVE_PUBLIC_KEY ?? 'FLWPUBK-ee67b63e18c5156137eac7fd5b5bdb00-X',
   FLUTTERWAVE_SECRET_HASH: process.env.FLUTTERWAVE_SECRET_HASH ?? '',
 
-  APP_URL: process.env.APP_URL ?? 'http://localhost:5173',
+  APP_URL: process.env.APP_URL ?? 'https://www.qonace.com',
 } as const;
