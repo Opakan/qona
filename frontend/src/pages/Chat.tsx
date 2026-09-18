@@ -276,7 +276,7 @@ export default function ChatPage() {
         {/* Sidebar Top Header */}
         <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200/60">
           <Link to="/dashboard" className="flex items-center gap-2 font-bold text-slate-900 hover:opacity-85 transition-opacity">
-            <img src="/logo.png" alt="Qonace" className="h-7 w-7 object-contain" />
+            <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
             <span className="text-sm font-extrabold tracking-tight">Qonace AI</span>
           </Link>
           <button

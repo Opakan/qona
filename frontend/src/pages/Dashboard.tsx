@@ -83,9 +83,9 @@ export default function Dashboard() {
       {/* Primary Header */}
       <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/80 backdrop-blur-md px-4 sm:px-8 py-3.5 shadow-2xs">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
-            <img src="/logo.png" alt="Qonace" className="h-8 w-8 object-contain" />
-            <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">
+          <Link to="/" className="flex items-center gap-2 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
+            <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
+            <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">
               Qonace
             </span>
           </Link>

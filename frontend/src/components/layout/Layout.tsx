@@ -43,9 +43,9 @@ export default function Layout() {
         }`}
       >
         <nav className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-2.5 text-base font-bold tracking-tight text-slate-900 transition-transform hover:scale-[1.02]">
-            <img src="/logo.png" alt="Qonace Logo" className="h-7 w-7 object-contain" />
-            <span className="text-slate-900 font-extrabold text-lg tracking-tight">Qonace</span>
+          <Link to="/" className="flex items-center gap-2 text-base font-bold tracking-tight text-slate-900 transition-transform hover:scale-[1.02]">
+            <img src="/logo.png" alt="Qonace Logo" className="h-5 w-5 object-contain" />
+            <span className="text-slate-900 font-extrabold text-base tracking-tight">Qonace</span>
           </Link>
 
           <div className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
@@ -117,8 +117,8 @@ export default function Layout() {
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-1">
-              <Link to="/" className="flex items-center gap-2 text-sm font-bold text-gray-900">
-                <img src="/logo.png" alt="Qonace Logo" className="h-5 w-5 object-contain" />
+              <Link to="/" className="flex items-center gap-1.5 text-sm font-bold text-gray-900">
+                <img src="/logo.png" alt="Qonace Logo" className="h-4 w-4 object-contain" />
                 <span>Qonace</span>
               </Link>
               <p className="mt-2 text-sm leading-relaxed text-gray-400">AI-powered automation.</p>
