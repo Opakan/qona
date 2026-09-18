@@ -12,7 +12,7 @@ export default function SignIn() {
           <div className="flex flex-col items-center">
             <Link to="/" className="flex items-center gap-2 group transition-transform hover:scale-[1.02]">
               <img src="/logo.png" alt="Qonace" className="h-5.5 w-5.5 object-contain" />
-              <span className="text-lg font-extrabold tracking-tight text-slate-900">Qonace</span>
+              <span className="text-lg font-extrabold font-display tracking-tight text-slate-900">Qonace</span>
             </Link>
             
             <h2 className="mt-6 text-center text-2xl font-extrabold text-slate-900 tracking-tight">

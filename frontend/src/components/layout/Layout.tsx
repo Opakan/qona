@@ -45,7 +45,7 @@ export default function Layout() {
         <nav className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2 text-base font-bold tracking-tight text-slate-900 transition-transform hover:scale-[1.02]">
             <img src="/logo.png" alt="Qonace Logo" className="h-5 w-5 object-contain" />
-            <span className="text-slate-900 font-extrabold text-base tracking-tight">Qonace</span>
+            <span className="text-slate-900 font-extrabold font-display text-[17px] tracking-tight">Qonace</span>
           </Link>
 
           <div className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">

@@ -85,7 +85,7 @@ export default function Dashboard() {
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
             <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
-            <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">
+            <span className="text-[17px] font-extrabold font-display tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">
               Qonace
             </span>
           </Link>
