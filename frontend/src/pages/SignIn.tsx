@@ -10,10 +10,8 @@ export default function SignIn() {
       <div className="w-full max-w-md space-y-8 relative">
         <div className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm">
           <div className="flex flex-col items-center">
-            <Link to="/" className="flex items-center gap-2 group transition-transform hover:scale-[1.02]">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-900">
-                <Workflow className="h-5 w-5" />
-              </div>
+            <Link to="/" className="flex items-center gap-2.5 group transition-transform hover:scale-[1.02]">
+              <img src="/logo.png" alt="Qonace" className="h-9 w-9 object-contain" />
               <span className="text-xl font-bold tracking-tight text-slate-900">Qonace</span>
             </Link>
             

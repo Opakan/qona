@@ -44,9 +44,9 @@ export const paymentService = {
           interval,
         },
         customizations: {
-          title: 'Qona Automation',
+          title: 'Qonace',
           description: `${params.planSlug.toUpperCase()} Plan (${interval === 'year' ? 'Annual - 20% Off' : 'Monthly'})`,
-          logo: `${config.APP_URL}/favicon.ico`,
+          logo: `${config.APP_URL}/logo.png`,
         },
       },
       {

@@ -276,9 +276,7 @@ export default function ChatPage() {
         {/* Sidebar Top Header */}
         <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200/60">
           <Link to="/dashboard" className="flex items-center gap-2 font-bold text-slate-900 hover:opacity-85 transition-opacity">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-2xs">
-              <Workflow className="h-4 w-4" />
-            </div>
+            <img src="/logo.png" alt="Qonace" className="h-7 w-7 object-contain" />
             <span className="text-sm font-extrabold tracking-tight">Qonace AI</span>
           </Link>
           <button
@@ -492,8 +490,8 @@ export default function ChatPage() {
             <div className="flex h-full flex-col items-center justify-center px-4 sm:px-6 max-w-3xl mx-auto space-y-8 select-none py-12">
               {/* ChatGPT Hero Banner */}
               <div className="text-center space-y-3">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-                  <Workflow className="h-7 w-7" />
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg border border-slate-100 p-2">
+                  <img src="/logo.png" alt="Qonace" className="h-10 w-10 object-contain" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   What workflow shall we build?
@@ -555,10 +553,10 @@ export default function ChatPage() {
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-2xs select-none ${
                       msg.role === 'user'
                         ? 'bg-slate-900 text-white'
-                        : 'bg-indigo-600 text-white'
+                        : 'bg-white border border-slate-200/80 p-1'
                     }`}
                   >
-                    {msg.role === 'user' ? userInitial : <Workflow className="h-4 w-4" />}
+                    {msg.role === 'user' ? userInitial : <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />}
                   </div>
 
                   {/* Message Bubble */}
