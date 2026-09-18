@@ -81,32 +81,48 @@ paymentsRouter.get('/keys', (_req, res) => {
 
 paymentsRouter.post('/initialize', requireAuth, validate(InitPaymentSchema), async (req, res, next) => {
   try {
-    const prisma = getPrisma();
-    let user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
-    if (!user) {
-      user = await prisma.user.upsert({
-        where: { authId: req.user!.authId },
-        update: { email: req.user!.email, name: req.user!.name },
-        create: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name },
-      });
+    let userId = req.user!.authId;
+    let userEmail = req.user!.email;
+    let userName = req.user!.name;
+
+    try {
+      const prisma = getPrisma();
+      let user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
+      if (!user) {
+        user = await prisma.user.upsert({
+          where: { authId: req.user!.authId },
+          update: { email: req.user!.email, name: req.user!.name },
+          create: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name },
+        });
+      }
+      if (user) {
+        userId = user.id;
+        userEmail = user.email;
+        userName = user.name;
+      }
+    } catch (dbErr) {
+      console.warn('[Payments] DB user lookup warning (proceeding with session info):', (dbErr as Error).message);
     }
 
     const planSlug = req.body.plan as 'starter' | 'pro' | 'enterprise';
     const interval = (req.body.billingInterval as 'month' | 'year') || 'month';
-    const pricing = PLAN_PRICING[planSlug] || { month: 30, year: 288 };
+    const pricing = PLAN_PRICING[planSlug] || { month: 1, year: 10 };
     const amount = interval === 'year' ? pricing.year : pricing.month;
 
     const result = await paymentService.initFlutterwave({
-      email: user.email,
+      email: userEmail,
       amount,
       planSlug,
-      userId: user.id,
+      userId,
       billingInterval: interval,
-      metadata: { name: user.name, interval },
+      metadata: { name: userName, interval },
     });
 
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('[Payments Initialize Error]:', err);
+    next(err);
+  }
 });
 
 paymentsRouter.get('/verify', requireAuth, async (req, res, next) => {

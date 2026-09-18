@@ -25,12 +25,12 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     return;
   }
 
-  console.error('[Qona API] Unhandled error:', { traceId, message: err.message });
+  console.error('[Qona API] Unhandled error:', { traceId, message: err.message, stack: err.stack });
   res.status(500).json({
     success: false,
     stage: 'internal',
-    error: 'An unexpected error occurred.',
-    details: config.NODE_ENV === 'development' ? err.message : undefined,
+    error: err.message || 'An unexpected error occurred.',
+    details: err.message,
     traceId,
   });
 }
