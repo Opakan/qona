@@ -29,9 +29,12 @@ with open(backend_pkg_path, 'r', encoding='utf-8') as f:
 # Use standard file:./shared dependency so npm install links it properly
 pkg['name'] = 'qonace-backend'
 pkg['dependencies']['@qona/shared'] = 'file:./shared'
+# Remove heavy prisma CLI from runtime dependencies to avoid 15-min download
+if 'prisma' in pkg['dependencies']:
+    del pkg['dependencies']['prisma']
+
 pkg['scripts'] = {
-    'start': 'node dist/index.js',
-    'postinstall': 'npx prisma generate'
+    'start': 'node dist/index.js'
 }
 pkg['engines'] = {
     'node': '>=20.0.0'
@@ -39,6 +42,10 @@ pkg['engines'] = {
 
 with open(os.path.join(staging_dir, 'package.json'), 'w', encoding='utf-8') as f:
     json.dump(pkg, f, indent=2)
+
+# 3b. Create .npmrc for ultra-fast, silent install on EC2
+with open(os.path.join(staging_dir, '.npmrc'), 'w', encoding='utf-8', newline='\n') as f:
+    f.write('audit=false\nfund=false\nupdate-notifier=false\n')
 
 # 4. Create Procfile
 with open(os.path.join(staging_dir, 'Procfile'), 'w', encoding='utf-8', newline='\n') as f:
