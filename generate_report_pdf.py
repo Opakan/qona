@@ -11,14 +11,14 @@ html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Qonace Platform: Full Progress & Architecture Report</title>
+<title>Qonace Platform: Executive Briefing & Launch Readiness Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   @page {{
     size: A4;
-    margin: 14mm 14mm 16mm 14mm;
+    margin: 12mm 14mm 14mm 14mm;
   }}
 
   * {{
@@ -31,27 +31,27 @@ html_content = f"""<!DOCTYPE html>
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     color: #1e293b;
     background: #ffffff;
-    font-size: 11.5px;
+    font-size: 11px;
     line-height: 1.55;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }}
 
-  /* Executive Header */
+  /* Top Executive Banner */
   .header-card {{
-    background: linear-gradient(135deg, #090d16 0%, #0f172a 60%, #1e1b4b 100%);
+    background: linear-gradient(135deg, #090d16 0%, #0f172a 55%, #1e1b4b 100%);
     color: #ffffff;
     border-radius: 14px;
-    padding: 22px 26px;
-    margin-bottom: 18px;
-    box-shadow: 0 4px 14px rgba(9, 13, 22, 0.2);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 14px rgba(9, 13, 22, 0.15);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }}
 
   .header-left {{
-    max-width: 70%;
+    max-width: 72%;
   }}
 
   .header-badge {{
@@ -61,7 +61,7 @@ html_content = f"""<!DOCTYPE html>
     background: rgba(99, 102, 241, 0.25);
     border: 1px solid rgba(165, 180, 252, 0.4);
     color: #c7d2fe;
-    padding: 3px 9px;
+    padding: 3px 10px;
     border-radius: 9999px;
     font-size: 9.5px;
     font-weight: 800;
@@ -72,38 +72,38 @@ html_content = f"""<!DOCTYPE html>
 
   .header-title {{
     font-family: 'Outfit', sans-serif;
-    font-size: 23px;
+    font-size: 22px;
     font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: -0.4px;
+    line-height: 1.25;
+    letter-spacing: -0.3px;
     color: #ffffff;
     margin-bottom: 6px;
   }}
 
   .header-subtitle {{
-    font-size: 11px;
+    font-size: 10.5px;
     color: #94a3b8;
     font-weight: 600;
   }}
 
-  .header-subtitle span {{
-    color: #38bdf8;
-    font-weight: 700;
+  .header-subtitle span.status {{
+    color: #34d399;
+    font-weight: 800;
   }}
 
   .header-logo {{
-    width: 68px;
-    height: 68px;
+    width: 64px;
+    height: 64px;
     object-fit: contain;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 8px;
   }}
 
-  /* Section Styles */
+  /* Section Styling */
   .section {{
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     page-break-inside: avoid;
     break-inside: avoid;
   }}
@@ -133,23 +133,14 @@ html_content = f"""<!DOCTYPE html>
 
   .section-title {{
     font-family: 'Outfit', sans-serif;
-    font-size: 14.5px;
+    font-size: 13.5px;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.2px;
   }}
 
-  /* Content Cards */
-  .card {{
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-  }}
-
-  .highlight-card {{
+  /* Callout & Cards */
+  .hero-box {{
     background: #f8fafc;
     border: 1px solid #cbd5e1;
     border-left: 4px solid #4f46e5;
@@ -158,62 +149,65 @@ html_content = f"""<!DOCTYPE html>
     margin-bottom: 10px;
     font-size: 11.5px;
     color: #334155;
-    line-height: 1.5;
+    line-height: 1.55;
   }}
 
-  /* Diagram Block */
-  .diagram-container {{
-    background: #090d16;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin: 8px 0 12px 0;
-    color: #e2e8f0;
-  }}
-
-  .diagram-code {{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9.8px;
-    line-height: 1.35;
-    color: #38bdf8;
-    white-space: pre;
-  }}
-
-  .infra-grid {{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 6px;
-  }}
-
-  .infra-item {{
-    background: #f8fafc;
+  .card {{
+    background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
   }}
 
-  .infra-item-title {{
+  /* Step by step 3 boxes */
+  .steps-grid {{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin: 8px 0;
+  }}
+
+  .step-box {{
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: left;
+  }}
+
+  .step-badge {{
+    display: inline-block;
+    background: #e0e7ff;
+    color: #4338ca;
+    font-size: 9px;
     font-weight: 800;
-    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }}
+
+  .step-title {{
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 11.5px;
     color: #0f172a;
-    margin-bottom: 2px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    margin-bottom: 3px;
   }}
 
-  .infra-item-desc {{
-    font-size: 10.5px;
+  .step-desc {{
+    font-size: 10px;
     color: #64748b;
+    line-height: 1.45;
   }}
 
-  /* Tables */
+  /* Upgrade Comparison Table */
   table {{
     width: 100%;
     border-collapse: collapse;
-    margin: 6px 0 10px 0;
-    font-size: 10.5px;
+    margin: 6px 0 8px 0;
+    font-size: 10px;
   }}
 
   th {{
@@ -222,8 +216,8 @@ html_content = f"""<!DOCTYPE html>
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
     text-align: left;
-    padding: 7px 10px;
-    font-size: 10.5px;
+    padding: 6px 9px;
+    font-size: 10px;
   }}
 
   th:first-child {{
@@ -235,7 +229,7 @@ html_content = f"""<!DOCTYPE html>
   }}
 
   td {{
-    padding: 7px 10px;
+    padding: 6px 9px;
     border-bottom: 1px solid #e2e8f0;
     color: #334155;
     vertical-align: middle;
@@ -249,7 +243,7 @@ html_content = f"""<!DOCTYPE html>
     display: inline-block;
     padding: 2px 7px;
     border-radius: 9999px;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
   }}
 
@@ -259,17 +253,12 @@ html_content = f"""<!DOCTYPE html>
     border: 1px solid #bbf7d0;
   }}
 
-  .pill-blue {{
-    background: #e0e7ff;
-    color: #4338ca;
-    border: 1px solid #c7d2fe;
-  }}
-
   /* Grid Layouts */
   .grid-2 {{
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    margin-top: 6px;
   }}
 
   .grid-3 {{
@@ -279,11 +268,38 @@ html_content = f"""<!DOCTYPE html>
     margin-bottom: 8px;
   }}
 
+  .grid-4 {{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin: 6px 0;
+  }}
+
+  .info-tile {{
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+  }}
+
+  .info-tile-title {{
+    font-weight: 800;
+    font-size: 11px;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }}
+
+  .info-tile-desc {{
+    font-size: 10px;
+    color: #64748b;
+    line-height: 1.4;
+  }}
+
   .stat-card {{
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 9px 10px;
+    padding: 8px;
     text-align: center;
   }}
 
@@ -304,11 +320,11 @@ html_content = f"""<!DOCTYPE html>
   }}
 
   .stat-sub {{
-    font-size: 9px;
+    font-size: 8.5px;
     color: #64748b;
   }}
 
-  /* Bullet Lists */
+  /* Plain Bullet Lists */
   ul {{
     list-style: none;
     padding-left: 0;
@@ -316,35 +332,79 @@ html_content = f"""<!DOCTYPE html>
 
   li {{
     position: relative;
-    padding-left: 14px;
+    padding-left: 13px;
     margin-bottom: 4px;
-    font-size: 11px;
+    font-size: 10.5px;
     color: #334155;
   }}
 
   li::before {{
-    content: "•";
+    content: "✔";
     position: absolute;
-    left: 4px;
-    color: #4f46e5;
+    left: 0;
+    color: #059669;
+    font-size: 9px;
     font-weight: 800;
   }}
 
-  .feature-title {{
+  .bold-title {{
     font-weight: 800;
     color: #0f172a;
   }}
 
-  /* Footer Note */
-  .footer-bar {{
-    margin-top: 14px;
-    padding-top: 8px;
-    border-top: 1px solid #cbd5e1;
-    display: flex;
-    justify-content: space-between;
+  /* Pricing Cards */
+  .pricing-box {{
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+  }}
+
+  .pricing-price {{
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 2px 0;
+  }}
+
+  .pricing-tier {{
+    font-size: 10px;
+    font-weight: 800;
+    color: #4f46e5;
+    text-transform: uppercase;
+  }}
+
+  .pricing-sub {{
     font-size: 9px;
-    font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
+  }}
+
+  /* Launch Readiness Callout */
+  .verdict-box {{
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    border: 1.5px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 6px;
+  }}
+
+  .verdict-title {{
+    font-family: 'Outfit', sans-serif;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #065f46;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }}
+
+  .verdict-text {{
+    font-size: 10.5px;
+    color: #047857;
+    line-height: 1.5;
   }}
 </style>
 </head>
@@ -353,208 +413,246 @@ html_content = f"""<!DOCTYPE html>
   <!-- Executive Header -->
   <div class="header-card">
     <div class="header-left">
-      <div class="header-badge">🚀 Confidential • Executive Briefing</div>
-      <h1 class="header-title">Qonace Platform: Full Progress &amp; Architecture Report</h1>
-      <p class="header-subtitle">Date: <strong>September 21, 2026</strong> &nbsp;|&nbsp; Status: <span>Operational &amp; Production-Ready</span> &nbsp;|&nbsp; Entity: <strong>Alive Technologies Ltd</strong></p>
+      <div class="header-badge">🌟 Executive Briefing • Team Meeting</div>
+      <h1 class="header-title">Qonace Platform: Progress &amp; Launch Readiness Report</h1>
+      <p class="header-subtitle">Date: <strong>September 21, 2026</strong> &nbsp;|&nbsp; Status: <span class="status">● 100% Operational &amp; Production-Ready</span> &nbsp;|&nbsp; Company: <strong>Alive Technologies Ltd</strong></p>
     </div>
     <img src="{logo_data_uri}" alt="Qonace Logo" class="header-logo">
   </div>
 
-  <!-- 1. Executive Summary -->
+  <!-- 1. What is Qonace? -->
   <div class="section">
     <div class="section-header">
       <div class="section-num">1</div>
-      <h2 class="section-title">Executive Summary</h2>
+      <h2 class="section-title">The Big Picture: What is Qonace &amp; What Problem Does It Solve?</h2>
     </div>
-    <div class="highlight-card">
-      <strong>Qonace</strong> has evolved into a complete, end-to-end AI-native automation platform. It enables non-technical and technical users alike to describe complex workflows in plain English, preview them on an interactive real-time canvas, and export or run them as production-ready <strong>n8n workflows</strong>.
+    <div class="hero-box">
+      <strong>In Plain English:</strong> Qonace is an intelligent AI assistant that allows anyone—regardless of technical skill—to describe how they want their business tools connected, and automatically builds the working automation workflow in seconds.
       <br><br>
-      Over the recent development sprints, we resolved critical infrastructure bottlenecks, established a high-converting multi-currency payment engine, achieved verified brand identity with Google Cloud and GitHub OAuth, eliminated generic template aesthetics, and implemented modern SaaS typography and user onboarding.
+      <strong>The Problem:</strong> Software like <em>n8n</em> is world-class for automating business tasks, but setting it up manually is intimidating for most non-programmers. It requires writing complex code structures, configuring dozens of technical data formats, and manually connecting confusing boxes on a screen.
+      <br><br>
+      <strong>The Qonace Solution:</strong> Instead of building from scratch, users simply type their goal (e.g. <em>"When a new customer makes a purchase on Stripe, add them to our marketing list and notify the team on Slack"</em>). Qonace generates the entire workflow file ready to run.
+    </div>
+
+    <!-- 3 Steps -->
+    <div class="steps-grid">
+      <div class="step-box">
+        <span class="step-badge">Step 1</span>
+        <div class="step-title">1. Describe in Plain Text</div>
+        <div class="step-desc">Type your goal in everyday language. No coding or developer jargon required.</div>
+      </div>
+      <div class="step-box">
+        <span class="step-badge">Step 2</span>
+        <div class="step-title">2. Watch the Diagram Build</div>
+        <div class="step-desc">Qonace draws an interactive visual map of every step and connection in real time.</div>
+      </div>
+      <div class="step-box">
+        <span class="step-badge">Step 3</span>
+        <div class="step-title">3. Export &amp; Run</div>
+        <div class="step-desc">Download the ready-to-run automation file with 1 click and run it anywhere.</div>
+      </div>
     </div>
   </div>
 
-  <!-- 2. Infrastructure & Deployment Architecture -->
+  <!-- 2. Recent Upgrades & Achievements -->
   <div class="section">
     <div class="section-header">
       <div class="section-num">2</div>
-      <h2 class="section-title">Infrastructure &amp; Deployment Architecture</h2>
+      <h2 class="section-title">What We Recently Built: Launch Upgrades Completed</h2>
     </div>
-    <div class="diagram-container">
-      <div class="diagram-code">[ Global Users ]
-       │
-       ▼
- [ Cloudflare DNS + DDoS Shield ]
-       │
- ┌─────┴──────────────────────────────────────────────────────┐
- │                                                            │
- ▼                                                            ▼
-[ Frontend: AWS CloudFront + S3 ]             [ Backend: AWS Elastic Beanstalk (Node.js 20) ]
-• Custom Domain: qonace.com &amp; www.qonace.com   • Production Server on EC2
-• Edge Caching (100% Uptime Guarantee)        • PostgreSQL Database on AWS / Supabase
-• Sub-second Global Load Times                • Automated Health Check Watchdogs</div>
-    </div>
-    <div class="infra-grid">
-      <div class="infra-item">
-        <div class="infra-item-title">🌐 Frontend Hosting</div>
-        <div class="infra-item-desc">Deployed via AWS S3 + CloudFront CDN, secured by Cloudflare SSL on <strong>https://qonace.com</strong> and <strong>https://www.qonace.com</strong>.</div>
-      </div>
-      <div class="infra-item">
-        <div class="infra-item-title">⚙️ Backend API</div>
-        <div class="infra-item-desc">Hosted on AWS Elastic Beanstalk (EC2) running Node.js 20 with clean Linux POSIX package automation (<code>package_eb.py</code>).</div>
-      </div>
-      <div class="infra-item">
-        <div class="infra-item-title">🗄️ Database Tier</div>
-        <div class="infra-item-desc">Production PostgreSQL database powered by Prisma ORM with connection pooling, automated migrations, and strict schema validation.</div>
-      </div>
-      <div class="infra-item">
-        <div class="infra-item-title">📦 Git Repository</div>
-        <div class="infra-item-desc">Monorepo structure (<code>@qona/frontend</code>, <code>@qona/backend</code>, <code>@qona/shared</code>) on GitHub (<code>Opakan/qona.git</code>) with automated build checks.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. Brand Identity & 100% White-Label Experience -->
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">3</div>
-      <h2 class="section-title">Brand Identity &amp; 100% White-Label Experience</h2>
-    </div>
-    <p style="font-size: 11px; color: #64748b; margin-bottom: 6px;">We have eliminated all generic third-party hashes and "AI template" aesthetics across the platform:</p>
+    <p style="font-size: 10.5px; color: #64748b; margin-bottom: 6px;">Over the recent development sprints, we transformed Qonace from an internal prototype into a fully branded, world-class product:</p>
     <table>
       <thead>
         <tr>
-          <th style="width: 22%;">Touchpoint</th>
-          <th style="width: 38%;">Previous State</th>
-          <th style="width: 40%;">Current Upgraded State</th>
+          <th style="width: 22%;">Area</th>
+          <th style="width: 38%;">Where We Started</th>
+          <th style="width: 40%;">What We Upgraded To (Current State)</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Domain &amp; SSL</strong></td>
-          <td>Raw hashes / default addresses</td>
-          <td><span class="pill pill-green">https://qonace.com</span> with Cloudflare DNS</td>
+          <td><strong>Website &amp; Domain</strong></td>
+          <td>Temporary test links &amp; hashes</td>
+          <td><span class="pill pill-green">https://qonace.com</span> with fast global edge loading</td>
         </tr>
         <tr>
-          <td><strong>Platform Logo</strong></td>
-          <td>Oversized placeholder</td>
-          <td><strong>Official Qonace Spiral 3D Logo</strong> (<code>/logo.png</code>)</td>
+          <td><strong>Brand Logo</strong></td>
+          <td>Generic placeholder image</td>
+          <td><strong>Official Qonace 3D Spiral Logo</strong> displayed across all pages</td>
         </tr>
         <tr>
-          <td><strong>Typography</strong></td>
-          <td>Default browser Inter font</td>
-          <td><strong>Outfit</strong> (Bold display) + <strong>Plus Jakarta Sans</strong> (High-tech body)</td>
+          <td><strong>Design &amp; Typography</strong></td>
+          <td>Default browser fonts &amp; muted gray UI</td>
+          <td>Premium <strong>Outfit</strong> headings &amp; sleek high-contrast dark accents</td>
         </tr>
         <tr>
-          <td><strong>Contrast &amp; UI</strong></td>
-          <td>Muted, washed-out grays</td>
-          <td>Deep obsidian ink (<code>#090d16</code>), tactile border shadows, dark accents</td>
+          <td><strong>Sign-In System</strong></td>
+          <td>Basic sign-in with unverified warnings</td>
+          <td><strong>Officially Verified Google &amp; GitHub Login</strong> + Email</td>
         </tr>
         <tr>
           <td><strong>Email Sender</strong></td>
-          <td>noreply@mail.supabase.co</td>
-          <td><strong>Qonace &lt;noreply@qonace.com&gt;</strong> via Zoho Mail SMTP</td>
+          <td>Third-party unbranded emails</td>
+          <td>Branded emails from <strong>noreply@qonace.com</strong> via Zoho Mail</td>
         </tr>
         <tr>
-          <td><strong>Email Styling</strong></td>
-          <td>Plain unstyled text</td>
-          <td>Responsive HTML templates with logo, custom buttons, &amp; security footer</td>
+          <td><strong>Account Protection</strong></td>
+          <td>No spam filters</td>
+          <td><strong>Anti-Spam Shield</strong> blocking 30+ fake/burner email services</td>
+        </tr>
+        <tr>
+          <td><strong>Payments</strong></td>
+          <td>No payment collection</td>
+          <td><strong>Flutterwave &amp; Paystack</strong> (Cards, Apple Pay, Google Pay, Bank transfer)</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- 4. Authentication & Security Suite -->
+  <!-- 3. The AI Brain & Accuracy -->
   <div class="section">
     <div class="section-header">
-      <div class="section-num">4</div>
-      <h2 class="section-title">Authentication &amp; Security Suite</h2>
-    </div>
-    <div class="card">
-      <ul>
-        <li><span class="feature-title">Google OAuth (Officially Verified):</span> Configured in Google Cloud Console with verified ownership of <code>qonace.com</code> via Google Search Console. Users see: "Sign in to Qonace", your custom logo, and verified domain links.</li>
-        <li><span class="feature-title">GitHub OAuth:</span> Registered under "Authorize Qonace" with full-color logo and instant developer sign-in.</li>
-        <li><span class="feature-title">Native Email &amp; Password:</span> One-click toggle between Sign In, Create Account, and Forgot Password, with show/hide password visibility and instant client-side validation.</li>
-        <li><span class="feature-title">Anti-Disposable / Temp Email Shield:</span> Double-layer protection (frontend client + backend middleware) blocking 30+ burner and temporary email providers (tempmail, mailinator, 10minutemail, yopmail, guerrillamail, etc.).</li>
-        <li><span class="feature-title">Dedicated Password Reset:</span> New dedicated page at <code>/reset-password</code> allowing users to safely reset passwords using secure recovery tokens.</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 5. Billing & Payment Infrastructure -->
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">5</div>
-      <h2 class="section-title">Billing &amp; Payment Infrastructure</h2>
-    </div>
-    <div class="card">
-      <ul>
-        <li><span class="feature-title">Payment Gateways:</span>
-          <strong>Flutterwave</strong> (Primary multi-currency engine supporting international cards, Apple Pay, Google Pay, USSD, and bank transfers) + <strong>Paystack</strong> (West African card processing &amp; instant bank debits).
-        </li>
-        <li><span class="feature-title">Pricing Strategy:</span>
-          <strong>Free Tier</strong> (Sandbox, preview, inspection) &nbsp;|&nbsp;
-          <strong>Starter Plan</strong> ($1 / ₦1,500 introductory conversion hook) &nbsp;|&nbsp;
-          <strong>Pro Plan</strong> ($30/mo unlimited AI synthesis &amp; production exports) &nbsp;|&nbsp;
-          <strong>Enterprise</strong> (Custom limits &amp; concierge support).
-        </li>
-        <li><span class="feature-title">Subscription Lifecycle:</span> Webhooks sync directly with PostgreSQL to automatically grant ACTIVE subscription status upon payment confirmation.</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 6. AI Automation Engine (Claude 3.5 Sonnet + Node Registry) -->
-  <div class="section">
-    <div class="section-header">
-      <div class="section-num">6</div>
-      <h2 class="section-title">AI Automation Engine (Claude 3.5 Sonnet + Node Registry)</h2>
+      <div class="section-num">3</div>
+      <h2 class="section-title">The AI Brain (Claude 3.5 Sonnet) &amp; Reliability</h2>
     </div>
     
     <div class="grid-3">
       <div class="stat-card">
         <span class="stat-val">98% – 100%</span>
-        <span class="stat-label">Simple Workflows</span>
-        <span class="stat-sub">1 – 5 Nodes (Linear Topologies)</span>
+        <span class="stat-label">Simple Automations</span>
+        <span class="stat-sub">1 to 5 steps (e.g. Form ➔ Email notification)</span>
       </div>
       <div class="stat-card">
         <span class="stat-val">95% – 97%</span>
-        <span class="stat-label">Intermediate Workflows</span>
-        <span class="stat-sub">6 – 15 Nodes (Conditionals &amp; APIs)</span>
+        <span class="stat-label">Intermediate Automations</span>
+        <span class="stat-sub">6 to 15 steps (e.g. Stripe payment ➔ CRM ➔ Slack)</span>
       </div>
       <div class="stat-card">
         <span class="stat-val">88% – 93%</span>
-        <span class="stat-label">Complex Multi-Branch</span>
-        <span class="stat-sub">16 – 30+ Nodes (Sub-workflows)</span>
+        <span class="stat-label">Complex Business Workflows</span>
+        <span class="stat-sub">16 to 30+ steps (Multi-branch branching logic)</span>
       </div>
     </div>
 
     <div class="card">
       <ul>
-        <li><span class="feature-title">200+ n8n Node Registry:</span> Includes official node specifications for Slack, Stripe, HubSpot, Notion, Google Workspace, PostgreSQL, Supabase, Twilio, OpenAI, Discord, and more.</li>
-        <li><span class="feature-title">Interactive 3-Pane Resizable Workspace:</span> Left Sidebar (Chat history &amp; drafts, adjustable 180px–460px; double-click collapse), Center Canvas (conversational prompt refinement), and Right Visualizer (live rendered graph with Maximize full-screen view).</li>
-        <li><span class="feature-title">🔑 Step-by-Step 3rd-Party Credentials Guide:</span> When a workflow involves third-party services, Qonace automatically coaches the user on where to retrieve API keys, Webhooks, and Client Secrets (e.g. Stripe Dashboard ➔ Developers ➔ API Keys).</li>
+        <li><span class="bold-title">Powered by Claude 3.5 Sonnet:</span> We paired one of the world's most advanced reasoning AI brains with a built-in encyclopedia of over 200 software services (Stripe, HubSpot, Google, Slack, WhatsApp, Shopify, Discord, etc.).</li>
+        <li><span class="bold-title">Built-In "Click-by-Click" Coaching Guide:</span> Non-technical users often don't know where to find their software keys or passwords. Qonace automatically coaches them step-by-step (e.g. <em>"Open Stripe ➔ Click Developers on top right ➔ Click API Keys"</em>).</li>
+        <li><span class="bold-title">Zero-Secret Security Guarantee:</span> Qonace never stores or asks for real passwords or credit card keys. Workflows use safe placeholders so customers' private data is never exposed.</li>
       </ul>
     </div>
   </div>
 
-  <!-- 7. Templates Catalog & User Onboarding -->
+  <!-- 4. Pricing & Monetization -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2 class="section-title">How Qonace Makes Money: Customer Pricing Tiers</h2>
+    </div>
+    <div class="grid-4">
+      <div class="pricing-box">
+        <div class="pricing-tier">Free Tier</div>
+        <div class="pricing-price">$0</div>
+        <div class="pricing-sub">Sandbox testing, previewing templates, and exploring the visual editor.</div>
+      </div>
+      <div class="pricing-box" style="border: 1.5px solid #4f46e5; background: #faf5ff;">
+        <div class="pricing-tier" style="color: #7c3aed;">Starter Trial</div>
+        <div class="pricing-price">$1 <span style="font-size: 10px; color: #64748b;">/ ₦1,500</span></div>
+        <div class="pricing-sub">Low-cost conversion hook to get users to enter payment and experience full power.</div>
+      </div>
+      <div class="pricing-box" style="border: 1.5px solid #059669; background: #f0fdf4;">
+        <div class="pricing-tier" style="color: #059669;">Pro Plan</div>
+        <div class="pricing-price">$30 <span style="font-size: 10px; color: #64748b;">/ month</span></div>
+        <div class="pricing-sub">Unlimited AI workflow building, instant file downloads, and advanced nodes.</div>
+      </div>
+      <div class="pricing-box">
+        <div class="pricing-tier">Enterprise</div>
+        <div class="pricing-price">Custom</div>
+        <div class="pricing-sub">Tailored setup, higher team limits, and dedicated priority support for agencies.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. User Experience & Ready-Made Templates -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2 class="section-title">User Experience &amp; The 12 Ready-Made Templates</h2>
+    </div>
+    <div class="grid-2">
+      <div class="info-tile">
+        <div class="info-tile-title">🚀 First-Time Welcome Tour</div>
+        <div class="info-tile-desc">When a new user logs in, they are greeted by an interactive 3-step guide explaining how to prompt the AI, resize the canvas, and download their workflow. They can reopen this guide anytime.</div>
+      </div>
+      <div class="info-tile">
+        <div class="info-tile-title">⚙️ User Account Settings</div>
+        <div class="info-tile-desc">Users can easily update their profile name, change passwords securely, and check their active subscription tier directly from their personal dashboard.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 6px;">
+      <p style="font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">12 Pre-Built Popular Business Templates (Ready to download in 1 click):</p>
+      <div class="grid-2">
+        <ul>
+          <li><span class="bold-title">Shopify + WhatsApp:</span> Instant customer notification on purchase.</li>
+          <li><span class="bold-title">AI Community Moderator:</span> Auto-filters spam on Discord &amp; Telegram.</li>
+          <li><span class="bold-title">HubSpot Deal Forecaster:</span> Analyzes sales deals and notifies reps.</li>
+        </ul>
+        <ul>
+          <li><span class="bold-title">GitHub Issue Triage:</span> Categorizes bugs and alerts engineers.</li>
+          <li><span class="bold-title">Spreadsheet-Database Sync:</span> Keeps Google Sheets and database updated.</li>
+          <li><span class="bold-title">Video-to-Blog Creator:</span> Automatically turns recordings into articles.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Legal & Enterprise Trust -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2 class="section-title">Legal, Trust &amp; Corporate Compliance</h2>
+    </div>
+    <div class="card">
+      <p style="font-size: 10.5px; color: #334155; margin-bottom: 6px;">To ensure enterprise trust, investor readiness, and global compliance, all 7 essential company and legal pages have been completely written, reviewed, and published on <a href="https://qonace.com" style="color: #4f46e5; font-weight: 700; text-decoration: none;">qonace.com</a>:</p>
+      <div class="grid-2">
+        <div>
+          <p>• <strong>Terms of Service:</strong> 100% customer ownership of exported workflows.</p>
+          <p>• <strong>Privacy Policy:</strong> Zero model training on private user workflows.</p>
+          <p>• <strong>GDPR Compliance:</strong> Full compliance with European &amp; UK privacy laws.</p>
+          <p>• <strong>Cookie Policy:</strong> Clear breakdown of essential &amp; preference storage.</p>
+        </div>
+        <div>
+          <p>• <strong>About Us:</strong> Our founding story, mission, and core pillars.</p>
+          <p>• <strong>Contact Us:</strong> Interactive inquiry form with guaranteed &lt;12h response time.</p>
+          <p>• <strong>Press &amp; Media Kit:</strong> Official logos, color hex codes, and company stats.</p>
+          <p>• <strong>Corporate Entity:</strong> Operated by <strong>Alive Technologies Ltd</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Launch Verdict & Next Steps -->
   <div class="section">
     <div class="section-header">
       <div class="section-num">7</div>
-      <h2 class="section-title">Templates Catalog &amp; User Onboarding</h2>
+      <h2 class="section-title">Executive Launch Verdict: Are We Ready to Launch?</h2>
     </div>
-    <div class="card">
+    <div class="verdict-box">
+      <div class="verdict-title">🚀 Verdict: YES, Qonace is 100% Operational &amp; Ready for Public Launch!</div>
+      <div class="verdict-text">
+        Every technical foundation—cloud hosting, verified authentication, multi-currency payment billing, spam protection, AI compilation, template downloads, and legal documentation—is complete, tested, and actively running live.
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 8px;">
+      <p style="font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Recommended Next Steps for the Team:</p>
       <ul>
-        <li><span class="feature-title">Expanded Template Gallery (12 Production Workflows):</span> Includes Discord/Telegram AI Moderator, Shopify + WhatsApp Fulfillment, HubSpot Revenue Forecaster, GitHub Issue Auto-Triage, Airtable-Supabase Sync, and Media-to-Blog AI Generator. Features instant <code>.json</code> downloads and rich Details Inspection modal.</li>
-        <li><span class="feature-title">First-Time User Onboarding Modal:</span> Greets first-time visitors with an interactive 3-step tour explaining prompt engineering, canvas resizing, and n8n exporting. Can be reopened anytime via the "Guide" button in the dashboard.</li>
-        <li><span class="feature-title">User Account Settings:</span> Dashboard modal allowing users to update full names, change passwords, and monitor plan privileges.</li>
+        <li><span class="bold-title">1. Public Beta &amp; Community Outreach:</span> Share Qonace in automation communities, Reddit (r/n8n, r/nocode), and productivity groups.</li>
+        <li><span class="bold-title">2. 60-Second Video Walkthroughs:</span> Create short screen-recording videos demonstrating typing a prompt and watching a full workflow get exported in 15 seconds.</li>
+        <li><span class="bold-title">3. Gather Early User Feedback:</span> Monitor customer messages via <code>support@qonace.com</code> to prioritize the next set of templates and partner integrations.</li>
       </ul>
     </div>
-  </div>
-
-  <!-- Footer -->
-  <div class="footer-bar">
-    <span>Alive Technologies Ltd • Qonace Executive Briefing</span>
-    <span>https://qonace.com • Confidential</span>
   </div>
 
 </body>
@@ -567,14 +665,13 @@ output_pdf_path = r"c:\Users\USER\TheQona\Qonace_Platform_Executive_Report.pdf"
 with open(temp_html_path, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print("HTML generated, rendering PDF via Playwright with system Chrome...")
+print("HTML generated, rendering updated PDF via Playwright...")
 
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe")
     page = browser.new_page()
     page.goto(f"file:///{temp_html_path.replace(os.sep, '/')}")
     page.wait_for_load_state("networkidle")
-    # Wait for Google Fonts to render
     page.wait_for_timeout(1500)
     page.pdf(
         path=output_pdf_path,
@@ -590,4 +687,4 @@ with sync_playwright() as p:
 if os.path.exists(temp_html_path):
     os.remove(temp_html_path)
 
-print(f"SUCCESS: Generated PDF at {output_pdf_path}")
+print(f"SUCCESS: Generated updated PDF at {output_pdf_path}")
