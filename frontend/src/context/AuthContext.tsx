@@ -12,6 +12,10 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithGitHub: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ data: any; error: any }>;
+  signUpWithEmail: (email: string, password: string, fullName?: string) => Promise<{ data: any; error: any }>;
+  resetPassword: (email: string) => Promise<{ data: any; error: any }>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
   toggleDeveloperRole: () => void;
@@ -138,6 +142,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const signInWithGitHub = useCallback(async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  }, []);
+
+  const signUpWithEmail = useCallback(async (email: string, password: string, fullName?: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName || undefined,
+        },
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    return { data, error };
+  }, []);
+
+  const resetPassword = useCallback(async (email: string) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { data, error };
+  }, []);
+
   const signInAsGuest = useCallback(async () => {
     const header = { alg: 'HS256', typ: 'JWT' };
     const payload = {
@@ -228,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hasActiveSubscription =
-    (user?.email && user.email.toLowerCase() === 'opadgiant@gmail.com') ||
+    (user?.email && ['opadgiant@gmail.com', 'opadboss@gmail.com'].includes(user.email.toLowerCase())) ||
     dbUser?.role === 'ADMIN' ||
     Boolean(subscription && subscription.status === 'ACTIVE');
 
@@ -243,6 +285,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         signInWithGoogle,
+        signInWithGitHub,
+        signInWithEmail,
+        signUpWithEmail,
+        resetPassword,
         signInAsGuest,
         signOut,
         toggleDeveloperRole,
