@@ -20,6 +20,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiePolicy from './pages/CookiePolicy';
 import GDPR from './pages/GDPR';
 import SignIn from './pages/SignIn';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
 import Billing from './pages/Billing';
@@ -56,6 +57,8 @@ export default function App() {
           <Route path="/cookie-policy" element={<CookiePolicy />} />
           <Route path="/gdpr" element={<GDPR />} />
           <Route path="/sign-in" element={<GuestGuard><SignIn /></GuestGuard>} />
+          <Route path="/signin" element={<GuestGuard><SignIn /></GuestGuard>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Route>
 
         {/* Auth pages (no layout) */}
