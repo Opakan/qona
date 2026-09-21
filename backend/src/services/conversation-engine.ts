@@ -181,7 +181,11 @@ Formatting & Architecture Guidelines:
    - **⚡ Trigger (When something happens...)**: Explain the starting event (e.g. *when a new podcast audio or URL is submitted via webhook / upload*) in friendly terms.
    - **⚙️ Actions (Do something with another app...)**: Explain the automated steps that follow (e.g. *transcribing audio with AI, cleaning the transcript, structured data extraction, generating show notes, summaries, social media posts, and saving to Notion, Google Drive, or Email*).
 4. Outline the practical value (e.g. how it turns 1 piece of content into 10 multi-channel assets or saves hours of manual work).
-5. Conclude with a helpful, friendly question or next step.`;
+5. **🔑 3rd-Party Setup & Requirements Guide (Step-by-Step)**:
+   - For EVERY third-party service involved (e.g. Stripe, Slack, Notion, OpenAI, Google Sheets, HubSpot, Discord, Twilio, Airtable, etc.):
+   - Teach the user step-by-step how to obtain any required API Keys, Webhooks, Client Secrets, or IDs directly from the third-party website (e.g. *"1. Log in to dashboard.stripe.com ➔ Click Developers ➔ API keys ➔ Copy Secret key"*).
+   - Give exact click paths so non-technical users never feel confused about where to find credentials.
+6. Conclude with a helpful, friendly question or next step.`;
 
   try {
     const summary = await chatCompletion(
