@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
+import { DISPOSABLE_EMAIL_DOMAINS } from '@qona/shared';
 
 export default function SignIn() {
   const { signInWithGoogle, signInWithGitHub, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
@@ -43,6 +44,12 @@ export default function SignIn() {
 
     if (!email || !email.includes('@')) {
       setError('Please provide a valid email address.');
+      return;
+    }
+
+    const emailDomain = email.split('@')[1]?.toLowerCase().trim();
+    if (emailDomain && (DISPOSABLE_EMAIL_DOMAINS as readonly string[]).includes(emailDomain)) {
+      setError('Temporary or disposable email addresses are not allowed. Please use your authentic personal or work email.');
       return;
     }
 
