@@ -233,11 +233,11 @@ export default function LandingPage() {
         {/* Teal-Indigo-Violet Gradient Background */}
         <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[320px] rounded-full bg-gradient-to-tr from-teal-400/20 via-indigo-400/10 to-violet-500/20 blur-[90px] pointer-events-none select-none z-0 animate-pulse" style={{ animationDuration: '7s' }} />
 
-        <div className="relative z-10 mx-auto max-w-3xl text-center space-y-6">
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-955 sm:text-5xl lg:text-6xl leading-[1.05] max-w-3xl mx-auto">
-            Build AI Automations Through Conversation
+        <div className="relative z-10 mx-auto max-w-4xl text-center space-y-6">
+          <h1 className="text-4xl font-black font-display tracking-tight text-slate-950 sm:text-6xl lg:text-7xl leading-[1.05] max-w-4xl mx-auto">
+            Build AI Automations <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-800 bg-clip-text text-transparent">Through Conversation</span>
           </h1>
-          <p className="text-slate-500 text-sm sm:text-base max-w-lg mx-auto">
+          <p className="text-slate-700 text-base sm:text-lg font-semibold max-w-xl mx-auto leading-relaxed">
             Create production-ready workflows and export them to n8n by chatting with Qonace.
           </p>
 
@@ -304,7 +304,7 @@ export default function LandingPage() {
                   key={s}
                   type="button"
                   onClick={() => setInput(s)}
-                  className="rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-650 transition-all cursor-pointer"
+                  className="rounded-full border border-slate-300/80 bg-white hover:bg-slate-100 hover:border-slate-400 px-4 py-1.5 text-xs font-bold text-slate-800 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                 >
                   {s}
                 </button>
@@ -316,12 +316,12 @@ export default function LandingPage() {
 
       {/* Meet Qona Interactive Animation Section (Lovable-Style Features Video Replication) */}
       <div className="mx-auto max-w-5xl px-6 pb-28">
-        <div className="border-t border-slate-100 pt-20">
+        <div className="border-t border-slate-200/80 pt-20">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h2 className="text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-950">
               Meet Qonace
             </h2>
-            <p className="text-slate-500 text-sm max-w-md mx-auto">
+            <p className="text-slate-700 text-sm sm:text-base font-semibold max-w-md mx-auto leading-relaxed">
               A workspace that turns natural language instructions into functional n8n graphs instantly.
             </p>
           </div>

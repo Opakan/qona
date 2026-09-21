@@ -5,7 +5,7 @@ import {
   LogOut, History, Loader2, LayoutDashboard, Download, Copy, Check,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
   Lightbulb, Crown, Paperclip, ChevronDown, Bot, User as UserIcon,
-  ShieldCheck, RefreshCw, Cpu, Layers
+  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -45,12 +45,47 @@ export default function ChatPage() {
   const [currentWorkflow, setCurrentWorkflow] = useState<InternalGraph | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   
-  // ChatGPT-style UI toggles
+  // Interactive & Resizable Layout State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showVisualizer, setShowVisualizer] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(260);
+  const [visualizerWidth, setVisualizerWidth] = useState<number>(520);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [isResizingVisualizer, setIsResizingVisualizer] = useState(false);
+  const [isVisualizerMaximized, setIsVisualizerMaximized] = useState(false);
+
   const [selectedModel, setSelectedModel] = useState('Qonace 4o-mini (Workflow Compiler)');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Drag-to-resize listener
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizingSidebar) {
+        const newWidth = Math.max(180, Math.min(460, e.clientX));
+        setSidebarWidth(newWidth);
+      }
+      if (isResizingVisualizer) {
+        const newWidth = Math.max(340, Math.min(window.innerWidth - 320, window.innerWidth - e.clientX));
+        setVisualizerWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingSidebar(false);
+      setIsResizingVisualizer(false);
+    };
+
+    if (isResizingSidebar || isResizingVisualizer) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingSidebar, isResizingVisualizer]);
 
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -269,9 +304,10 @@ export default function ChatPage() {
       {/* 1. LEFT SIDEBAR (Clean White ChatGPT Style)                     */}
       {/* ════════════════════════════════════════════════════════════════ */}
       <aside
-        className={`flex flex-col border-r border-slate-200 bg-[#f9f9fb] text-slate-800 transition-all duration-300 ease-in-out relative z-30 ${
-          sidebarOpen ? 'w-64' : 'w-0 overflow-hidden border-r-0'
-        }`}
+        style={{ width: sidebarOpen ? `${sidebarWidth}px` : 0 }}
+        className={`flex flex-col border-r border-slate-200 bg-[#f9f9fb] text-slate-800 ${
+          isResizingSidebar ? 'select-none' : 'transition-[width] duration-200 ease-in-out'
+        } relative z-30 shrink-0 overflow-hidden ${!sidebarOpen && 'border-r-0'}`}
       >
         {/* Sidebar Top Header */}
         <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200/60">
@@ -374,6 +410,21 @@ export default function ChatPage() {
           </div>
         </div>
       </aside>
+
+      {/* Left Resize Handle Divider */}
+      {sidebarOpen && (
+        <div
+          onMouseDown={() => setIsResizingSidebar(true)}
+          onDoubleClick={() => setSidebarOpen(false)}
+          className={`relative w-1.5 hover:w-2 bg-slate-200/60 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
+            isResizingSidebar ? 'bg-indigo-600 w-2 shadow-sm' : ''
+          }`}
+          title="Drag to resize sidebar • Double-click to collapse"
+        >
+          <div className="absolute inset-y-0 -left-1.5 -right-1.5 cursor-col-resize" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-8 w-1 rounded-full bg-slate-400 group-hover:bg-white transition-colors" />
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════════════ */}
       {/* 2. CENTER CHAT WORKSPACE                                        */}
@@ -727,21 +778,63 @@ export default function ChatPage() {
       {/* ════════════════════════════════════════════════════════════════ */}
       {/* 3. RIGHT WORKFLOW CANVAS VISUALIZER                             */}
       {/* ════════════════════════════════════════════════════════════════ */}
+      {/* Right Resize Handle Divider */}
+      {showVisualizer && !isVisualizerMaximized && (
+        <div
+          onMouseDown={() => setIsResizingVisualizer(true)}
+          onDoubleClick={() => setShowVisualizer(false)}
+          className={`relative w-1.5 hover:w-2 bg-slate-200/60 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
+            isResizingVisualizer ? 'bg-indigo-600 w-2 shadow-sm' : ''
+          }`}
+          title="Drag to resize visualizer • Double-click to collapse"
+        >
+          <div className="absolute inset-y-0 -left-1.5 -right-1.5 cursor-col-resize" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-8 w-1 rounded-full bg-slate-400 group-hover:bg-white transition-colors" />
+        </div>
+      )}
+
       <aside
-        className={`flex flex-col border-l border-slate-200/80 bg-slate-50 transition-all duration-300 ease-in-out ${
-          showVisualizer ? 'w-[480px]' : 'w-0 overflow-hidden border-l-0'
-        }`}
+        style={{
+          width: isVisualizerMaximized
+            ? '100%'
+            : showVisualizer
+            ? `${visualizerWidth}px`
+            : 0,
+        }}
+        className={`flex flex-col border-l border-slate-200/80 bg-slate-50 ${
+          isResizingVisualizer ? 'select-none' : 'transition-[width] duration-200 ease-in-out'
+        } ${
+          isVisualizerMaximized ? 'fixed inset-0 z-50' : 'relative z-20'
+        } shrink-0 overflow-hidden ${!showVisualizer && 'border-l-0'}`}
       >
         {/* Canvas Header */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-200/80 px-5 flex-shrink-0 bg-white">
+        <div className="flex h-14 items-center justify-between border-b border-slate-200/80 px-4 sm:px-5 flex-shrink-0 bg-white">
           <div className="flex items-center gap-2">
             <Workflow className="h-4 w-4 text-indigo-600" />
-            <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+            <span className="text-xs font-extrabold font-display text-slate-800 uppercase tracking-wider">
               Workflow Canvas
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsVisualizerMaximized(!isVisualizerMaximized)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              title={isVisualizerMaximized ? 'Restore split view' : 'Maximize canvas'}
+            >
+              {isVisualizerMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            </button>
+
+            <button
+              onClick={() => {
+                setShowVisualizer(false);
+                setIsVisualizerMaximized(false);
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              title="Collapse visualizer"
+            >
+              <PanelRightClose className="h-3.5 w-3.5" />
+            </button>
             <button
               onClick={() => handleSimulateExecution()}
               disabled={simulating || !currentWorkflow}

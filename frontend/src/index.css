@@ -5,13 +5,23 @@
   --font-display: 'Outfit', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
-h1, h2, h3, .font-display {
+body {
+  color: #090d16;
+  background-color: #ffffff;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
+  font-weight: 500;
+}
+
+h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  color: #090d16;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #e5e5e5 transparent;
+  scrollbar-color: #d1d5db transparent;
 }
 
 html {

@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, dbUser, isLoading } = useAuth();
+  const { isAuthenticated, user, dbUser, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -18,8 +18,19 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
-  // Allow admin access if the user profile role is ADMIN
-  if (!dbUser || dbUser.role !== 'ADMIN') {
+  const adminEmails = ['opadboss@gmail.com', 'opadgiant@gmail.com'];
+  const userEmail = (user?.email || dbUser?.email || '').toLowerCase();
+  const isOwner = adminEmails.includes(userEmail);
+  const isDevAdmin = (() => {
+    try {
+      return localStorage.getItem('qonace-developer-role') === 'ADMIN';
+    } catch {
+      return false;
+    }
+  })();
+
+  // Allow admin access if the user profile role is ADMIN, or owner email, or dev role toggle
+  if (!isOwner && !isDevAdmin && (!dbUser || dbUser.role !== 'ADMIN')) {
     console.warn('[AdminGuard] Unauthorized access attempt — redirecting to user dashboard');
     return <Navigate to="/dashboard" replace />;
   }

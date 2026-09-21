@@ -51,8 +51,10 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
       user = await db.user.updateByAuthId(authId, { country });
     }
 
-    // Auto-promote opadgiant@gmail.com to ADMIN role
-    if (user && user.email.toLowerCase() === 'opadgiant@gmail.com' && user.role !== 'ADMIN') {
+    // Auto-promote owner emails to ADMIN role
+    const adminEmails = ['opadboss@gmail.com', 'opadgiant@gmail.com'];
+    const currentEmail = user?.email?.toLowerCase();
+    if (user && currentEmail && adminEmails.includes(currentEmail) && user.role !== 'ADMIN') {
       user = await db.user.updateRole(user.id, 'ADMIN');
     }
 

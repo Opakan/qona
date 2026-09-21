@@ -13,9 +13,16 @@ export async function requireAdmin(req: Request, _res: Response, next: NextFunct
     if (!req.user) {
       throw new AppError('Authentication required', 401);
     }
+    const adminEmails = ['opadboss@gmail.com', 'opadgiant@gmail.com'];
+    const isOwner = Boolean(req.user.email && adminEmails.some((e) => e.toLowerCase() === req.user!.email.toLowerCase()));
     const devOverride = config.NODE_ENV === 'development' && req.headers['x-developer-role'] === 'ADMIN';
-    const dbUser = await db.user.findByAuthId(req.user.authId);
-    if (!devOverride && (!dbUser || dbUser.role !== 'ADMIN')) {
+
+    let dbUser = await db.user.findByAuthId(req.user.authId);
+    if (isOwner && dbUser && dbUser.role !== 'ADMIN') {
+      dbUser = await db.user.updateRole(dbUser.id, 'ADMIN');
+    }
+
+    if (!devOverride && !isOwner && (!dbUser || dbUser.role !== 'ADMIN')) {
       throw new AppError('Forbidden: Admin access required', 403);
     }
     next();

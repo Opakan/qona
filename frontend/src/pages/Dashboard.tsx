@@ -91,10 +91,10 @@ export default function Dashboard() {
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {dbUser?.role === 'ADMIN' && (
+            {(dbUser?.role === 'ADMIN' || ['opadboss@gmail.com', 'opadgiant@gmail.com'].includes((dbUser?.email || user?.email || '').toLowerCase())) && (
               <Link
                 to="/admin"
-                className="hidden sm:inline-flex rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 transition-colors px-3 py-1.5 text-xs font-bold shadow-2xs"
+                className="hidden sm:inline-flex rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all px-3.5 py-1.5 text-xs font-extrabold shadow-sm"
               >
                 Admin Panel
               </Link>

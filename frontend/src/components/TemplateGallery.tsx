@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, ArrowRight, Search, Zap, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, Search, Zap, CheckCircle, ShieldCheck, Download, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import type { Template } from '@qona/shared';
+import { TemplateDetailsModal, downloadTemplateJson } from './TemplateDetailsModal';
 
 interface TemplateGalleryProps {
   onSelectTemplate?: (template: Template) => void;
@@ -108,6 +109,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('AI & Automation');
   const [displayCount, setDisplayCount] = useState<number>(12);
+  const [selectedTemplateForDetails, setSelectedTemplateForDetails] = useState<Template | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -279,53 +281,79 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
             {displayedTemplates.map((template) => (
               <div
                 key={template.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 hover:shadow-md"
+                onClick={() => setSelectedTemplateForDetails(template)}
+                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500 hover:shadow-lg cursor-pointer"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-100 px-2.5 py-1 text-[11px] font-extrabold text-indigo-700">
                       <Zap className="h-3 w-3 text-indigo-600" />
                       {template.category || 'Automation'}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                      template.difficulty === 'Advanced'
+                        ? 'bg-amber-50 text-amber-800'
+                        : template.difficulty === 'Intermediate'
+                        ? 'bg-blue-50 text-blue-800'
+                        : 'bg-emerald-50 text-emerald-800'
+                    }`}>
                       {template.difficulty || 'Intermediate'}
                     </span>
                   </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  <h4 className="text-base font-extrabold font-display text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
                     {template.name || 'Untitled Automation'}
                   </h4>
-                  <p className="mt-1.5 text-xs text-slate-500 leading-relaxed line-clamp-2">
+                  <p className="mt-2 text-xs font-medium text-slate-600 leading-relaxed line-clamp-2">
                     {template.description || 'Ready-made n8n automation template.'}
                   </p>
 
                   {/* Plain English Bullet Highlights */}
                   {Array.isArray(template.plainEnglishSummary) && template.plainEnglishSummary.length > 0 && (
-                    <ul className="mt-3 space-y-1 text-[11px] text-slate-600 border-t border-slate-100 pt-2.5">
+                    <ul className="mt-3.5 space-y-1.5 text-xs text-slate-700 border-t border-slate-100 pt-3">
                       {template.plainEnglishSummary.slice(0, 2).map((item, idx) => (
                         <li key={idx} className="flex items-start gap-1.5">
-                          <CheckCircle className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
-                          <span>{item}</span>
+                          <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-600 mt-0.5" />
+                          <span className="font-semibold text-[11px] text-slate-800">{item}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3.5">
-                  <div className="flex flex-wrap gap-1">
-                    {(template.tags || []).slice(0, 2).map((tag) => (
-                      <span key={tag} className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                        {tag}
-                      </span>
-                    ))}
+                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadTemplateJson(template);
+                      }}
+                      title="Download n8n Workflow JSON"
+                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-250 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTemplateForDetails(template);
+                      }}
+                      title="View Full Workflow Details"
+                      className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Details</span>
+                    </button>
                   </div>
 
                   <button
-                    onClick={() => handleUseTemplate(template)}
-                    className="flex items-center gap-1 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-indigo-700 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUseTemplate(template);
+                    }}
+                    className="flex items-center gap-1 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-xs transition-all hover:bg-indigo-700 hover:shadow-md cursor-pointer"
                   >
-                    <span>Use Template</span>
+                    <span>Use</span>
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -338,7 +366,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
             <div className="flex justify-center pt-6">
               <button
                 onClick={() => setDisplayCount((prev) => prev + 12)}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-xs font-extrabold text-slate-800 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition-all cursor-pointer"
               >
                 <span>Load More Templates ({filteredTemplates.length - displayedTemplates.length} remaining)</span>
               </button>
@@ -346,6 +374,14 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
           )}
         </>
       )}
+
+      {/* Details and Download Modal */}
+      <TemplateDetailsModal
+        template={selectedTemplateForDetails}
+        isOpen={Boolean(selectedTemplateForDetails)}
+        onClose={() => setSelectedTemplateForDetails(null)}
+        onUseTemplate={handleUseTemplate}
+      />
     </div>
   );
 };
