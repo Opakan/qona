@@ -3,10 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import {
   LogOut, Workflow, BarChart3, Plus, History, Sparkles, LayoutDashboard,
   ArrowRight, Clock, CheckCircle2, FileText, Zap, ChevronRight, Layers,
-  ExternalLink, Cpu, Activity, ShieldCheck, RefreshCw, Filter, Search
+  ExternalLink, Cpu, Activity, ShieldCheck, RefreshCw, Filter, Search,
+  Settings, Compass
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TemplateGallery } from '../components/TemplateGallery';
+import { OnboardingModal } from '../components/OnboardingModal';
+import { AccountSettingsModal } from '../components/AccountSettingsModal';
 import apiClient from '../api/client';
 
 interface WorkflowItem {
@@ -28,6 +31,17 @@ export default function Dashboard() {
   const [loadingWorkflows, setLoadingWorkflows] = useState(false);
   const [workflowFilter, setWorkflowFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED'>('ALL');
   const [workflowSearch, setWorkflowSearch] = useState('');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem('qonace_onboarding_seen');
+      if (!seen) {
+        setShowOnboarding(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   // Dynamic redirect if user typed a prompt on the homepage
   useEffect(() => {
@@ -107,6 +121,24 @@ export default function Dashboard() {
             >
               <Sparkles className="h-3 w-3 text-yellow-600 animate-spin" style={{ animationDuration: '3s' }} />
               <span className="hidden xs:inline">Dev: Toggle Admin</span>
+            </button>
+
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+              title="View Qonace Quick Tour"
+            >
+              <Compass className="h-3.5 w-3.5 text-indigo-600" />
+              <span className="hidden sm:inline">Guide</span>
+            </button>
+
+            <button
+              onClick={() => setShowSettings(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+              title="Account & Security Settings"
+            >
+              <Settings className="h-3.5 w-3.5 text-slate-600" />
+              <span className="hidden sm:inline">Settings</span>
             </button>
 
             <div className="hidden md:flex flex-col items-end">
@@ -521,6 +553,10 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      {/* Onboarding & Account Modals */}
+      <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <AccountSettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   );
 }
