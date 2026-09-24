@@ -482,6 +482,18 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                     <span>{hasActiveSubscription ? 'Manage Subscription' : 'Get Starter ($1) or Pro'}</span>
                     <ExternalLink className="h-3.5 w-3.5 ml-1" />
                   </button>
+
+                  {hasActiveSubscription && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        navigate('/billing');
+                      }}
+                      className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                    >
+                      Cancel Plan Anytime
+                    </button>
+                  )}
                 </div>
               </div>
             )}

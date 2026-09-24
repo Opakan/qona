@@ -165,11 +165,33 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
     }
 
     const subscription = await prisma.subscription.findFirst({
-      where: { userId: user.id, status: 'ACTIVE' },
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
       include: { plan: true, invoices: { orderBy: { createdAt: 'desc' }, take: 10 } },
     });
     res.json({ subscription });
   } catch (err) { next(err); }
+});
+
+paymentsRouter.post('/cancel', requireAuth, async (req, res, next) => {
+  try {
+    const prisma = getPrisma();
+    const user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const { reason } = req.body || {};
+    const subscription = await paymentService.cancelSubscription(user.id, reason);
+
+    res.json({
+      success: true,
+      message: 'Your subscription has been successfully cancelled.',
+      subscription,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 paymentsRouter.post('/webhook/flutterwave', express.raw({ type: 'application/json' }), async (req, res, next) => {

@@ -231,4 +231,48 @@ export const paymentService = {
       });
     }
   },
+
+  async cancelSubscription(userId: string, _reason?: string) {
+    const prisma = getPrisma();
+    const subscription = await prisma.subscription.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!subscription) {
+      throw new Error('No active subscription found to cancel.');
+    }
+
+    try {
+      if (subscription.provider === 'flutterwave' && config.FLUTTERWAVE_SECRET_KEY) {
+        const invoice = await prisma.invoice.findFirst({
+          where: { subscriptionId: subscription.id },
+          orderBy: { createdAt: 'desc' },
+        });
+        const meta = (invoice?.metadata as Record<string, any>) || {};
+        const subId = meta.flutterwaveId;
+        if (subId) {
+          await axios.put(
+            `${FLUTTERWAVE_BASE}/subscriptions/${subId}/cancel`,
+            {},
+            { headers: { Authorization: `Bearer ${config.FLUTTERWAVE_SECRET_KEY}` } },
+          ).catch(() => {});
+        }
+      }
+    } catch {
+      // Gracefully ignore third-party API error if already cancelled or one-time charge
+    }
+
+    const updated = await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+      },
+      include: { plan: true },
+    });
+
+    return updated;
+  },
 };
