@@ -1,25 +1,8 @@
 import { getPrisma } from '../lib/prisma.js';
 import { PLANNING_STATES, PlanningStateSchema } from '@qona/shared';
+import { resolveUserId } from './user-sync.js';
 
 const LOG_PREFIX = '[Planning]';
-
-async function resolveUserId(authId: string, email?: string, name?: string): Promise<string> {
-  const p = getPrisma();
-  let u = await p.user.findUnique({ where: { authId } });
-  if (!u) {
-    u = await p.user.create({
-      data: {
-        authId,
-        email: email ?? authId + '@unknown',
-        name: name ?? email ?? authId.slice(0, 8),
-      },
-    });
-    console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'created' });
-  } else {
-    console.log(LOG_PREFIX, { authId, prismaUserId: u.id, action: 'resolved' });
-  }
-  return u.id;
-}
 
 import type { Prisma } from '@prisma/client';
 import type {
@@ -91,10 +74,10 @@ export const planningSessionService = {
     }
   },
 
-  async getActiveForConversation(conversationId: string, authId: string) {
+  async getActiveForConversation(conversationId: string, authId: string, email?: string, name?: string) {
     await this.scanAndRecover();
     const prisma = getPrisma();
-    const userId = await resolveUserId(authId);
+    const userId = await resolveUserId(authId, email, name);
     return prisma.workflowPlanningSession.findFirst({
       where: {
         conversationId,

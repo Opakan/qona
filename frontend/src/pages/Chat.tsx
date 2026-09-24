@@ -275,7 +275,34 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, reply]);
     } catch (err: unknown) {
       setTyping(false);
-      setMessages((prev) => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: err instanceof Error ? err.message : 'Something went wrong while compiling.' }]);
+      const apiErr = (err as any)?.response?.data?.error || (err as any)?.response?.data?.message || (err as any)?.response?.data?.details;
+      const displayMsg = apiErr
+        ? `⚠️ ${apiErr}`
+        : (err instanceof Error && !err.message.includes('500')
+            ? err.message
+            : "I ran into a brief connection hitch while processing that step. You can pick an option below or type what you'd like to build:");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `e-${Date.now()}`,
+          role: 'assistant',
+          content: displayMsg,
+          metadata: {
+            singleQuestion: {
+              id: 'q_starter_goal',
+              question: 'What workflow would you like to build?',
+              field: 'workflow_goal',
+              options: [
+                'AI Podcast Summarizer & Enhancer',
+                'Customer Support & Ticket Auto-Responder',
+                'New Lead / Payment Notifications (Slack/Email)',
+                'Daily Database / Google Sheets Summary',
+              ],
+              required: true,
+            },
+          },
+        },
+      ]);
     } finally {
       isSendingRef.current = false;
       setLoading(false);

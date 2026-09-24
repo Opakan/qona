@@ -1,33 +1,6 @@
 import { db } from './db.js';
 import { getPrisma } from '../lib/prisma.js';
-
-const LOG_PREFIX = '[Conversation]';
-async function resolveUserId(authId: string, email?: string, name?: string): Promise<string> {
-  const prisma = getPrisma();
-  let user = await prisma.user.findUnique({ where: { authId } });
-  if (!user && email) {
-    user = await prisma.user.findUnique({ where: { email } });
-    if (user) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { authId, name: name ?? user.name },
-      });
-    }
-  }
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        authId,
-        email: email ?? `${authId}@qonace.internal`,
-        name: name ?? email?.split('@')[0] ?? authId.slice(0, 8),
-      },
-    });
-    console.log(LOG_PREFIX, { authId, prismaUserId: user.id, action: 'created' });
-  } else {
-    console.log(LOG_PREFIX, { authId, prismaUserId: user.id, action: 'resolved' });
-  }
-  return user.id;
-}
+import { resolveUserId } from './user-sync.js';
 
 export const conversationService = {
   async list(authId: string, options?: { status?: string }) {

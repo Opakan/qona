@@ -70,6 +70,8 @@ conversationsRouter.post(
         req.user!.authId,
         req.body.content,
         req.traceId,
+        req.user!.email,
+        req.user!.name,
       );
 
       res.json(result);

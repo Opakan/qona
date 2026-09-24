@@ -162,6 +162,57 @@ async function callBedrock(
 }
 
 /**
+ * Call DeepSeek API as high-availability fallback
+ */
+async function callDeepSeek(
+  messages: ChatMessage[],
+  options?: ChatCompletionOptions,
+): Promise<string> {
+  const systemMessage = messages
+    .filter((m) => m.role === 'system')
+    .map((m) => m.content)
+    .join('\n\n');
+
+  const conversationMessages = messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    }));
+
+  if (conversationMessages.length === 0) {
+    conversationMessages.push({ role: 'user', content: 'Generate the response in JSON format.' });
+  }
+
+  const response = await axios.post(
+    'https://api.deepseek.com/chat/completions',
+    {
+      model: 'deepseek-chat',
+      messages: [
+        ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
+        ...conversationMessages,
+      ],
+      temperature: options?.temperature ?? 0.2,
+      max_tokens: options?.max_tokens ?? 4096,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${config.DEEPSEEK_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 60000,
+    },
+  );
+
+  const text = response.data?.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error('Empty response received from DeepSeek API');
+  }
+
+  return cleanJsonOutput(text);
+}
+
+/**
  * Invoke Anthropic Claude with multiple retries and provider fallback
  */
 export async function chatCompletion(
@@ -186,14 +237,26 @@ export async function chatCompletion(
     } catch (err: unknown) {
       lastError = err as Error;
       console.error(`[Claude AI] Error on attempt ${attempt + 1}/${maxRetries + 1}:`, (err as Error).message);
+
+      // Attempt DeepSeek fallback if Bedrock/Claude encounters network/auth/model errors
+      if (config.DEEPSEEK_API_KEY) {
+        try {
+          console.log('[Claude AI] Attempting fallback to DeepSeek API...');
+          return await callDeepSeek(messages, options);
+        } catch (deepseekErr: unknown) {
+          console.warn('[Claude AI] DeepSeek fallback error:', (deepseekErr as Error).message);
+        }
+      }
+
       if (attempt < maxRetries) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
   }
 
-  const errorMessage = lastError?.message || 'Claude AI request failed';
+  const errorMessage = lastError?.message || 'AI request failed';
   throw new Error(
-    `Claude AI is currently unavailable (${errorMessage}). Please ensure either ANTHROPIC_API_KEY or AWS Bedrock credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) are configured.`,
+    `AI service is currently unavailable (${errorMessage}). Please check your AI API credentials.`,
   );
 }
+

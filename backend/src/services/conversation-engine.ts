@@ -11,6 +11,7 @@ import { validateGraph, validateGraphForCompilation, formatValidationSummary } f
 import { compileInternalGraph } from './n8n-compiler.js';
 import { nodeRegistry } from './node-registry.js';
 import { workflowMemory } from './workflow-memory.js';
+import { resolveUserId } from './user-sync.js';
 import {
   AIClarificationResponseSchema,
   InternalGraphSchema,
@@ -133,27 +134,7 @@ function planQuestionToSingleQuestion(
 // ═══════════════════════════════════════════════════════
 
 async function resolvePrismaUserId(authId: string, email?: string, name?: string): Promise<string> {
-  const prisma = getPrisma();
-  let user = await prisma.user.findUnique({ where: { authId } });
-  if (!user && email) {
-    user = await prisma.user.findUnique({ where: { email } });
-    if (user) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { authId, name: name ?? user.name },
-      });
-    }
-  }
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        authId,
-        email: email ?? `${authId}@qonace.internal`,
-        name: name ?? email?.split('@')[0] ?? authId.slice(0, 8),
-      },
-    });
-  }
-  return user.id;
+  return resolveUserId(authId, email, name);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -274,58 +255,98 @@ export const conversationEngine = {
     authId: string,
     userMessage: string,
     traceId?: string,
+    email?: string,
+    name?: string,
   ): Promise<AIResponse> {
     _traceId = traceId;
-    const conversation = await conversationService.getById(conversationId);
-    if (!conversation) throw new Error('Conversation not found');
-
-    await conversationService.addMessage(conversationId, { role: 'user', content: userMessage });
-
-    // ── Get or create planning session scoped to this conversation ──
-    let session = await planningSessionService.getActiveForConversation(conversationId, authId);
-    if (!session) {
-      session = await planningSessionService.create(authId, conversationId);
-      log('info', 'Created new planning session', { sessionId: session.id, conversationId });
-    }
-
-    const state = session.state;
-    log('info', 'CONVERSATION RECEIVED', { sessionId: session.id, state, stage: session.stage, userMessage: userMessage.slice(0, 100) });
-
-    // ── Check if user is greeting / saying hello ──
-    const isGreeting = /^(hi|hello|hey|greetings|help|start|good (morning|afternoon|evening)|yo)[\s!.?]*$/i.test(userMessage.trim().toLowerCase());
-    if (isGreeting) {
-      if (session.state !== PLANNING_STATES.COLLECTING_INTENT) {
-        await planningSessionService.transition(session.id, PLANNING_STATES.COLLECTING_INTENT);
+    try {
+      const existingConv = await conversationService.getById(conversationId);
+      if (!existingConv) {
+        const newConv = await conversationService.create({
+          authId,
+          email,
+          name,
+          title: userMessage.slice(0, 80) || 'New conversation',
+        });
+        conversationId = newConv.id;
       }
-      return await this.handleCollectingIntent(session.id, userMessage, conversationId);
-    }
 
-    // ── Check if user wants to generate directly ──
-    if (isConfirmationToGenerate(userMessage)) {
-      return await this.handleGeneratingGraph(session.id, userMessage, conversationId, authId);
-    }
+      await conversationService.addMessage(conversationId, { role: 'user', content: userMessage });
 
-    // ── Check if user is asking for a new workflow or choosing a starter card ──
-    if (isNewWorkflowIntent(userMessage)) {
-      if (session.state !== PLANNING_STATES.COLLECTING_INTENT) {
-        await planningSessionService.transition(session.id, PLANNING_STATES.COLLECTING_INTENT);
+      // ── Get or create planning session scoped to this conversation ──
+      let session = await planningSessionService.getActiveForConversation(conversationId, authId, email, name);
+      if (!session) {
+        session = await planningSessionService.create(authId, conversationId, email, name);
+        log('info', 'Created new planning session', { sessionId: session.id, conversationId });
       }
-      return await this.handleCollectingIntent(session.id, userMessage, conversationId);
-    }
 
-    // ── Route based on current state ──
-    switch (state) {
-      case PLANNING_STATES.COLLECTING_INTENT:
+      const state = session.state;
+      log('info', 'CONVERSATION RECEIVED', { sessionId: session.id, state, stage: session.stage, userMessage: userMessage.slice(0, 100) });
+
+      // ── Check if user is greeting / saying hello ──
+      const isGreeting = /^(hi|hello|hey|greetings|help|start|good (morning|afternoon|evening)|yo)[\s!.?]*$/i.test(userMessage.trim().toLowerCase());
+      if (isGreeting) {
+        if (session.state !== PLANNING_STATES.COLLECTING_INTENT) {
+          await planningSessionService.transition(session.id, PLANNING_STATES.COLLECTING_INTENT);
+        }
         return await this.handleCollectingIntent(session.id, userMessage, conversationId);
+      }
 
-      case PLANNING_STATES.CLARIFYING:
-        return await this.handleClarifying(session.id, userMessage, conversationId, authId);
-
-      case PLANNING_STATES.GENERATING_GRAPH:
+      // ── Check if user wants to generate directly ──
+      if (isConfirmationToGenerate(userMessage)) {
         return await this.handleGeneratingGraph(session.id, userMessage, conversationId, authId);
+      }
 
-      default:
+      // ── Check if user is asking for a new workflow or choosing a starter card ──
+      if (isNewWorkflowIntent(userMessage)) {
+        if (session.state !== PLANNING_STATES.COLLECTING_INTENT) {
+          await planningSessionService.transition(session.id, PLANNING_STATES.COLLECTING_INTENT);
+        }
         return await this.handleCollectingIntent(session.id, userMessage, conversationId);
+      }
+
+      // ── Route based on current state ──
+      switch (state) {
+        case PLANNING_STATES.COLLECTING_INTENT:
+          return await this.handleCollectingIntent(session.id, userMessage, conversationId);
+
+        case PLANNING_STATES.CLARIFYING:
+          return await this.handleClarifying(session.id, userMessage, conversationId, authId);
+
+        case PLANNING_STATES.GENERATING_GRAPH:
+          return await this.handleGeneratingGraph(session.id, userMessage, conversationId, authId);
+
+        default:
+          return await this.handleCollectingIntent(session.id, userMessage, conversationId);
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      log('error', 'Unhandled error in processMessage', { error: errMsg });
+      const friendlyHelp = `I'm ready to build your automation! What apps or triggers would you like to connect? (e.g. *"When a Stripe payment succeeds, send a Slack message"* or *"AI Podcast Summarizer"*).`;
+      try {
+        await conversationService.addMessage(conversationId, {
+          role: 'assistant',
+          content: friendlyHelp,
+          metadata: { error: errMsg },
+        });
+      } catch { /* ignore message add error */ }
+
+      return {
+        type: 'question',
+        explanation: friendlyHelp,
+        singleQuestion: {
+          id: 'q_starter_goal',
+          question: 'What workflow would you like to build?',
+          field: 'workflow_goal',
+          options: [
+            'AI Podcast Summarizer & Enhancer',
+            'Customer Support & Ticket Auto-Responder',
+            'New Lead / Payment Notifications (Slack/Email)',
+            'Daily Database / Google Sheets Summary',
+          ],
+          required: true,
+        },
+      };
     }
   },
 
