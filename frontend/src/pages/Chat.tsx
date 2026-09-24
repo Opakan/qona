@@ -14,6 +14,7 @@ import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionP
 import { UpgradeProModal } from '../components/chat/UpgradeProModal';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/shared/ThemeToggle';
 import type { InternalGraph } from '@qona/shared';
 
 interface ConversationItem {
@@ -305,19 +306,19 @@ export default function ChatPage() {
       {/* ════════════════════════════════════════════════════════════════ */}
       <aside
         style={{ width: sidebarOpen ? `${sidebarWidth}px` : 0 }}
-        className={`flex flex-col border-r border-slate-200 bg-[#f9f9fb] text-slate-800 ${
+        className={`flex flex-col border-r border-slate-200 dark:border-slate-800 bg-[#f9f9fb] dark:bg-[#090d16] text-slate-800 dark:text-slate-200 ${
           isResizingSidebar ? 'select-none' : 'transition-[width] duration-200 ease-in-out'
         } relative z-30 shrink-0 overflow-hidden ${!sidebarOpen && 'border-r-0'}`}
       >
         {/* Sidebar Top Header */}
-        <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200/60">
-          <Link to="/dashboard" className="flex items-center gap-2 font-bold text-slate-900 hover:opacity-85 transition-opacity">
+        <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200/60 dark:border-slate-800/80">
+          <Link to="/dashboard" className="flex items-center gap-2 font-bold text-slate-900 dark:text-white hover:opacity-85 transition-opacity">
             <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
             <span className="text-sm font-extrabold font-display tracking-tight">Qonace AI</span>
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 transition-colors cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
             title="Collapse Sidebar"
           >
             <PanelLeftClose className="h-4 w-4" />
@@ -328,9 +329,9 @@ export default function ChatPage() {
         <div className="p-3">
           <button
             onClick={newConversation}
-            className="flex w-full items-center justify-start gap-2.5 rounded-xl bg-white border border-slate-200/90 px-3.5 py-2.5 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-100 hover:border-slate-300 transition-all cursor-pointer group"
+            className="flex w-full items-center justify-start gap-2.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-750 px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer group"
           >
-            <Plus className="h-4 w-4 text-slate-600 group-hover:scale-110 transition-transform" />
+            <Plus className="h-4 w-4 text-slate-600 dark:text-slate-400 group-hover:scale-110 transition-transform" />
             <span>New Workflow Chat</span>
           </button>
         </div>
@@ -338,11 +339,11 @@ export default function ChatPage() {
         {/* Conversation History List */}
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
           <div>
-            <div className="px-2 pb-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="px-2 pb-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Recent Conversations
             </div>
             {conversations.length === 0 ? (
-              <div className="px-2 py-4 text-center text-xs text-slate-400 font-medium">
+              <div className="px-2 py-4 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
                 No recent workflow chats
               </div>
             ) : (
@@ -353,11 +354,11 @@ export default function ChatPage() {
                     onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); }}
                     className={`group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium transition-all cursor-pointer ${
                       activeId === conv.id
-                        ? 'bg-slate-200/80 text-slate-900 font-bold shadow-2xs'
-                        : 'text-slate-700 hover:bg-slate-200/50 hover:text-slate-900'
+                        ? 'bg-slate-200/80 dark:bg-slate-800 text-slate-900 dark:text-white font-bold shadow-2xs'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-600" />
+                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
                     <span className="flex-1 truncate">{conv.title}</span>
                     <Trash2
                       onClick={(e) => deleteConversation(e, conv.id)}
@@ -371,38 +372,38 @@ export default function ChatPage() {
         </div>
 
         {/* Sidebar Footer: Upgrade to Pro & User Profile */}
-        <div className="border-t border-slate-200/80 p-3 space-y-2 bg-[#f9f9fb]">
+        <div className="border-t border-slate-200/80 dark:border-slate-800 p-3 space-y-2 bg-[#f9f9fb] dark:bg-[#090d16]">
           {/* Upgrade to Pro Card */}
           <button
             onClick={() => setShowUpgradeModal(true)}
-            className="flex w-full items-center justify-between rounded-xl bg-indigo-50/80 border border-indigo-200/80 p-2.5 text-left transition-all hover:bg-indigo-100/80 cursor-pointer group"
+            className="flex w-full items-center justify-between rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 p-2.5 text-left transition-all hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 cursor-pointer group"
           >
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold shadow-2xs">
                 <Crown className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-xs font-extrabold text-indigo-900">Upgrade to Pro</div>
-                <div className="text-[10px] font-medium text-indigo-600">Unlimited compilations</div>
+                <div className="text-xs font-extrabold text-indigo-900 dark:text-indigo-200">Upgrade to Pro</div>
+                <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">Unlimited compilations</div>
               </div>
             </div>
           </button>
 
           {/* User Profile Row */}
-          <div className="flex items-center justify-between rounded-xl p-2 hover:bg-slate-200/50 transition-colors">
+          <div className="flex items-center justify-between rounded-xl p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors">
             <div className="flex items-center gap-2.5 truncate">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-extrabold text-xs uppercase shadow-2xs">
                 {userInitial}
               </div>
               <div className="truncate">
-                <div className="text-xs font-bold text-slate-900 truncate">{userName}</div>
-                <div className="text-[10px] text-slate-400 truncate">{user?.email}</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{userName}</div>
+                <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{user?.email}</div>
               </div>
             </div>
 
             <button
               onClick={async () => { await signOut(); navigate('/sign-in'); }}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -416,27 +417,27 @@ export default function ChatPage() {
         <div
           onMouseDown={() => setIsResizingSidebar(true)}
           onDoubleClick={() => setSidebarOpen(false)}
-          className={`relative w-1.5 hover:w-2 bg-slate-200/60 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
+          className={`relative w-1.5 hover:w-2 bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
             isResizingSidebar ? 'bg-indigo-600 w-2 shadow-sm' : ''
           }`}
           title="Drag to resize sidebar • Double-click to collapse"
         >
           <div className="absolute inset-y-0 -left-1.5 -right-1.5 cursor-col-resize" />
-          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-8 w-1 rounded-full bg-slate-400 group-hover:bg-white transition-colors" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-8 w-1 rounded-full bg-slate-400 dark:bg-slate-600 group-hover:bg-white transition-colors" />
         </div>
       )}
 
       {/* ════════════════════════════════════════════════════════════════ */}
       {/* 2. CENTER CHAT WORKSPACE                                        */}
       {/* ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-1 flex-col min-w-0 bg-white relative">
+      <div className="flex flex-1 flex-col min-w-0 bg-white dark:bg-[#090d16] text-slate-900 dark:text-slate-100 relative">
         {/* Main Header Bar (ChatGPT style) */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200/80 px-4 sm:px-6 bg-white z-20">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-white dark:bg-[#090d16] z-20">
           <div className="flex items-center gap-3">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer"
                 title="Open Sidebar"
               >
                 <PanelLeftOpen className="h-4.5 w-4.5" />
@@ -447,15 +448,15 @@ export default function ChatPage() {
             <div className="relative">
               <button
                 onClick={() => setShowModelDropdown(!showModelDropdown)}
-                className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 hover:bg-slate-100 transition-all cursor-pointer"
+                className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-850 transition-all cursor-pointer"
               >
-                <Bot className="h-4 w-4 text-indigo-600" />
+                <Bot className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 <span>{selectedModel}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               </button>
 
               {showModelDropdown && (
-                <div className="absolute left-0 mt-1.5 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50 animate-in fade-in duration-150">
+                <div className="absolute left-0 mt-1.5 w-64 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-xl z-50 animate-in fade-in duration-150">
                   {[
                     { title: 'Qonace 4o-mini (Workflow Compiler)', desc: 'Fast, production-ready n8n node compilation', badge: 'Default' },
                     { title: 'Qonace Pro (n8n Expert Engine)', desc: 'Advanced AI agent & custom HTTP workflow graph', badge: 'Pro' },
@@ -464,14 +465,14 @@ export default function ChatPage() {
                       key={m.title}
                       onClick={() => { setSelectedModel(m.title); setShowModelDropdown(false); }}
                       className={`flex w-full flex-col text-left p-2.5 rounded-xl transition-all cursor-pointer ${
-                        selectedModel === m.title ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-slate-50'
+                        selectedModel === m.title ? 'bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900">{m.title}</span>
-                        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold text-slate-600">{m.badge}</span>
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">{m.title}</span>
+                        <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300">{m.badge}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 mt-0.5">{m.desc}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{m.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -481,19 +482,22 @@ export default function ChatPage() {
 
           {/* Right Header Toolbar Actions */}
           <div className="flex items-center gap-2">
+            {/* Theme Toggle in Chat Top Bar */}
+            <ThemeToggle />
+
             {/* Top Right ChatGPT-style Upgrade Button */}
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 text-xs font-bold hover:bg-indigo-100 transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer shadow-2xs"
             >
-              <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+              <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Upgrade</span>
             </button>
 
             <button
               onClick={() => handleSimulateExecution()}
               disabled={simulating || !currentWorkflow}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-2xs hover:bg-emerald-100 disabled:opacity-40 transition-all cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-2xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition-all cursor-pointer"
             >
               {simulating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5 fill-current" />}
               <span>Simulate Run</span>
@@ -503,7 +507,7 @@ export default function ChatPage() {
               <>
                 <button
                   onClick={handleCopyForN8n}
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 shadow-2xs hover:bg-indigo-100 transition-all cursor-pointer"
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer"
                 >
                   {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                   <span>{copied ? 'Copied!' : 'Copy n8n'}</span>
@@ -512,7 +516,7 @@ export default function ChatPage() {
                 <button
                   onClick={handleExportSession}
                   disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 dark:hover:bg-indigo-500 disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                   <span>Export</span>
@@ -524,8 +528,8 @@ export default function ChatPage() {
               onClick={() => setShowVisualizer(!showVisualizer)}
               className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 showVisualizer
-                  ? 'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-2xs'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  ? 'border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-2xs'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
               title="Toggle Workflow Canvas Split-View"
             >
@@ -536,18 +540,18 @@ export default function ChatPage() {
         </header>
 
         {/* Message Container */}
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-[#090d16]">
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-4 sm:px-6 max-w-3xl mx-auto space-y-8 select-none py-12">
               {/* ChatGPT Hero Banner */}
               <div className="text-center space-y-3">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg border border-slate-100 p-2">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-slate-850 shadow-lg border border-slate-100 dark:border-slate-800 p-2">
                   <img src="/logo.png" alt="Qonace" className="h-10 w-10 object-contain" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   What workflow shall we build?
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
                   Describe any automation idea in plain English. Qonace will collect parameters and build production-ready n8n nodes.
                 </p>
               </div>
@@ -579,13 +583,13 @@ export default function ChatPage() {
                   <button
                     key={card.title}
                     onClick={() => { setInput(card.prompt); inputRef.current?.focus(); }}
-                    className="flex flex-col text-left p-4 rounded-2xl border border-slate-200/90 bg-white hover:border-indigo-400 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                    className="flex flex-col text-left p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-850/80 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md transition-all duration-200 cursor-pointer group"
                   >
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 flex items-center gap-1.5 transition-colors">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 flex items-center gap-1.5 transition-colors">
                       <Lightbulb className="h-3.5 w-3.5 text-indigo-500" />
                       {card.title}
                     </span>
-                    <span className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
                       {card.desc}
                     </span>
                   </button>
@@ -603,8 +607,8 @@ export default function ChatPage() {
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-2xs select-none ${
                       msg.role === 'user'
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-white border border-slate-200/80 p-1'
+                        ? 'bg-slate-900 dark:bg-indigo-600 text-white'
+                        : 'bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-750 p-1'
                     }`}
                   >
                     {msg.role === 'user' ? userInitial : <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />}
@@ -614,8 +618,8 @@ export default function ChatPage() {
                   <div
                     className={`rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed max-w-[85%] shadow-2xs ${
                       msg.role === 'user'
-                        ? 'bg-slate-900 text-white font-medium'
-                        : 'bg-slate-50 text-slate-900 border border-slate-200/70 font-normal'
+                        ? 'bg-slate-900 dark:bg-indigo-600 text-white font-medium'
+                        : 'bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-slate-100 border border-slate-200/70 dark:border-slate-750 font-normal'
                     }`}
                   >
                     {/* Message Text Content */}
@@ -627,8 +631,8 @@ export default function ChatPage() {
 
                     {/* Interactive Clickable Option Pills for Non-Technical Users */}
                     {Boolean((msg.metadata?.singleQuestion as any)?.options?.length || (msg.metadata?.question as any)?.options?.length) && (
-                      <div className="mt-3.5 pt-3 border-t border-slate-200/60">
-                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-700">
+                        <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                           Quick Select Options:
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -637,7 +641,7 @@ export default function ChatPage() {
                               key={i}
                               disabled={loading}
                               onClick={() => sendMessage(opt)}
-                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
                             >
                               {opt}
                             </button>
@@ -648,17 +652,17 @@ export default function ChatPage() {
 
                     {/* Assistant Graph Summary Card */}
                     {Boolean(msg.metadata?.graph) && (
-                      <div className="mt-4 rounded-xl border border-indigo-200 bg-white p-3.5 shadow-2xs text-slate-900">
+                      <div className="mt-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 p-3.5 shadow-2xs text-slate-900 dark:text-white">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700">
-                            <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                            <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                             Workflow Compiled
                           </span>
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
                             Ready on Canvas
                           </span>
                         </div>
-                        <div className="text-xs font-extrabold text-slate-800">
+                        <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
                           {String((msg.metadata as any)?.graph?.metadata?.name || 'Compiled Automation')}
                         </div>
                       </div>
@@ -672,13 +676,13 @@ export default function ChatPage() {
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-2xs">
                     <Workflow className="h-4 w-4 animate-spin" />
                   </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 px-5 py-3.5 border border-slate-200/80 shadow-2xs">
+                  <div className="flex items-center gap-3 rounded-2xl bg-slate-50 dark:bg-slate-850 px-5 py-3.5 border border-slate-200/80 dark:border-slate-750 shadow-2xs">
                     <div className="flex gap-1.5 items-center">
                       <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-600" />
                       <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-600" style={{ animationDelay: '0.15s' }} />
                       <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-600" style={{ animationDelay: '0.3s' }} />
                     </div>
-                    <span className="text-xs font-semibold text-slate-600">Qonace AI is architecting your workflow...</span>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Qonace AI is architecting your workflow...</span>
                   </div>
                 </div>
               )}
@@ -689,17 +693,17 @@ export default function ChatPage() {
 
         {/* Floating Quick Controls Toolbar */}
         <div className="absolute right-4 top-20 flex flex-col gap-2 z-10">
-          <div className="backdrop-blur-md bg-white/80 border border-slate-200/90 rounded-2xl p-1.5 shadow-lg flex flex-col gap-1.5">
+          <div className="backdrop-blur-md bg-white/80 dark:bg-slate-850/80 border border-slate-200/90 dark:border-slate-750 rounded-2xl p-1.5 shadow-lg flex flex-col gap-1.5">
             <button
               onClick={newConversation}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-all cursor-pointer"
               title="New Chat"
             >
-              <Sparkles className="h-4 w-4 text-indigo-600" />
+              <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             </button>
             <button
               onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
               title="Scroll to Bottom"
             >
               <ArrowUp className="h-4 w-4" />
@@ -708,8 +712,8 @@ export default function ChatPage() {
         </div>
 
         {/* ChatGPT Bottom Input Box */}
-        <div className="border-t border-slate-200/70 px-4 sm:px-6 py-4 bg-white">
-          <div className="relative max-w-3xl mx-auto rounded-3xl border border-slate-200/90 bg-white p-2 shadow-xl shadow-slate-200/40 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+        <div className="border-t border-slate-200/70 dark:border-slate-800 px-4 sm:px-6 py-4 bg-white dark:bg-[#090d16]">
+          <div className="relative max-w-3xl mx-auto rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-850 p-2 shadow-xl shadow-slate-200/40 dark:shadow-black/40 focus-within:border-indigo-400 dark:focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-950 transition-all">
             {/* Preset Suggestions Row above textarea */}
             <div className="flex items-center gap-1.5 overflow-x-auto px-3 pt-1.5 pb-1 scrollbar-none">
               {[
@@ -720,7 +724,7 @@ export default function ChatPage() {
                 <button
                   key={chip.label}
                   onClick={() => { setInput(chip.prompt); inputRef.current?.focus(); }}
-                  className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-colors whitespace-nowrap cursor-pointer"
+                  className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors whitespace-nowrap cursor-pointer"
                 >
                   {chip.label}
                 </button>
@@ -734,11 +738,11 @@ export default function ChatPage() {
               onKeyDown={handleKeyDown}
               placeholder="Describe your automation workflow..."
               rows={2}
-              className="w-full resize-none border-0 bg-transparent px-3 py-2 text-slate-900 placeholder-slate-400 focus:ring-0 text-xs sm:text-sm outline-none min-h-[52px]"
+              className="w-full resize-none border-0 bg-transparent px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-0 text-xs sm:text-sm outline-none min-h-[52px]"
             />
 
             {/* Bottom Controls Row inside Input Box */}
-            <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-100">
+            <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <input
                   type="file"
@@ -749,12 +753,12 @@ export default function ChatPage() {
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   title="Upload n8n JSON Workflow file"
                 >
                   <Paperclip className="h-4 w-4" />
                 </button>
-                <span className="text-[10px] font-semibold text-slate-450 hidden xs:inline">
+                <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-500 hidden xs:inline">
                   Press Enter to send
                 </span>
               </div>
@@ -769,7 +773,7 @@ export default function ChatPage() {
             </div>
           </div>
 
-          <div className="mt-2 text-center text-[10px] font-semibold text-slate-400">
+          <div className="mt-2 text-center text-[10px] font-semibold text-slate-400 dark:text-slate-500">
             Qonace AI builds production-ready n8n workflows. Verify nodes before deployment.
           </div>
         </div>
@@ -783,13 +787,13 @@ export default function ChatPage() {
         <div
           onMouseDown={() => setIsResizingVisualizer(true)}
           onDoubleClick={() => setShowVisualizer(false)}
-          className={`relative w-1.5 hover:w-2 bg-slate-200/60 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
+          className={`relative w-1.5 hover:w-2 bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
             isResizingVisualizer ? 'bg-indigo-600 w-2 shadow-sm' : ''
           }`}
           title="Drag to resize visualizer • Double-click to collapse"
         >
           <div className="absolute inset-y-0 -left-1.5 -right-1.5 cursor-col-resize" />
-          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-8 w-1 rounded-full bg-slate-400 group-hover:bg-white transition-colors" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-8 w-1 rounded-full bg-slate-400 dark:bg-slate-600 group-hover:bg-white transition-colors" />
         </div>
       )}
 
@@ -801,17 +805,17 @@ export default function ChatPage() {
             ? `${visualizerWidth}px`
             : 0,
         }}
-        className={`flex flex-col border-l border-slate-200/80 bg-slate-50 ${
+        className={`flex flex-col border-l border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-[#070a12] ${
           isResizingVisualizer ? 'select-none' : 'transition-[width] duration-200 ease-in-out'
         } ${
           isVisualizerMaximized ? 'fixed inset-0 z-50' : 'relative z-20'
         } shrink-0 overflow-hidden ${!showVisualizer && 'border-l-0'}`}
       >
         {/* Canvas Header */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-200/80 px-4 sm:px-5 flex-shrink-0 bg-white">
+        <div className="flex h-14 items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-5 flex-shrink-0 bg-white dark:bg-[#090d16]">
           <div className="flex items-center gap-2">
-            <Workflow className="h-4 w-4 text-indigo-600" />
-            <span className="text-xs font-extrabold font-display text-slate-800 uppercase tracking-wider">
+            <Workflow className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-xs font-extrabold font-display text-slate-800 dark:text-white uppercase tracking-wider">
               Workflow Canvas
             </span>
           </div>
@@ -819,7 +823,7 @@ export default function ChatPage() {
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsVisualizerMaximized(!isVisualizerMaximized)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
               title={isVisualizerMaximized ? 'Restore split view' : 'Maximize canvas'}
             >
               {isVisualizerMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
@@ -830,7 +834,7 @@ export default function ChatPage() {
                 setShowVisualizer(false);
                 setIsVisualizerMaximized(false);
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
               title="Collapse visualizer"
             >
               <PanelRightClose className="h-3.5 w-3.5" />
@@ -838,7 +842,7 @@ export default function ChatPage() {
             <button
               onClick={() => handleSimulateExecution()}
               disabled={simulating || !currentWorkflow}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 shadow-2xs hover:bg-emerald-100 disabled:opacity-40 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition-all cursor-pointer"
             >
               {simulating ? <Loader2 className="h-3 w-3 animate-spin text-emerald-700" /> : <Play className="h-3 w-3 fill-current text-emerald-700" />}
               <span>{simulating ? 'Simulating...' : 'Simulate'}</span>
@@ -847,7 +851,7 @@ export default function ChatPage() {
             {sessionId && (
               <button
                 onClick={handleCopyForN8n}
-                className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer"
               >
                 {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3 text-indigo-600" />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -857,17 +861,17 @@ export default function ChatPage() {
         </div>
 
         {/* Graph Canvas Container */}
-        <div className="flex-1 relative bg-slate-100">
+        <div className="flex-1 relative bg-slate-100 dark:bg-slate-950">
           {currentWorkflow ? (
             <WorkflowGraph graph={currentWorkflow} className="h-full" />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-200/80 text-slate-400">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-200/80 dark:bg-slate-850 text-slate-400 dark:text-slate-500">
                 <Workflow className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-800">Visualizer Ready</h3>
-                <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Visualizer Ready</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400 dark:text-slate-500">
                   Your node graph will dynamically generate here in real-time as you chat with Qonace AI.
                 </p>
               </div>

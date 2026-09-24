@@ -126,14 +126,14 @@ export default function PricingPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10 rounded-2xl border border-indigo-200 bg-indigo-50/90 p-4 text-center sm:text-left flex flex-col sm:flex-row items-center gap-3 shadow-sm"
+          className="mb-10 rounded-2xl border border-indigo-200 dark:border-indigo-900/80 bg-indigo-50/90 dark:bg-indigo-950/50 p-4 text-center sm:text-left flex flex-col sm:flex-row items-center gap-3 shadow-sm"
         >
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-indigo-950">Active Plan Required</h3>
-            <p className="text-xs text-indigo-700">
+            <h3 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">Active Plan Required</h3>
+            <p className="text-xs text-indigo-700 dark:text-indigo-300">
               To start creating automated workflows with Claude AI, please select any plan below (starting at just $1).
             </p>
           </div>
@@ -141,10 +141,10 @@ export default function PricingPage() {
       )}
 
       <div className="text-center space-y-4 mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
           Simple, Transparent Pricing
         </h1>
-        <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+        <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto">
           Choose any plan to unlock AI workflow automation. Upgrade or change plans anytime.
         </p>
       </div>
@@ -156,7 +156,7 @@ export default function PricingPage() {
             ref={switchRef}
             onClick={() => handleToggle(isMonthly)}
             className={`relative inline-flex h-6.5 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${
-              !isMonthly ? 'bg-indigo-600' : 'bg-slate-200'
+              !isMonthly ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'
             }`}
           >
             <span
@@ -165,8 +165,8 @@ export default function PricingPage() {
               }`}
             />
           </button>
-          <span className="ml-3 font-semibold text-slate-700 text-sm">
-            Annual billing <span className="text-indigo-600 font-bold">(Save 20%)</span>
+          <span className="ml-3 font-semibold text-slate-700 dark:text-slate-300 text-sm">
+            Annual billing <span className="text-indigo-600 dark:text-indigo-400 font-bold">(Save 20%)</span>
           </span>
         </label>
       </div>
@@ -196,8 +196,8 @@ export default function PricingPage() {
               }}
               className={`rounded-2xl border p-8 flex flex-col justify-between relative transition-shadow ${
                 isPlanPopular
-                  ? 'border-indigo-600 bg-slate-950 text-white shadow-xl shadow-indigo-950/20'
-                  : 'border-slate-200 bg-white text-slate-900 shadow-sm hover:shadow-md'
+                  ? 'border-indigo-600 bg-slate-950 text-white shadow-xl shadow-indigo-950/20 dark:shadow-indigo-900/30'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm hover:shadow-md'
               }`}
             >
               {isPlanPopular && (
@@ -208,15 +208,15 @@ export default function PricingPage() {
               )}
 
               <div>
-                <p className={`text-base font-semibold ${isPlanPopular ? 'text-indigo-400' : 'text-slate-500'}`}>
+                <p className={`text-base font-semibold ${isPlanPopular ? 'text-indigo-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
                   {plan.name}
                 </p>
-                <p className={`mt-2 text-xs leading-relaxed ${isPlanPopular ? 'text-slate-400' : 'text-slate-400'}`}>
+                <p className={`mt-2 text-xs leading-relaxed ${isPlanPopular ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                   {plan.description}
                 </p>
 
                 <div className="mt-6 flex items-baseline gap-1 justify-center">
-                  <span className={`text-5xl font-extrabold tracking-tight ${isPlanPopular ? 'text-white' : 'text-slate-900'}`}>
+                  <span className={`text-5xl font-extrabold tracking-tight ${isPlanPopular ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                     <NumberFlow
                       value={isMonthly ? plan.price : plan.yearlyPrice}
                       format={{
@@ -232,28 +232,28 @@ export default function PricingPage() {
                     />
                   </span>
                   {plan.slug !== 'free' && (
-                    <span className={`text-sm font-medium ${isPlanPopular ? 'text-slate-400' : 'text-slate-400'}`}>
+                    <span className={`text-sm font-medium ${isPlanPopular ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                       /mo
                     </span>
                   )}
                 </div>
                 
-                <p className={`text-[10px] mt-1.5 ${isPlanPopular ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className={`text-[10px] mt-1.5 ${isPlanPopular ? 'text-slate-500' : 'text-slate-400 dark:text-slate-500'}`}>
                   {plan.slug === 'free' ? 'always free' : (isMonthly ? 'billed monthly' : 'billed annually')}
                 </p>
 
                 <ul className="mt-8 space-y-4">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 text-sm">
-                      <Check className={`h-4.5 w-4.5 mt-0.5 flex-shrink-0 ${isPlanPopular ? 'text-indigo-400' : 'text-indigo-600'}`} />
-                      <span className={`text-left ${isPlanPopular ? 'text-slate-300' : 'text-slate-600'}`}>{feature}</span>
+                      <Check className={`h-4.5 w-4.5 mt-0.5 flex-shrink-0 ${isPlanPopular ? 'text-indigo-400' : 'text-indigo-600 dark:text-indigo-400'}`} />
+                      <span className={`text-left ${isPlanPopular ? 'text-slate-300' : 'text-slate-600 dark:text-slate-300'}`}>{feature}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               <div className="mt-8">
-                <hr className={`w-full my-6 ${isPlanPopular ? 'border-slate-800' : 'border-slate-100'}`} />
+                <hr className={`w-full my-6 ${isPlanPopular ? 'border-slate-800' : 'border-slate-100 dark:border-slate-800'}`} />
 
                 <button
                   onClick={() => handleCheckout(plan.slug)}
@@ -263,7 +263,7 @@ export default function PricingPage() {
                       ? 'bg-emerald-600 text-white hover:bg-emerald-500'
                       : isPlanPopular
                       ? 'bg-indigo-600 text-white hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-600/20'
-                      : 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-md'
+                      : 'bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 hover:shadow-md'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loading === plan.slug ? (

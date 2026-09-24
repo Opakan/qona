@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/layout/Layout';
 import Landing from './pages/Landing';
 import Pricing from './pages/Pricing';
@@ -34,42 +35,44 @@ import AdminGuard from './components/auth/AdminGuard';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        {/* Public layout routes */}
-        <Route element={<Layout />}>
-          <Route path="/" element={<Landing />} />
-          <Route path="/product" element={<Product />} />
-          <Route path="/workflow-builder" element={<WorkflowBuilder />} />
-          <Route path="/integrations" element={<Integrations />} />
-          <Route path="/api" element={<Api />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/documentation" element={<Documentation />} />
-          <Route path="/tutorials" element={<Tutorials />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/press" element={<Press />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
-          <Route path="/gdpr" element={<GDPR />} />
-          <Route path="/sign-in" element={<GuestGuard><SignIn /></GuestGuard>} />
-          <Route path="/signin" element={<GuestGuard><SignIn /></GuestGuard>} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-        </Route>
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
+          {/* Public layout routes */}
+          <Route element={<Layout />}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/product" element={<Product />} />
+            <Route path="/workflow-builder" element={<WorkflowBuilder />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/api" element={<Api />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/documentation" element={<Documentation />} />
+            <Route path="/tutorials" element={<Tutorials />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/press" element={<Press />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
+            <Route path="/gdpr" element={<GDPR />} />
+            <Route path="/sign-in" element={<GuestGuard><SignIn /></GuestGuard>} />
+            <Route path="/signin" element={<GuestGuard><SignIn /></GuestGuard>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Route>
 
-        {/* Auth pages (no layout) */}
-        <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-        <Route path="/chat" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
-        <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
-        <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/admin" element={<AuthGuard><AdminGuard><AdminDashboard /></AdminGuard></AuthGuard>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AuthProvider>
+          {/* Auth pages (no layout) */}
+          <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+          <Route path="/chat" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
+          <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
+          <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/admin" element={<AuthGuard><AdminGuard><AdminDashboard /></AdminGuard></AuthGuard>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

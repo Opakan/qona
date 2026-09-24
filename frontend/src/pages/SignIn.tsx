@@ -97,39 +97,39 @@ export default function SignIn() {
   };
 
   return (
-    <div className="relative flex min-h-[calc(100vh-8rem)] items-center justify-center bg-slate-50/50 px-4 py-12 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="relative flex min-h-[calc(100vh-8rem)] items-center justify-center bg-slate-50/50 dark:bg-[#090d16] px-4 py-12 sm:px-6 lg:px-8 overflow-hidden transition-colors duration-200">
       <div className="w-full max-w-md relative">
-        <div className="bg-white border border-slate-200/90 p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/40">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/40 dark:shadow-slate-950/40">
           {/* Header */}
           <div className="flex flex-col items-center text-center">
             <Link to="/" className="flex items-center gap-2.5 group transition-transform hover:scale-[1.02]">
               <img src="/logo.png" alt="Qonace" className="h-6 w-6 object-contain" />
-              <span className="text-xl font-black font-display tracking-tight text-slate-950">Qonace</span>
+              <span className="text-xl font-black font-display tracking-tight text-slate-950 dark:text-white">Qonace</span>
             </Link>
 
-            <h2 className="mt-6 text-2xl sm:text-3xl font-black font-display text-slate-950 tracking-tight">
+            <h2 className="mt-6 text-2xl sm:text-3xl font-black font-display text-slate-950 dark:text-white tracking-tight">
               {mode === 'signin' && 'Sign in to your account'}
               {mode === 'signup' && 'Create your account'}
               {mode === 'forgot' && 'Reset your password'}
             </h2>
-            <p className="mt-2 text-xs font-semibold text-slate-500 max-w-xs leading-relaxed">
+            <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
               {mode === 'signin' && 'Generate and manage production-ready AI workflows with autonomous n8n nodes.'}
-              {mode === 'signup' && 'Start building smart automated workflows in seconds. No credit card required.'}
+              {mode === 'signup' && 'Start building smart automated workflows in seconds. Plans start at just $1.'}
               {mode === 'forgot' && 'Enter your verified account email to receive a secure recovery link.'}
             </p>
           </div>
 
           {/* Alerts */}
           {error && (
-            <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-red-50 p-3.5 border border-red-200 text-xs font-semibold text-red-800 animate-in fade-in">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+            <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 p-3.5 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-800 dark:text-red-300 animate-in fade-in">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-emerald-50 p-3.5 border border-emerald-200 text-xs font-semibold text-emerald-800 animate-in fade-in">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+            <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 p-3.5 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold text-emerald-800 dark:text-emerald-300 animate-in fade-in">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <span>{successMessage}</span>
             </div>
           )}
@@ -143,10 +143,10 @@ export default function SignIn() {
                   type="button"
                   onClick={() => handleOAuth('google')}
                   disabled={!!oauthLoading || loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-250 bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-250 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-bold text-slate-800 dark:text-slate-200 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-750 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow active:scale-[0.99] disabled:opacity-60 cursor-pointer"
                 >
                   {oauthLoading === 'google' ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+                    <Loader2 className="h-5 w-5 animate-spin text-slate-600 dark:text-slate-400" />
                   ) : (
                     <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -163,7 +163,7 @@ export default function SignIn() {
                   type="button"
                   onClick={() => handleOAuth('github')}
                   disabled={!!oauthLoading || loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-250 bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-slate-900 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-250 dark:border-slate-700 bg-slate-950 dark:bg-slate-800 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-slate-900 dark:hover:bg-slate-750 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
                 >
                   {oauthLoading === 'github' ? (
                     <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
@@ -179,10 +179,10 @@ export default function SignIn() {
               {/* Divider */}
               <div className="relative my-7">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
+                  <div className="w-full border-t border-slate-200 dark:border-slate-800" />
                 </div>
                 <div className="relative flex justify-center text-[11px] uppercase">
-                  <span className="bg-white px-3 font-bold text-slate-400 tracking-wider">
+                  <span className="bg-white dark:bg-slate-900 px-3 font-bold text-slate-400 dark:text-slate-500 tracking-wider">
                     Or continue with email
                   </span>
                 </div>
@@ -194,35 +194,35 @@ export default function SignIn() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="w-full rounded-xl border border-slate-250 bg-white py-2.5 pl-10 pr-3.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all"
+                    className="w-full rounded-xl border border-slate-250 dark:border-slate-750 bg-white dark:bg-slate-950 py-2.5 pl-10 pr-3.5 text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5">
+              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="alex@company.com"
-                  className="w-full rounded-xl border border-slate-250 bg-white py-2.5 pl-10 pr-3.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all"
+                  className="w-full rounded-xl border border-slate-250 dark:border-slate-750 bg-white dark:bg-slate-950 py-2.5 pl-10 pr-3.5 text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all"
                 />
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function SignIn() {
             {mode !== 'forgot' && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-800">
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
                     Password
                   </label>
                   {mode === 'signin' && (
@@ -240,26 +240,26 @@ export default function SignIn() {
                         clearMessages();
                         setMode('forgot');
                       }}
-                      className="text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                      className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
                   )}
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-slate-250 bg-white py-2.5 pl-10 pr-10 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all"
+                    className="w-full rounded-xl border border-slate-250 dark:border-slate-750 bg-white dark:bg-slate-950 py-2.5 pl-10 pr-10 text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer p-1"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -285,7 +285,7 @@ export default function SignIn() {
           </form>
 
           {/* Mode Switchers */}
-          <div className="mt-6 text-center text-xs font-semibold text-slate-500">
+          <div className="mt-6 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
             {mode === 'signin' && (
               <p>
                 Don't have an account?{' '}
@@ -295,9 +295,9 @@ export default function SignIn() {
                     clearMessages();
                     setMode('signup');
                   }}
-                  className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer"
                 >
-                  Sign up free
+                  Sign up
                 </button>
               </p>
             )}
@@ -311,7 +311,7 @@ export default function SignIn() {
                     clearMessages();
                     setMode('signin');
                   }}
-                  className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer"
                 >
                   Sign in
                 </button>
@@ -325,7 +325,7 @@ export default function SignIn() {
                   clearMessages();
                   setMode('signin');
                 }}
-                className="inline-flex items-center gap-1.5 font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                className="inline-flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back to Sign In
@@ -334,11 +334,11 @@ export default function SignIn() {
           </div>
 
           {/* Footer Terms */}
-          <div className="mt-8 border-t border-slate-100 pt-6">
-            <p className="text-center text-[10px] leading-relaxed text-slate-400 font-medium">
+          <div className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+            <p className="text-center text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 font-medium">
               By continuing, you agree to Qonace's <br />
-              <Link to="/terms-of-service" className="underline hover:text-slate-700 font-semibold">Terms of Service</Link> and{' '}
-              <Link to="/privacy-policy" className="underline hover:text-slate-700 font-semibold">Privacy Policy</Link>.
+              <Link to="/terms-of-service" className="underline hover:text-slate-700 dark:hover:text-slate-300 font-semibold">Terms of Service</Link> and{' '}
+              <Link to="/privacy-policy" className="underline hover:text-slate-700 dark:hover:text-slate-300 font-semibold">Privacy Policy</Link>.
             </p>
           </div>
         </div>
