@@ -29,8 +29,8 @@ declare global {
 
 function extractUser(payload: { sub?: string; email?: string; user_metadata?: Record<string, unknown> }): AuthenticatedUser {
   const authId = payload.sub as string;
-  const email = payload.email as string;
   const metadata = (payload.user_metadata as Record<string, unknown> | undefined) ?? {};
+  const email = (payload.email as string) || (metadata.email as string) || '';
   if (!authId || !email) throw new AppError('Invalid token payload', 401);
   return {
     authId,

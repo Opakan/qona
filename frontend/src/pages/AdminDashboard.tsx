@@ -17,9 +17,12 @@ import {
   Calendar,
   Sparkles,
   ArrowUpDown,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api/client';
+import { ThemeToggle } from '../components/shared/ThemeToggle';
 
 interface AdminStats {
   totalUsers: number;
@@ -54,10 +57,12 @@ export default function AdminDashboard() {
   // Stats State
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // Users List State
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -75,13 +80,16 @@ export default function AdminDashboard() {
   const fetchStats = useCallback(async () => {
     try {
       setStatsLoading(true);
+      setStatsError(null);
       const response = await apiClient.get('/admin/stats');
       if (response.data?.stats) {
         setStats(response.data.stats);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch admin stats:', error);
-      showToast('Failed to load dashboard statistics.', 'error');
+      const errMsg = error?.response?.data?.message || error?.message || 'Failed to load dashboard statistics.';
+      setStatsError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setStatsLoading(false);
     }
@@ -91,6 +99,7 @@ export default function AdminDashboard() {
   const fetchUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
+      setUsersError(null);
       const response = await apiClient.get('/admin/users', {
         params: {
           page,
@@ -104,9 +113,11 @@ export default function AdminDashboard() {
         setUsers(response.data.users || []);
         setTotal(response.data.total || 0);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch users:', error);
-      showToast('Failed to load users list.', 'error');
+      const errMsg = error?.response?.data?.message || error?.message || 'Failed to load users list.';
+      setUsersError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setUsersLoading(false);
     }
@@ -150,10 +161,10 @@ export default function AdminDashboard() {
         prev.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u))
       );
       showToast(`Successfully changed ${targetUser.name}'s role to ${newRole}.`, 'success');
-      fetchStats(); // Refresh stats in case breakdown changes
-    } catch (error) {
+      fetchStats();
+    } catch (error: any) {
       console.error('Failed to update role:', error);
-      showToast('Failed to update user role.', 'error');
+      showToast(error?.response?.data?.message || 'Failed to update user role.', 'error');
     } finally {
       setRoleUpdatingId(null);
     }
@@ -168,16 +179,15 @@ export default function AdminDashboard() {
       await apiClient.delete(`/admin/users/${userToDelete.id}`);
       showToast(`User ${userToDelete.name} deleted successfully.`, 'success');
       setUserToDelete(null);
-      // If we deleted the last user on a page, go back
       if (users.length === 1 && page > 1) {
         setPage((p) => p - 1);
       } else {
         fetchUsers();
       }
       fetchStats();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete user:', error);
-      showToast('Failed to delete user account.', 'error');
+      showToast(error?.response?.data?.message || 'Failed to delete user account.', 'error');
     } finally {
       setDeleting(false);
     }
@@ -199,7 +209,7 @@ export default function AdminDashboard() {
     const codePoints = countryCode
       .toUpperCase()
       .split('')
-      .map((char) =>  127397 + char.charCodeAt(0));
+      .map((char) => 127397 + char.charCodeAt(0));
     try {
       return String.fromCodePoint(...codePoints);
     } catch {
@@ -207,7 +217,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Calculate stats summaries
   const maxGrowth = stats?.growth && stats.growth.length > 0
     ? Math.max(...stats.growth.map((g) => g.count), 1)
     : 1;
@@ -215,54 +224,60 @@ export default function AdminDashboard() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50/50 text-slate-900 antialiased font-sans">
+    <div className="flex min-h-screen flex-col bg-slate-50/50 dark:bg-[#070a12] text-slate-900 dark:text-slate-100 antialiased font-sans transition-colors duration-200">
       
       {/* Toast Alert */}
       {toast && (
         <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 shadow-lg transition-all duration-300 border animate-bounce ${
-          toast.type === 'success' ? 'bg-emerald-50 border-emerald-250 text-emerald-800' : 'bg-rose-50 border-rose-250 text-rose-800'
+          toast.type === 'success' 
+            ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-250 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' 
+            : 'bg-rose-50 dark:bg-rose-950/60 border-rose-250 dark:border-rose-800 text-rose-800 dark:text-rose-300'
         }`}>
           <span className="text-xs font-semibold">{toast.message}</span>
         </div>
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/75 backdrop-blur-md px-6 py-4 shadow-xs">
+      <header className="sticky top-0 z-40 border-b border-slate-200/60 dark:border-slate-800 bg-white/75 dark:bg-[#090d16]/80 backdrop-blur-md px-6 py-4 shadow-xs">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-slate-900 hover:scale-[1.02] transition-transform">
+            <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white hover:scale-[1.02] transition-transform">
               <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
-              <span className="text-[17px] font-extrabold font-display tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 bg-clip-text text-transparent">Qonace</span>
+              <span className="text-[17px] font-extrabold font-display tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 dark:from-white dark:via-indigo-200 dark:to-indigo-300 bg-clip-text text-transparent">
+                Qonace
+              </span>
             </Link>
-            <div className="rounded-md bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-bold text-indigo-700 tracking-wider uppercase">
+            <div className="rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400 tracking-wider uppercase">
               Admin Portal
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-5">
             <button
               onClick={toggleDeveloperRole}
-              className="flex items-center gap-1 rounded-lg border border-yellow-200 bg-yellow-50 px-2.5 py-1 text-[10px] font-semibold text-yellow-800 hover:bg-yellow-100 transition-colors shadow-2xs"
-              title="Quick toggle ADMIN/USER role for easy frontend testing."
+              className="flex items-center gap-1 rounded-lg border border-yellow-200 dark:border-yellow-800/80 bg-yellow-50 dark:bg-yellow-950/40 px-2.5 py-1 text-[10px] font-semibold text-yellow-800 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/60 transition-colors shadow-2xs cursor-pointer"
+              title="Quick toggle ADMIN/USER role for testing."
             >
-              <Sparkles className="h-3 w-3 text-yellow-600" />
-              Dev: Toggle Role
+              <Sparkles className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+              <span className="hidden xs:inline">Dev: Toggle Role</span>
             </button>
 
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-xs font-semibold text-slate-800">
+            <ThemeToggle />
+
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                   {dbUser?.name ?? 'Admin'}
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium">{dbUser?.email}</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{dbUser?.email}</span>
               </div>
-              <div className="h-8 w-px bg-slate-200" />
+              <div className="hidden sm:block h-7 w-px bg-slate-200 dark:bg-slate-800" />
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-955 shadow-xs cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                Sign out
+                <span className="hidden sm:inline">Sign out</span>
               </button>
             </div>
           </div>
@@ -271,71 +286,91 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-10">
           
+          {/* Error Banner if Stats or Users failed to load */}
+          {(statsError || usersError) && (
+            <div className="mb-8 p-4 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5 text-xs text-rose-800 dark:text-rose-300 font-medium">
+                <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                <span>Administrative data failed to load: {statsError || usersError}</span>
+              </div>
+              <button
+                onClick={() => {
+                  fetchStats();
+                  fetchUsers();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Retry</span>
+              </button>
+            </div>
+          )}
+
           {/* Hero section */}
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Dashboard Metrics</h2>
-              <p className="mt-1.5 text-xs text-slate-500 font-medium">Real-time usage and geolocation user logs.</p>
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Dashboard Metrics</h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">Real-time system statistics and user management directory.</p>
             </div>
             <Link
               to="/dashboard"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-850 flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
-              Back to User App
+              <span>Back to User App</span>
             </Link>
           </div>
 
           {/* Key Metrics Cards */}
-          <div className="grid gap-6 grid-cols-2 lg:grid-cols-4 mb-10">
+          <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4 mb-10">
             {statsLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-28 rounded-2xl border border-slate-200 bg-white p-5 animate-pulse" />
+                <div key={i} className="h-28 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 animate-pulse" />
               ))
             ) : stats ? (
               <>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs relative overflow-hidden group">
-                  <div className="absolute right-3 top-3 rounded-lg bg-indigo-50 p-2 text-indigo-600">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs relative overflow-hidden group">
+                  <div className="absolute right-3 top-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 p-2 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">
                     <Users className="h-5 w-5" />
                   </div>
-                  <div className="text-2xl font-black text-slate-900">{stats.totalUsers}</div>
-                  <div className="mt-1 text-xs font-bold text-slate-400 uppercase tracking-wide">Total Users</div>
-                  <div className="mt-2.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 rounded-md px-1.5 py-0.5 inline-block">
-                    Active & Registered
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">{stats.totalUsers}</div>
+                  <div className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Total Users</div>
+                  <div className="mt-2.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-150 dark:border-emerald-800/60 rounded-md px-1.5 py-0.5 inline-block">
+                    Active &amp; Registered
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs relative overflow-hidden group">
-                  <div className="absolute right-3 top-3 rounded-lg bg-sky-50 p-2 text-sky-600">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs relative overflow-hidden group">
+                  <div className="absolute right-3 top-3 rounded-xl bg-sky-50 dark:bg-sky-950/60 p-2 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-800/50">
                     <Briefcase className="h-5 w-5" />
                   </div>
-                  <div className="text-2xl font-black text-slate-900">{stats.activeUsers}</div>
-                  <div className="mt-1 text-xs font-bold text-slate-400 uppercase tracking-wide">Active Creators</div>
-                  <div className="mt-2.5 text-[10px] text-sky-700 font-bold bg-sky-50 border border-sky-100 rounded-md px-1.5 py-0.5 inline-block">
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">{stats.activeUsers}</div>
+                  <div className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Active Creators</div>
+                  <div className="mt-2.5 text-[10px] text-sky-700 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/60 border border-sky-150 dark:border-sky-800/60 rounded-md px-1.5 py-0.5 inline-block">
                     {stats.totalUsers > 0 ? `${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% Conversion` : '0%'}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs relative overflow-hidden group">
-                  <div className="absolute right-3 top-3 rounded-lg bg-violet-50 p-2 text-violet-600">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs relative overflow-hidden group">
+                  <div className="absolute right-3 top-3 rounded-xl bg-violet-50 dark:bg-violet-950/60 p-2 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-800/50">
                     <Layers className="h-5 w-5" />
                   </div>
-                  <div className="text-2xl font-black text-slate-900">{stats.totalWorkflows}</div>
-                  <div className="mt-1 text-xs font-bold text-slate-400 uppercase tracking-wide">Total Workflows</div>
-                  <div className="mt-2.5 text-[10px] text-violet-700 font-bold bg-violet-50 border border-violet-100 rounded-md px-1.5 py-0.5 inline-block">
-                    Across entire system
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">{stats.totalWorkflows}</div>
+                  <div className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Total Workflows</div>
+                  <div className="mt-2.5 text-[10px] text-violet-700 dark:text-violet-400 font-bold bg-violet-50 dark:bg-violet-950/60 border border-violet-150 dark:border-violet-800/60 rounded-md px-1.5 py-0.5 inline-block">
+                    Across system
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs relative overflow-hidden group">
-                  <div className="absolute right-3 top-3 rounded-lg bg-amber-50 p-2 text-amber-600">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs relative overflow-hidden group">
+                  <div className="absolute right-3 top-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 p-2 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">
                     <Workflow className="h-5 w-5" />
                   </div>
-                  <div className="text-2xl font-black text-slate-900">{stats.avgWorkflows}</div>
-                  <div className="mt-1 text-xs font-bold text-slate-400 uppercase tracking-wide">Avg Workflows / User</div>
-                  <div className="mt-2.5 text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded-md px-1.5 py-0.5 inline-block">
+                  <div className="text-2xl font-black text-slate-900 dark:text-white">{stats.avgWorkflows}</div>
+                  <div className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Avg Workflows / User</div>
+                  <div className="mt-2.5 text-[10px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 border border-amber-150 dark:border-amber-800/60 rounded-md px-1.5 py-0.5 inline-block">
                     Creation density
                   </div>
                 </div>
@@ -347,15 +382,14 @@ export default function AdminDashboard() {
           <div className="grid gap-6 grid-cols-1 md:grid-cols-3 mb-10">
             
             {/* User Growth Line Chart */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs md:col-span-2">
-              <h3 className="text-sm font-bold text-slate-800 mb-4">User Growth Trends (Last 30 Days)</h3>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs md:col-span-2">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">User Growth Trends (Last 30 Days)</h3>
               {statsLoading ? (
                 <div className="h-36 flex items-center justify-center">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-indigo-600" />
                 </div>
-              ) : stats?.growth ? (
+              ) : stats?.growth && stats.growth.length > 0 ? (
                 <div className="relative">
-                  {/* Custom SVG line / Bar chart */}
                   <div className="flex h-36 items-end gap-1.5 pt-4">
                     {stats.growth.map((g, idx) => {
                       const pct = (g.count / maxGrowth) * 100;
@@ -365,15 +399,14 @@ export default function AdminDashboard() {
                             className="w-full bg-gradient-to-t from-indigo-500 to-violet-500 rounded-t-sm group-hover:from-indigo-600 group-hover:to-violet-600 transition-all duration-300 shadow-2xs"
                             style={{ height: `${pct || 4}%`, minHeight: '4px' }}
                           />
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full mb-1 scale-0 group-hover:scale-100 bg-slate-900 text-white text-[9px] px-1.5 py-0.5 rounded shadow-md pointer-events-none transition-all duration-200 z-10 whitespace-nowrap">
+                          <div className="absolute bottom-full mb-1 scale-0 group-hover:scale-100 bg-slate-900 dark:bg-slate-800 text-white text-[9px] px-1.5 py-0.5 rounded shadow-md pointer-events-none transition-all duration-200 z-10 whitespace-nowrap border border-slate-700">
                             {g.date}: {g.count} signups
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                  <div className="border-t border-slate-100 pt-2 flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex justify-between text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                     <span>{stats.growth[0]?.date}</span>
                     <span>{stats.growth[Math.floor(stats.growth.length / 2)]?.date}</span>
                     <span>{stats.growth[stats.growth.length - 1]?.date}</span>
@@ -385,28 +418,27 @@ export default function AdminDashboard() {
             </div>
 
             {/* Email Provider & Country Distribution charts */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-              <h3 className="text-sm font-bold text-slate-800 mb-4">Email Domains & Subscription Plans</h3>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Email Domains &amp; Plans</h3>
               {statsLoading ? (
                 <div className="h-36 flex items-center justify-center">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-indigo-600" />
                 </div>
               ) : stats ? (
                 <div className="space-y-4">
-                  {/* Email breakdown */}
                   <div>
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Email Providers</h4>
+                    <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Email Providers</h4>
                     <div className="space-y-1.5">
                       {stats.emailDomains.slice(0, 4).map((d, i) => {
                         const totalDomains = stats.emailDomains.reduce((acc, current) => acc + current.count, 0) || 1;
                         const pct = Math.round((d.count / totalDomains) * 100);
                         return (
                           <div key={i} className="text-xs">
-                            <div className="flex justify-between font-medium text-slate-700 mb-0.5 text-[11px]">
+                            <div className="flex justify-between font-medium text-slate-700 dark:text-slate-300 mb-0.5 text-[11px]">
                               <span>{d.name}</span>
-                              <span className="font-semibold text-slate-500">{d.count} ({pct}%)</span>
+                              <span className="font-semibold text-slate-500 dark:text-slate-400">{d.count} ({pct}%)</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                               <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
@@ -415,19 +447,18 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Subscriptions */}
                   <div>
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Subscription Tiers</h4>
+                    <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Subscription Tiers</h4>
                     <div className="space-y-1.5">
                       {stats.planDistribution.map((p, i) => {
-                        const pct = Math.round((p.count / stats.totalUsers) * 100) || 0;
+                        const pct = Math.round((p.count / (stats.totalUsers || 1)) * 100) || 0;
                         return (
                           <div key={i} className="text-xs">
-                            <div className="flex justify-between font-medium text-slate-700 mb-0.5 text-[11px]">
+                            <div className="flex justify-between font-medium text-slate-700 dark:text-slate-300 mb-0.5 text-[11px]">
                               <span>{p.name}</span>
-                              <span className="font-semibold text-slate-500">{p.count} ({pct}%)</span>
+                              <span className="font-semibold text-slate-500 dark:text-slate-400">{p.count} ({pct}%)</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                               <div className="bg-violet-600 h-full rounded-full" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
@@ -444,44 +475,43 @@ export default function AdminDashboard() {
           </div>
 
           {/* Geography Distribution Breakdown */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs mb-10">
-            <h3 className="text-sm font-bold text-slate-800 mb-3.5 flex items-center gap-1.5">
-              <MapPin className="h-4.5 w-4.5 text-indigo-500" />
-              Country Demographic Distribution
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-xs mb-10">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3.5 flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-indigo-500" />
+              <span>Country Demographic Distribution</span>
             </h3>
             {statsLoading ? (
               <div className="h-10 flex items-center justify-center">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-indigo-600" />
               </div>
             ) : stats?.countryDistribution && stats.countryDistribution.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {stats.countryDistribution.map((c, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-xl border border-slate-200/60 bg-slate-50/50 px-3.5 py-2 shadow-2xs">
+                  <div key={i} className="flex items-center gap-2 rounded-xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-3.5 py-2 shadow-2xs">
                     <span className="text-lg">{getFlagEmoji(c.name)}</span>
                     <div className="flex flex-col">
-                      <span className="text-[11px] font-bold text-slate-800">{c.name === 'Unknown' ? 'Global / Proxy' : c.name}</span>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">{c.count} {c.count === 1 ? 'User' : 'Users'}</span>
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">{c.name === 'Unknown' ? 'Global / Proxy' : c.name}</span>
+                      <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{c.count} {c.count === 1 ? 'User' : 'Users'}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-slate-400 text-center py-4">No countries geolocated yet. Try creating/signing in a new user.</div>
+              <div className="text-xs text-slate-400 text-center py-4">No countries geolocated yet.</div>
             )}
           </div>
 
           {/* User Management Section */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs overflow-hidden">
             
             {/* Search/Sort controls header */}
-            <div className="border-b border-slate-100 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/20">
+            <div className="border-b border-slate-100 dark:border-slate-800 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/20 dark:bg-slate-950/30">
               <div>
-                <h3 className="text-sm font-extrabold text-slate-800">User Directory</h3>
-                <p className="text-[10px] text-slate-400 font-medium">Manage user profiles, active scopes, and permissions.</p>
+                <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">User Directory</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Manage user profiles, active roles, and system permissions.</p>
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Search bar */}
                 <div className="relative">
                   <input
                     type="text"
@@ -491,9 +521,9 @@ export default function AdminDashboard() {
                       setSearch(e.target.value);
                       setPage(1);
                     }}
-                    className="w-64 rounded-xl border border-slate-200 pl-9 pr-4 py-2 text-xs font-semibold text-slate-700 bg-white placeholder-slate-400 focus:outline-hidden focus:border-indigo-400 transition-colors shadow-2xs"
+                    className="w-64 rounded-xl border border-slate-200 dark:border-slate-700 pl-9 pr-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-950 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-400 transition-colors shadow-2xs"
                   />
-                  <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                 </div>
               </div>
             </div>
@@ -502,78 +532,78 @@ export default function AdminDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-150 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                  <tr className="border-b border-slate-150 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-950/60">
                     <th className="px-6 py-3.5 font-bold">User</th>
-                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50" onClick={() => handleSort('email')}>
+                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/40" onClick={() => handleSort('email')}>
                       <div className="flex items-center gap-1">
-                        Email / Domain
+                        <span>Email / Domain</span>
                         <ArrowUpDown className="h-3 w-3" />
                       </div>
                     </th>
-                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50" onClick={() => handleSort('country')}>
+                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/40" onClick={() => handleSort('country')}>
                       <div className="flex items-center gap-1">
-                        Country
+                        <span>Country</span>
                         <ArrowUpDown className="h-3 w-3" />
                       </div>
                     </th>
-                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50" onClick={() => handleSort('role')}>
+                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/40" onClick={() => handleSort('role')}>
                       <div className="flex items-center gap-1">
-                        Role
+                        <span>Role</span>
                         <ArrowUpDown className="h-3 w-3" />
                       </div>
                     </th>
                     <th className="px-6 py-3.5 font-bold">Plan</th>
                     <th className="px-6 py-3.5 font-bold text-center">Workflows</th>
-                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50" onClick={() => handleSort('createdAt')}>
+                    <th className="px-6 py-3.5 font-bold cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/40" onClick={() => handleSort('createdAt')}>
                       <div className="flex items-center gap-1 justify-end">
-                        Registered
+                        <span>Registered</span>
                         <ArrowUpDown className="h-3 w-3" />
                       </div>
                     </th>
                     <th className="px-6 py-3.5 font-bold text-right pr-8">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   {usersLoading ? (
                     Array.from({ length: 4 }).map((_, i) => (
                       <tr key={i} className="animate-pulse">
                         <td colSpan={8} className="px-6 py-5">
-                          <div className="h-4 bg-slate-100 rounded-sm w-full" />
+                          <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-sm w-full" />
                         </td>
                       </tr>
                     ))
                   ) : users.length > 0 ? (
                     users.map((user) => (
-                      <tr key={user.id} className="hover:bg-slate-50/40 transition-colors">
+                      <tr key={user.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition-colors">
                         {/* Name/Avatar */}
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 border border-slate-200 overflow-hidden font-bold text-slate-600">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden font-bold text-slate-600 dark:text-slate-300 text-xs">
                               {user.avatarUrl ? (
                                 <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
                               ) : (
                                 user.name.slice(0, 2).toUpperCase()
                               )}
                             </div>
-                            <div className="font-semibold text-slate-800 leading-tight">
+                            <div className="font-semibold text-slate-800 dark:text-slate-200 leading-tight">
                               {user.name}
                             </div>
                           </div>
                         </td>
 
                         {/* Email */}
-                        <td className="px-6 py-3 text-slate-500 font-medium">
+                        <td className="px-6 py-3 text-slate-500 dark:text-slate-400 font-medium">
                           <div className="flex items-center gap-1.5">
-                            <Mail className="h-3.5 w-3.5 text-slate-350" />
-                            {user.email}
+                            <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                            <span>{user.email}</span>
                           </div>
                         </td>
 
                         {/* Country */}
-                        <td className="px-6 py-3 text-slate-700 font-semibold">
+                        <td className="px-6 py-3 text-slate-700 dark:text-slate-300 font-semibold">
                           <div className="flex items-center gap-1.5">
                             <span className="text-base">{getFlagEmoji(user.country)}</span>
-                            {user.country ? (user.country === 'Unknown' ? 'Global' : user.country) : '—'}
+                            <span>{user.country ? (user.country === 'Unknown' ? 'Global' : user.country) : '—'}</span>
                           </div>
                         </td>
 
@@ -582,52 +612,54 @@ export default function AdminDashboard() {
                           <button
                             onClick={() => handleToggleRole(user)}
                             disabled={roleUpdatingId === user.id}
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[10px] font-bold border transition-colors shadow-2xs ${
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[10px] font-bold border transition-colors shadow-2xs cursor-pointer ${
                               user.role === 'ADMIN'
-                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                             title="Click to toggle user role"
                           >
                             {user.role === 'ADMIN' ? (
                               <>
                                 <ShieldCheck className="h-3 w-3 text-indigo-500" />
-                                Admin
+                                <span>Admin</span>
                               </>
                             ) : (
                               <>
                                 <ShieldAlert className="h-3 w-3 text-slate-400" />
-                                User
+                                <span>User</span>
                               </>
                             )}
                           </button>
                         </td>
 
                         {/* Plan */}
-                        <td className="px-6 py-3 font-semibold text-slate-600">
+                        <td className="px-6 py-3 font-semibold text-slate-600 dark:text-slate-400">
                           <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold ${
-                            user.planName === 'Pro' ? 'bg-violet-50 text-violet-700 border border-violet-200' :
-                            user.planName === 'Starter' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
-                            'bg-slate-50 text-slate-500 border border-slate-200'
+                            user.planName === 'Pro' ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800/60' :
+                            user.planName === 'Starter' ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60' :
+                            'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                           }`}>
                             {user.planName}
                           </span>
                         </td>
 
                         {/* Workflows count */}
-                        <td className="px-6 py-3 text-center font-bold text-slate-600">
+                        <td className="px-6 py-3 text-center font-bold text-slate-600 dark:text-slate-300">
                           {user.workflowsCount}
                         </td>
 
                         {/* Registered Date */}
-                        <td className="px-6 py-3 text-right text-slate-500 font-medium whitespace-nowrap">
+                        <td className="px-6 py-3 text-right text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 text-slate-350" />
-                            {new Date(user.createdAt).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
+                            <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                            <span>
+                              {new Date(user.createdAt).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
                           </div>
                         </td>
 
@@ -635,7 +667,7 @@ export default function AdminDashboard() {
                         <td className="px-6 py-3 text-right">
                           <button
                             onClick={() => setUserToDelete(user)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer inline-block"
+                            className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer inline-block"
                             title="Delete User Account"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -656,8 +688,8 @@ export default function AdminDashboard() {
 
             {/* Pagination controls */}
             {totalPages > 1 && (
-              <div className="border-t border-slate-100 p-5 flex items-center justify-between bg-slate-50/10">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+              <div className="border-t border-slate-100 dark:border-slate-800 p-5 flex items-center justify-between bg-slate-50/10 dark:bg-slate-950/20">
+                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                   Page {page} of {totalPages} ({total} Users total)
                 </span>
 
@@ -665,17 +697,17 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => setPage((p) => Math.max(p - 1, 1))}
                     disabled={page === 1}
-                    className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors shadow-2xs cursor-pointer"
+                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors shadow-2xs cursor-pointer"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    <span>Previous</span>
                   </button>
                   <button
                     onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
                     disabled={page === totalPages}
-                    className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-40 transition-colors shadow-2xs cursor-pointer"
+                    className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors shadow-2xs cursor-pointer"
                   >
-                    Next
+                    <span>Next</span>
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
@@ -689,18 +721,18 @@ export default function AdminDashboard() {
 
       {/* Delete User Modal Dialog */}
       {userToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-base font-bold text-slate-900">Permanently delete user?</h3>
-            <p className="mt-2.5 text-xs leading-relaxed text-slate-500">
-              Are you sure you want to delete <span className="font-semibold text-slate-800">{userToDelete.name}</span> ({userToDelete.email})?
-              All of their workflows, conversations, API keys, and records will be immediately and permanently destroyed.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Permanently delete user?</h3>
+            <p className="mt-2.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Are you sure you want to delete <span className="font-semibold text-slate-800 dark:text-slate-200">{userToDelete.name}</span> ({userToDelete.email})?
+              All of their workflows, conversations, and records will be immediately destroyed.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setUserToDelete(null)}
                 disabled={deleting}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -710,7 +742,7 @@ export default function AdminDashboard() {
                 className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
               >
                 {deleting && <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />}
-                Yes, Delete Account
+                <span>Yes, Delete Account</span>
               </button>
             </div>
           </div>

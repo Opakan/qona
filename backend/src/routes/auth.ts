@@ -52,7 +52,7 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
     }
 
     // Auto-promote owner emails to ADMIN role
-    const adminEmails = ['opadboss@gmail.com', 'opadgiant@gmail.com'];
+    const adminEmails = ['opadboss@gmail.com', 'opadgiant@gmail.com', 'opakan@gmail.com', 'admin@qonace.com'];
     const currentEmail = user?.email?.toLowerCase();
     if (user && currentEmail && adminEmails.includes(currentEmail) && user.role !== 'ADMIN') {
       user = await db.user.updateRole(user.id, 'ADMIN');
