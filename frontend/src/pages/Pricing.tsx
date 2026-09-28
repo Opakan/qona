@@ -274,6 +274,13 @@ export default function PricingPage() {
                     plan.buttonText
                   )}
                 </button>
+
+                {loading === plan.slug && (
+                  <p className="mt-3 text-center text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed animate-pulse">
+                    ⚠️ Redirecting to payment... Card OTP may take up to 2 minutes to arrive.
+                    <br />You can also pay with bank transfer or USSD on the next screen.
+                  </p>
+                )}
               </div>
             </motion.div>
           );

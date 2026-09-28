@@ -8,6 +8,7 @@ interface AuthState {
   dbUser: any | null;
   subscription: any | null;
   hasActiveSubscription: boolean;
+  isEmailVerified: boolean;
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -15,6 +16,7 @@ interface AuthState {
   signInWithGitHub: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signUpWithEmail: (email: string, password: string, fullName?: string) => Promise<{ data: any; error: any }>;
+  resendVerificationEmail: (email?: string) => Promise<{ data: any; error: any }>;
   resetPassword: (email: string) => Promise<{ data: any; error: any }>;
   signInAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -32,15 +34,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDbUser = useCallback(async (cancelled = false) => {
-    try {
-      const response = await apiClient.get('/auth/me');
-      if (!cancelled && response.data) {
-        if (response.data.user) setDbUser(response.data.user);
-        if (response.data.subscription) setSubscription(response.data.subscription);
+    // Retry up to 2 times on failure to handle transient network errors
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await apiClient.get('/auth/me');
+        if (!cancelled && response.data) {
+          if (response.data.user) setDbUser(response.data.user);
+          if (response.data.subscription) setSubscription(response.data.subscription);
+        }
+        return; // success
+      } catch (err) {
+        lastErr = err;
+        if (cancelled) return;
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        }
       }
-    } catch (err) {
-      console.warn('[AuthContext] Failed to fetch database profile:', err);
     }
+    console.warn('[AuthContext] Failed to fetch database profile after 3 attempts:', lastErr);
   }, []);
 
   const refreshSubscription = useCallback(async () => {
@@ -180,6 +192,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { data, error };
   }, []);
 
+  const resendVerificationEmail = useCallback(async (email?: string) => {
+    // If a specific email is provided (e.g. for unverified accounts), use OTP resend.
+    // Otherwise resend for the currently signed-in user's email.
+    const targetEmail = email || user?.email || '';
+    if (!targetEmail) {
+      return { data: null, error: new Error('No email address provided.') };
+    }
+    // Use Supabase's resend OTP for email signup confirmation
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email: targetEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    return { data, error };
+  }, [user]);
+
   const signInAsGuest = useCallback(async () => {
     const header = { alg: 'HS256', typ: 'JWT' };
     const payload = {
@@ -274,6 +304,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dbUser?.role === 'ADMIN' ||
     Boolean(subscription && subscription.status === 'ACTIVE');
 
+  // isEmailVerified: true if the Supabase user has confirmed their email,
+  // or if signed in via OAuth (Google/GitHub), or if they are a guest/admin.
+  const isEmailVerified =
+    !user || // not logged in — no restriction
+    Boolean(user.email_confirmed_at) ||
+    user.app_metadata?.provider === 'google' ||
+    user.app_metadata?.provider === 'github' ||
+    (user.app_metadata?.providers as string[] | undefined)?.some((p) => ['google', 'github'].includes(p)) ||
+    ['opadgiant@gmail.com', 'opadboss@gmail.com', 'opakan@gmail.com'].includes((user.email ?? '').toLowerCase());
+
   return (
     <AuthContext.Provider
       value={{
@@ -281,6 +321,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dbUser,
         subscription,
         hasActiveSubscription,
+        isEmailVerified,
         session,
         isLoading,
         isAuthenticated: !!user,
@@ -288,6 +329,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGitHub,
         signInWithEmail,
         signUpWithEmail,
+        resendVerificationEmail,
         resetPassword,
         signInAsGuest,
         signOut,

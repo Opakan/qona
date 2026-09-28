@@ -17,23 +17,40 @@ export async function requireAdmin(req: Request, _res: Response, next: NextFunct
     const isOwner = Boolean(req.user.email && adminEmails.some((e) => e.toLowerCase() === req.user!.email.toLowerCase()));
     const devOverride = req.headers['x-developer-role'] === 'ADMIN';
 
+    console.log(`[requireAdmin] user=${req.user.email} isOwner=${isOwner} devOverride=${devOverride}`);
+
     let dbUser = await db.user.findByAuthId(req.user.authId);
-    if (!dbUser && (isOwner || devOverride)) {
-      dbUser = await db.user.upsertByAuthId({
-        authId: req.user.authId,
-        email: req.user.email,
-        name: req.user.name,
-      });
-      if (isOwner) {
-        dbUser = await db.user.updateRole(dbUser.id, 'ADMIN');
-      }
-    } else if (isOwner && dbUser && dbUser.role !== 'ADMIN') {
-      dbUser = await db.user.updateRole(dbUser.id, 'ADMIN');
+    if (!dbUser && req.user.email) {
+      dbUser = await db.user.findByEmail(req.user.email);
     }
 
+    if (!dbUser && (isOwner || devOverride)) {
+      try {
+        dbUser = await db.user.upsertByAuthId({
+          authId: req.user.authId,
+          email: req.user.email,
+          name: req.user.name,
+        });
+      } catch (err) {
+        console.warn('[Admin] Upsert error in requireAdmin:', err);
+      }
+    }
+
+    if (isOwner && dbUser && dbUser.role !== 'ADMIN') {
+      try {
+        dbUser = await db.user.updateRole(dbUser.id, 'ADMIN');
+      } catch (err) {
+        console.warn('[Admin] updateRole error in requireAdmin:', err);
+      }
+    }
+
+    // isOwner always passes through — DB role is secondary for owner emails
     if (!devOverride && !isOwner && (!dbUser || dbUser.role !== 'ADMIN')) {
+      console.warn(`[requireAdmin] Access DENIED for ${req.user.email}`);
       throw new AppError('Forbidden: Admin access required', 403);
     }
+
+    console.log(`[requireAdmin] Access GRANTED for ${req.user.email}`);
     next();
   } catch (error) {
     next(error);

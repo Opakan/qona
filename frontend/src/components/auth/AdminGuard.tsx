@@ -13,8 +13,8 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     if (dbUser !== null || !isAuthenticated) {
       setWaitingForDb(false);
     } else {
-      // Grace timeout for async /auth/me call
-      const timer = setTimeout(() => setWaitingForDb(false), 600);
+      // Grace timeout for async /auth/me call — extended to 8s to cover retry logic (3 attempts)
+      const timer = setTimeout(() => setWaitingForDb(false), 8000);
       return () => clearTimeout(timer);
     }
   }, [dbUser, isAuthenticated]);

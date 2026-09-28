@@ -5,7 +5,7 @@ import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, Lo
 import { DISPOSABLE_EMAIL_DOMAINS } from '@qona/shared';
 
 export default function SignIn() {
-  const { signInWithGoogle, signInWithGitHub, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+  const { signInWithGoogle, signInWithGitHub, signInWithEmail, signUpWithEmail, resetPassword, resendVerificationEmail } = useAuth();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
@@ -17,10 +17,15 @@ export default function SignIn() {
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
 
   const clearMessages = () => {
     setError(null);
     setSuccessMessage(null);
+    setNeedsVerification(false);
+    setVerificationResent(false);
   };
 
   const handleOAuth = async (provider: 'google' | 'github') => {
@@ -81,18 +86,49 @@ export default function SignIn() {
         if (data?.session) {
           navigate('/dashboard');
         } else {
-          setSuccessMessage('Account created! Please check your email to confirm your account, or sign in.');
+          setSuccessMessage(
+            'Account created! A verification email has been sent to ' + email + '. Please check your inbox (and spam folder) and click the link to activate your account before signing in.'
+          );
           setMode('signin');
         }
       } else {
         const { error: signinErr } = await signInWithEmail(email, password);
-        if (signinErr) throw signinErr;
+        if (signinErr) {
+          // Detect unverified email error from Supabase
+          const errMsg = signinErr.message || '';
+          if (
+            errMsg.toLowerCase().includes('email not confirmed') ||
+            errMsg.toLowerCase().includes('not confirmed') ||
+            errMsg.toLowerCase().includes('confirm your email')
+          ) {
+            setNeedsVerification(true);
+            setError('Your email address has not been verified yet. Please check your inbox for the verification link, or request a new one below.');
+          } else {
+            throw signinErr;
+          }
+          return;
+        }
         navigate('/dashboard');
       }
     } catch (err: any) {
       setError(err?.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (resendingVerification || verificationResent || !email) return;
+    setResendingVerification(true);
+    try {
+      await resendVerificationEmail(email);
+      setVerificationResent(true);
+      setError(null);
+      setSuccessMessage('Verification email sent! Check your inbox (and spam folder) and click the link to verify your account.');
+    } catch (err: any) {
+      setError('Failed to resend verification email. Please try again in a moment.');
+    } finally {
+      setResendingVerification(false);
     }
   };
 
@@ -121,9 +157,27 @@ export default function SignIn() {
 
           {/* Alerts */}
           {error && (
-            <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 p-3.5 border border-red-200 dark:border-red-800 text-xs font-semibold text-red-800 dark:text-red-300 animate-in fade-in">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
-              <span>{error}</span>
+            <div className="mt-6 flex flex-col gap-3 rounded-xl bg-red-50 dark:bg-red-950/40 p-3.5 border border-red-200 dark:border-red-800 animate-in fade-in">
+              <div className="flex items-start gap-2.5 text-xs font-semibold text-red-800 dark:text-red-300">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                <span>{error}</span>
+              </div>
+              {needsVerification && email && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification || verificationResent}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 px-3 py-2 text-xs font-bold text-white transition-colors cursor-pointer"
+                >
+                  {resendingVerification ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span>Sending...</span></>
+                  ) : verificationResent ? (
+                    <><CheckCircle2 className="h-3.5 w-3.5" /><span>Email Sent! Check your inbox</span></>
+                  ) : (
+                    <span>Resend Verification Email to {email}</span>
+                  )}
+                </button>
+              )}
             </div>
           )}
 

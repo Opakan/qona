@@ -4,11 +4,11 @@ import { Sparkles, Bot, Layers, ShieldCheck, Zap, ArrowRight, Heart, Cpu, Globe 
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-slate-50/60 py-16 px-4 sm:px-6 lg:px-8 text-slate-900 antialiased">
+    <div className="min-h-screen bg-slate-50/60 dark:bg-[#090d16] py-16 px-4 sm:px-6 lg:px-8 text-slate-900 dark:text-slate-100 antialiased">
       <div className="mx-auto max-w-5xl space-y-12">
         {/* Hero Section */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-150 text-xs font-extrabold text-indigo-700 tracking-wide uppercase">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-150 dark:border-indigo-800/60 text-xs font-extrabold text-indigo-700 dark:text-indigo-300 tracking-wide uppercase">
             <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
             <span>Our Mission &amp; Story</span>
           </div>
@@ -23,8 +23,8 @@ export default function About() {
         </div>
 
         {/* Narrative Section */}
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-sm space-y-6 text-sm leading-relaxed text-slate-700">
-          <h2 className="text-2xl font-black font-display text-slate-950">
+        <div className="bg-white dark:bg-[#0f1624] border border-slate-200/90 dark:border-slate-800/80 rounded-3xl p-8 sm:p-12 shadow-sm space-y-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <h2 className="text-2xl font-black font-display text-slate-950 dark:text-white">
             The Problem We Set Out to Solve
           </h2>
           <p>
@@ -40,32 +40,32 @@ export default function About() {
 
         {/* Core Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-8 bg-white border border-slate-200/90 rounded-3xl shadow-sm space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-4">
+          <div className="p-8 bg-white dark:bg-[#0f1624] border border-slate-200/90 dark:border-slate-800/80 rounded-3xl shadow-sm space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4">
               <Globe className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-black font-display text-slate-950">Zero Vendor Lock-In</h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            <h3 className="text-lg font-black font-display text-slate-950 dark:text-white">Zero Vendor Lock-In</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
               Your workflows belong to you. We export standard, vendor-neutral n8n JSON files that you can run on your own self-hosted servers, Docker containers, or n8n cloud instances.
             </p>
           </div>
 
-          <div className="p-8 bg-white border border-slate-200/90 rounded-3xl shadow-sm space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
+          <div className="p-8 bg-white dark:bg-[#0f1624] border border-slate-200/90 dark:border-slate-800/80 rounded-3xl shadow-sm space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4">
               <ShieldCheck className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-black font-display text-slate-950">Zero-Secret Security</h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            <h3 className="text-lg font-black font-display text-slate-950 dark:text-white">Zero-Secret Security</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
               We never ask for or store your third-party API keys or private database passwords. All secret credentials remain securely in your private execution environment.
             </p>
           </div>
 
-          <div className="p-8 bg-white border border-slate-200/90 rounded-3xl shadow-sm space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+          <div className="p-8 bg-white dark:bg-[#0f1624] border border-slate-200/90 dark:border-slate-800/80 rounded-3xl shadow-sm space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
               <Cpu className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-black font-display text-slate-950">200+ Node Precision</h3>
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            <h3 className="text-lg font-black font-display text-slate-950 dark:text-white">200+ Node Precision</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
               Backed by our comprehensive schema registry and the cognitive power of Claude 3.5 Sonnet, Qonace generates compliant topologies with ~95% compilation accuracy.
             </p>
           </div>

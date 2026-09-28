@@ -18,14 +18,37 @@ export class UserRepository extends BaseRepository {
   }
 
   async upsertByAuthId(input: { authId: string; email: string; name: string; country?: string }) {
-    return this.prisma.user.upsert({
-      where: { authId: input.authId },
-      update: {
-        email: input.email,
-        name: input.name,
-        ...(input.country ? { country: input.country } : {}),
-      },
-      create: {
+    // 1. Try finding by authId
+    let user = await this.prisma.user.findUnique({ where: { authId: input.authId } });
+    if (user) {
+      return this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          email: input.email,
+          name: input.name,
+          ...(input.country ? { country: input.country } : {}),
+        },
+      });
+    }
+
+    // 2. Try finding by email (in case authId changed or re-registered)
+    if (input.email) {
+      user = await this.prisma.user.findUnique({ where: { email: input.email } });
+      if (user) {
+        return this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            authId: input.authId,
+            name: input.name,
+            ...(input.country ? { country: input.country } : {}),
+          },
+        });
+      }
+    }
+
+    // 3. User does not exist, create safely
+    return this.prisma.user.create({
+      data: {
         authId: input.authId,
         email: input.email,
         name: input.name,

@@ -3,21 +3,26 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Outfit', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Body: Inter — ultra-legible at all sizes, used by Linear, Vercel, Figma */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Display / Headings: Sora — bold geometric, premium SaaS feel */
+  --font-display: 'Sora', 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  color: #090d16;
+  font-family: var(--font-sans);
+  color: #0f1118;
   background-color: #ffffff;
+  font-size: 15px;
+  line-height: 1.65;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   text-rendering: optimizeLegibility;
-  font-weight: 500;
+  font-weight: 450;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 html.dark body {
-  color: #f1f5f9;
+  color: #e8eaf2;
   background-color: #090d16;
 }
 
@@ -29,18 +34,118 @@ html.light {
   color-scheme: light;
 }
 
-h1, h2, h3, h4, .font-display {
+/* Headings — Sora bold for maximum visual impact */
+h1, h2, h3, h4, h5, h6, .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.025em;
-  color: #090d16;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #0a0d18;
 }
 
 html.dark h1,
 html.dark h2,
 html.dark h3,
 html.dark h4,
+html.dark h5,
+html.dark h6,
 html.dark .font-display {
-  color: #f8fafc;
+  color: #f0f2ff;
+}
+
+/* Ensure heading sizes are never too small */
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; }
+h2 { font-size: clamp(1.5rem, 3.5vw, 2.5rem); font-weight: 700; }
+h3 { font-size: clamp(1.15rem, 2.5vw, 1.6rem); font-weight: 700; }
+h4 { font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 600; }
+
+/* Minimum font size — no text should be invisible */
+p, li, span, label, td, th, button, a {
+  font-size: max(13px, 0.875rem);
+}
+
+/* Small / helper text minimum */
+small, .text-xs { font-size: max(11px, 0.7rem); }
+
+/* =====================================================================
+   DARK MODE GLOBAL OVERRIDES
+   Fix pages that use light-only Tailwind classes without dark: variants.
+   These are low-specificity fallbacks — explicit dark: classes still win.
+   ===================================================================== */
+
+/* Page wrapper backgrounds */
+html.dark .min-h-screen.bg-slate-50\/60,
+html.dark [class*="bg-slate-50"] {
+  background-color: #090d16 !important;
+}
+
+/* Card backgrounds: bg-white cards become dark surface */
+html.dark .bg-white.border.border-slate-200\/90,
+html.dark .bg-white.border.border-slate-200 {
+  background-color: #0f1624 !important;
+  border-color: #1e2a3a !important;
+}
+
+/* Generic bg-white that has no dark variant */
+html.dark .rounded-3xl.bg-white,
+html.dark .rounded-2xl.bg-white {
+  background-color: #0f1624 !important;
+  border-color: #1e2a3a !important;
+}
+
+/* Text on those cards — slate-950, slate-700, slate-600, slate-500 */
+html.dark .text-slate-950 { color: #f0f2ff !important; }
+html.dark .text-slate-900 { color: #eceeff !important; }
+html.dark .text-slate-800 { color: #d8dbf0 !important; }
+html.dark .text-slate-700 { color: #c4c8e0 !important; }
+html.dark .text-slate-600 { color: #9ba3c2 !important; }
+html.dark .text-slate-500 { color: #6b7494 !important; }
+
+/* Body text color on pages without explicit dark: text class */
+html.dark [class*="text-slate-9"] { color: #eceeff !important; }
+
+/* Indigo badge chips on light pages */
+html.dark .bg-indigo-50.border-indigo-150 {
+  background-color: rgba(79, 70, 229, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+html.dark .text-indigo-700 { color: #a5b4fc !important; }
+html.dark .text-indigo-600:not(.bg-indigo-600 .text-indigo-600) { color: #818cf8 !important; }
+
+/* Emerald / green chips */
+html.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.1) !important; }
+html.dark .text-emerald-600 { color: #34d399 !important; }
+
+/* Blue chips */
+html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+html.dark .text-blue-600 { color: #60a5fa !important; }
+
+/* Gradient dark section — text should remain white (already set inline) */
+html.dark .from-slate-900.via-slate-950 h2,
+html.dark .from-slate-900.via-slate-950 p {
+  color: inherit;
+}
+
+/* Input / form fields */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #0f1624;
+  color: #e8eaf2;
+  border-color: #1e2a3a;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #4a5270;
+}
+
+/* Focus ring */
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #4f46e5;
+  outline-color: #4f46e5;
 }
 
 * {
@@ -57,3 +162,4 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+

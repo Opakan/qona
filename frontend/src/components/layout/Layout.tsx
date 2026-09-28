@@ -135,26 +135,43 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-gray-100 dark:border-slate-800/80 px-4 py-16 lg:px-6 bg-slate-50/50 dark:bg-[#060911] transition-colors duration-200">
+      <footer className="border-t border-slate-200 dark:border-slate-800/80 px-4 py-16 lg:px-6 bg-white dark:bg-[#060911] transition-colors duration-200">
         <div className="mx-auto max-w-5xl">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Brand column + link columns */}
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+            {/* Brand / tagline */}
             <div className="lg:col-span-1">
-              <Link to="/" className="flex items-center gap-1.5 text-sm font-bold text-gray-900 dark:text-white">
-                <img src="/logo.png" alt="Qonace Logo" className="h-4 w-4 object-contain" />
-                <span>Qonace</span>
+              <Link to="/" className="flex items-center gap-2 group">
+                <img src="/logo.png" alt="Qonace Logo" className="h-5 w-5 object-contain" />
+                <span className="font-display text-base font-800 font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
+                  Qonace
+                </span>
               </Link>
-              <p className="mt-2 text-sm leading-relaxed text-gray-400 dark:text-slate-500">AI-powered automation.</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                AI-powered automation workflows built in seconds.
+              </p>
             </div>
+
+            {/* Link sections */}
             {Object.entries(footerSections).map(([category, links]) => (
               <div key={category}>
-                <h4 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{category}</h4>
-                <ul className="mt-3 space-y-2">
+                <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.12em] mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  {category}
+                </h4>
+                <ul className="space-y-2.5">
                   {links.map((link) => {
                     const slug = link.toLowerCase().replace(/\s+/g, '-');
                     return (
                       <li key={link}>
-                        <Link to={`/${slug}`} className="text-sm text-gray-500 dark:text-slate-400 transition-colors hover:text-gray-900 dark:hover:text-white">
-                          {link}
+                        <Link
+                          to={`/${slug}`}
+                          className="group inline-flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 transition-all duration-200 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        >
+                          <span className="relative">
+                            {link}
+                            {/* animated underline on hover */}
+                            <span className="absolute -bottom-px left-0 h-[1.5px] w-0 bg-indigo-500 dark:bg-indigo-400 rounded-full transition-all duration-200 group-hover:w-full" />
+                          </span>
                         </Link>
                       </li>
                     );
@@ -163,11 +180,31 @@ export default function Layout() {
               </div>
             ))}
           </div>
-          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-100 dark:border-slate-800/80 pt-8 sm:flex-row">
-            <p className="text-xs text-gray-400 dark:text-slate-500">&copy; {new Date().getFullYear()} Qonace, Inc.</p>
-            <div className="flex gap-4">
-              <a href="#" className="text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"><Github className="h-4 w-4" /></a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"><Twitter className="h-4 w-4" /></a>
+
+          {/* Bottom bar */}
+          <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/80 pt-8 sm:flex-row">
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+              &copy; {new Date().getFullYear()} Qonace, Inc. All rights reserved.
+            </p>
+            <div className="flex gap-5 items-center">
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all duration-200 hover:scale-110"
+              >
+                <Github className="h-4 w-4" />
+              </a>
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Twitter / X"
+                className="text-slate-400 dark:text-slate-500 hover:text-sky-500 dark:hover:text-sky-400 transition-all duration-200 hover:scale-110"
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </div>
@@ -175,3 +212,4 @@ export default function Layout() {
     </div>
   );
 }
+

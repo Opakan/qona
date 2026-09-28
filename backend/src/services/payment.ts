@@ -34,6 +34,8 @@ export const paymentService = {
         amount: params.amount,
         currency: 'USD',
         redirect_url: `${config.APP_URL}/payment/success?provider=flutterwave&plan=${params.planSlug}`,
+        // Offer card, bank transfer, and USSD — bank transfer/USSD skip OTP entirely
+        payment_options: 'card,banktransfer,ussd,mobilemoney',
         customer: {
           email: params.email,
           name: (params.metadata?.name as string) ?? params.email,

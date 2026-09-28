@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import {
   LogOut, Workflow, BarChart3, Plus, History, Sparkles, LayoutDashboard,
   ArrowRight, CheckCircle2, Zap, ChevronRight, Layers,
-  Cpu, Activity, ShieldCheck, Search, Settings, Compass
+  Cpu, Activity, ShieldCheck, Search, Settings, Compass,
+  AlertTriangle, Loader2,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TemplateGallery } from '../components/TemplateGallery';
@@ -23,7 +24,7 @@ interface WorkflowItem {
 }
 
 export default function Dashboard() {
-  const { user, dbUser, hasActiveSubscription, signOut, toggleDeveloperRole } = useAuth();
+  const { user, dbUser, hasActiveSubscription, isEmailVerified, resendVerificationEmail, signOut, toggleDeveloperRole } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'recent' | 'analytics'>('overview');
@@ -33,6 +34,8 @@ export default function Dashboard() {
   const [workflowSearch, setWorkflowSearch] = useState('');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [verificationSending, setVerificationSending] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   useEffect(() => {
     try {
@@ -75,6 +78,19 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/sign-in');
+  };
+
+  const handleResendVerification = async () => {
+    if (verificationSending || verificationSent) return;
+    setVerificationSending(true);
+    try {
+      await resendVerificationEmail(user?.email || undefined);
+      setVerificationSent(true);
+    } catch (err) {
+      console.warn('[Dashboard] Failed to resend verification email:', err);
+    } finally {
+      setVerificationSending(false);
+    }
   };
 
   const getGreeting = () => {
@@ -163,6 +179,33 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* Email Verification Banner — shown to all unverified email-registered users */}
+      {!isEmailVerified && user && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 px-4 sm:px-8 py-3">
+          <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-center sm:text-left">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-200">
+                <strong>Action required:</strong> Please verify your email address{user?.email ? <> (<span className="font-bold">{user.email}</span>)</> : ''} to unlock full access.
+              </span>
+            </div>
+            <button
+              onClick={handleResendVerification}
+              disabled={verificationSending || verificationSent}
+              className="rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-4 py-1.5 text-xs font-bold text-white transition-colors shadow-xs flex-shrink-0 cursor-pointer flex items-center gap-2"
+            >
+              {verificationSending ? (
+                <><Loader2 className="h-3 w-3 animate-spin" /><span>Sending...</span></>
+              ) : verificationSent ? (
+                <><CheckCircle2 className="h-3 w-3" /><span>Email Sent! Check your inbox</span></>
+              ) : (
+                <span>Resend Verification Email</span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {!hasActiveSubscription && (
         <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-900 text-white px-4 sm:px-8 py-3 shadow-sm">
