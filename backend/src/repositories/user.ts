@@ -96,26 +96,33 @@ export class UserRepository extends BaseRepository {
         }
       : {};
 
-    const total = await this.prisma.user.count({ where });
-
-    const users = await this.prisma.user.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        subscriptions: {
-          where: { status: 'ACTIVE' },
-          include: { plan: true },
-        },
-        _count: {
-          select: {
-            workflows: true,
-            conversations: true,
+    let users: any[] = [];
+    let total = 0;
+    try {
+      total = await this.prisma.user.count({ where });
+      users = await this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          subscriptions: {
+            where: { status: 'ACTIVE' },
+            include: { plan: true },
+          },
+          _count: {
+            select: {
+              workflows: true,
+              conversations: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (e: any) {
+      console.error('[findManyPaginated] Error:', e?.message);
+      // Re-throw so the route handler can report back
+      throw e;
+    }
 
     return {
       users: users.map((user) => {
@@ -143,41 +150,54 @@ export class UserRepository extends BaseRepository {
   }
 
   async getAdminStats() {
-    const totalUsers = await this.prisma.user.count();
+    // Run each query independently so a schema mismatch on one doesn't crash the whole endpoint
+    let totalUsers = 0;
+    let activeUsers = 0;
+    let totalWorkflows = 0;
+    let allUsers: Array<{
+      email: string;
+      country: string | null;
+      createdAt: Date;
+      subscriptions: Array<{ plan: { name: string } | null }>;
+    }> = [];
 
-    const activeUsers = await this.prisma.user.count({
-      where: {
-        workflows: {
-          some: {},
-        },
-      },
-    });
+    try {
+      totalUsers = await this.prisma.user.count();
+    } catch (e) {
+      console.error('[getAdminStats] totalUsers failed:', e);
+    }
 
-    const allUsers = await this.prisma.user.findMany({
-      select: {
-        email: true,
-        country: true,
-        createdAt: true,
-        subscriptions: {
-          where: { status: 'ACTIVE' },
-          select: {
-            plan: {
-              select: {
-                name: true,
-              },
-            },
+    try {
+      activeUsers = await this.prisma.user.count({ where: { workflows: { some: {} } } });
+    } catch (e) {
+      console.error('[getAdminStats] activeUsers failed:', e);
+    }
+
+    try {
+      allUsers = await this.prisma.user.findMany({
+        select: {
+          email: true,
+          country: true,
+          createdAt: true,
+          subscriptions: {
+            where: { status: 'ACTIVE' },
+            select: { plan: { select: { name: true } } },
           },
         },
-      },
-    });
+      });
+    } catch (e) {
+      console.error('[getAdminStats] allUsers failed:', e);
+    }
+
+    try {
+      totalWorkflows = await this.prisma.workflow.count();
+    } catch (e) {
+      console.error('[getAdminStats] totalWorkflows failed:', e);
+    }
 
     const emailDomains: Record<string, number> = {};
     const countryDistribution: Record<string, number> = {};
-    const planDistribution: Record<string, number> = {
-      Free: 0,
-      Starter: 0,
-      Pro: 0,
-    };
+    const planDistribution: Record<string, number> = { Free: 0, Starter: 0, Pro: 0 };
 
     allUsers.forEach((user) => {
       const parts = user.email.split('@');
@@ -188,7 +208,6 @@ export class UserRepository extends BaseRepository {
         else if (domain.includes('yahoo.com')) provider = 'Yahoo';
         else if (domain.includes('outlook.com') || domain.includes('hotmail.com')) provider = 'Outlook';
         else if (domain.includes('icloud.com')) provider = 'iCloud';
-
         emailDomains[provider] = (emailDomains[provider] || 0) + 1;
       }
 
@@ -199,25 +218,17 @@ export class UserRepository extends BaseRepository {
       planDistribution[planName] = (planDistribution[planName] || 0) + 1;
     });
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     const growthData: Record<string, number> = {};
     for (let i = 29; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      growthData[dateStr] = 0;
+      growthData[d.toISOString().split('T')[0]] = 0;
     }
-
     allUsers.forEach((user) => {
       const dateStr = user.createdAt.toISOString().split('T')[0];
-      if (dateStr in growthData) {
-        growthData[dateStr]++;
-      }
+      if (dateStr in growthData) growthData[dateStr]++;
     });
 
-    const totalWorkflows = await this.prisma.workflow.count();
     const avgWorkflows = totalUsers > 0 ? Number((totalWorkflows / totalUsers).toFixed(1)) : 0;
 
     return {

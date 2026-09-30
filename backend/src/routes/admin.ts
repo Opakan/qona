@@ -69,7 +69,8 @@ adminRouter.get('/stats', async (_req, res, next) => {
   try {
     const stats = await db.user.getAdminStats();
     res.json({ stats });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Admin /stats] Error:', error?.message, error?.stack);
     next(error);
   }
 });
@@ -78,12 +79,16 @@ adminRouter.get('/stats', async (_req, res, next) => {
  * GET /api/admin/users
  * Retrieves a list of users with pagination, sorting, and search.
  */
+// Only allow sorting on fields that exist in the User model
+const VALID_SORT_FIELDS = ['createdAt', 'updatedAt', 'name', 'email', 'country', 'role'];
+
 adminRouter.get('/users', async (req, res, next) => {
   try {
     const page = parseInt(req.query.page as string || '1', 10);
     const limit = parseInt(req.query.limit as string || '10', 10);
     const search = req.query.search as string || undefined;
-    const sortBy = req.query.sortBy as string || 'createdAt';
+    const rawSortBy = req.query.sortBy as string || 'createdAt';
+    const sortBy = VALID_SORT_FIELDS.includes(rawSortBy) ? rawSortBy : 'createdAt';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 'asc' : 'desc';
 
     const result = await db.user.findManyPaginated({
@@ -95,7 +100,8 @@ adminRouter.get('/users', async (req, res, next) => {
     });
 
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Admin /users] Error:', error?.message, error?.stack);
     next(error);
   }
 });
