@@ -206,3 +206,55 @@ workflowsRouter.get('/:id/validate', requireAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * GET /api/workflows/:id/versions
+ * Lists all saved versions for a workflow (newest first).
+ */
+workflowsRouter.get('/:id/versions', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const workflow = await workflowService.getById(id);
+    if (!workflow) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+    const versions = await workflowService.getVersions(id);
+    res.json({ versions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/workflows/:id/versions/:version/restore
+ * Restores the workflow to a specific version snapshot.
+ * Creates a new version entry recording the restore action.
+ */
+workflowsRouter.post('/:id/versions/:version/restore', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const version = parseInt(req.params.version as string, 10);
+
+    if (isNaN(version) || version < 1) {
+      res.status(400).json({ error: 'Invalid version number' });
+      return;
+    }
+
+    const workflow = await workflowService.getById(id);
+    if (!workflow) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+
+    const restored = await workflowService.restoreVersion(id, version);
+    res.json({ workflow: restored, message: `Successfully restored to version ${version}` });
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) {
+      res.status(404).json({ error: err.message });
+    } else {
+      next(err);
+    }
+  }
+});
+

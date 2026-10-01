@@ -12,6 +12,7 @@ import { OnboardingModal } from '../components/OnboardingModal';
 import { AccountSettingsModal } from '../components/AccountSettingsModal';
 import ThemeToggle from '../components/shared/ThemeToggle';
 import apiClient from '../api/client';
+import { WorkflowVersionHistory } from '../components/WorkflowVersionHistory';
 
 interface WorkflowItem {
   id: string;
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [verificationSending, setVerificationSending] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [versionHistoryWorkflow, setVersionHistoryWorkflow] = useState<WorkflowItem | null>(null);
 
   useEffect(() => {
     try {
@@ -475,10 +477,21 @@ export default function Dashboard() {
                       </div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
-                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                          <Layers className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                          {wf.nodesCount ?? 3} Nodes
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                            <Layers className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                            {wf.nodesCount ?? 3} Nodes
+                          </span>
+                          {/* Version History button */}
+                          <button
+                            onClick={() => setVersionHistoryWorkflow(wf)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+                            title="View version history &amp; rollback"
+                          >
+                            <History className="h-3.5 w-3.5" />
+                            <span>History</span>
+                          </button>
+                        </div>
 
                         <button
                           onClick={() => navigate('/chat', { state: { workflowId: wf.id } })}
@@ -492,6 +505,10 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+
             </div>
           )}
 
@@ -603,6 +620,23 @@ export default function Dashboard() {
       {/* Onboarding & Account Modals */}
       <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <AccountSettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      {/* Workflow Version History Modal */}
+      {versionHistoryWorkflow && (
+        <WorkflowVersionHistory
+          workflowId={versionHistoryWorkflow.id}
+          workflowName={versionHistoryWorkflow.name}
+          onClose={() => setVersionHistoryWorkflow(null)}
+          onRestored={async () => {
+            // Refresh the workflows list after a successful restore
+            try {
+              const res = await apiClient.get('/workflows');
+              if (res.data?.workflows) setWorkflows(res.data.workflows);
+            } catch { /* ignore */ }
+          }}
+        />
+      )}
+
     </div>
   );
 }

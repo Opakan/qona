@@ -56,6 +56,10 @@ export const workflowService = {
     return db.workflow.listVersions(workflowId);
   },
 
+  async restoreVersion(workflowId: string, version: number) {
+    return db.workflow.restoreVersion(workflowId, version);
+  },
+
   async exportWorkflow(
     workflow: Workflow,
     platform: string,

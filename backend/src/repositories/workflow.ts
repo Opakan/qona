@@ -90,4 +90,31 @@ export class WorkflowRepository extends BaseRepository {
       orderBy: { version: 'desc' },
     });
   }
+
+  async getVersion(workflowId: string, version: number) {
+    return this.prisma.workflowVersion.findUnique({
+      where: { workflowId_version: { workflowId, version } },
+    });
+  }
+
+  async restoreVersion(workflowId: string, version: number) {
+    const snapshot = await this.getVersion(workflowId, version);
+    if (!snapshot) throw new Error(`Version ${version} not found for workflow ${workflowId}`);
+
+    // Update the live workflow definition
+    const restored = await this.prisma.workflow.update({
+      where: { id: workflowId },
+      data: { definition: snapshot.definition as Prisma.InputJsonValue },
+    });
+
+
+    // Create a new version entry recording the restore
+    await this.createVersion(
+      workflowId,
+      snapshot.definition as Record<string, unknown>,
+      `Restored from v${version}`,
+    );
+
+    return restored;
+  }
 }
