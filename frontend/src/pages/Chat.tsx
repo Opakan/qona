@@ -5,7 +5,7 @@ import {
   LogOut, History, Loader2, LayoutDashboard, Download, Copy, Check,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
   Lightbulb, Crown, Paperclip, ChevronDown, Bot, User as UserIcon,
-  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical,
+  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical, CloudUpload,
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -14,6 +14,7 @@ import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionP
 import { UpgradeProModal } from '../components/chat/UpgradeProModal';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ExecutionSandbox } from '../components/ExecutionSandbox';
+import { DeployN8nModal } from '../components/DeployN8nModal';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/shared/ThemeToggle';
@@ -97,6 +98,7 @@ export default function ChatPage() {
   const [showSimulationModal, setShowSimulationModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showSandbox, setShowSandbox] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -556,6 +558,17 @@ export default function ChatPage() {
               </button>
             )}
 
+            {currentWorkflow && (
+              <button
+                onClick={() => setShowDeployModal(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/60 px-3 py-1.5 text-xs font-bold text-orange-700 dark:text-orange-300 shadow-2xs hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-all cursor-pointer"
+                title="Deploy 1-click to n8n Cloud or Self-Hosted instance"
+              >
+                <CloudUpload className="h-3.5 w-3.5" />
+                <span>Deploy n8n</span>
+              </button>
+            )}
+
             {sessionId && (
               <>
                 <button
@@ -964,6 +977,14 @@ export default function ChatPage() {
         graph={currentWorkflow}
         isOpen={showSandbox}
         onClose={() => setShowSandbox(false)}
+      />
+
+      {/* Deploy to n8n Cloud Modal */}
+      <DeployN8nModal
+        graph={currentWorkflow}
+        workflowName={currentWorkflow?.metadata?.name || 'Studio Workflow'}
+        isOpen={showDeployModal}
+        onClose={() => setShowDeployModal(false)}
       />
     </div>
   );

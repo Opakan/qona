@@ -4,7 +4,7 @@ import {
   LogOut, Workflow, BarChart3, Plus, History, Sparkles, LayoutDashboard,
   ArrowRight, CheckCircle2, Zap, ChevronRight, Layers,
   Cpu, Activity, ShieldCheck, Search, Settings, Compass,
-  AlertTriangle, Loader2, Clock, FlaskConical,
+  AlertTriangle, Loader2, Clock, FlaskConical, CloudUpload,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TemplateGallery } from '../components/TemplateGallery';
@@ -15,6 +15,7 @@ import apiClient from '../api/client';
 import { WorkflowVersionHistory } from '../components/WorkflowVersionHistory';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ExecutionSandbox } from '../components/ExecutionSandbox';
+import { DeployN8nModal } from '../components/DeployN8nModal';
 
 interface WorkflowItem {
   id: string;
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [schedulesList, setSchedulesList] = useState<any[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [sandboxWorkflow, setSandboxWorkflow] = useState<WorkflowItem | null>(null);
+  const [deployWorkflow, setDeployWorkflow] = useState<WorkflowItem | null>(null);
 
   useEffect(() => {
     try {
@@ -534,6 +536,15 @@ export default function Dashboard() {
                             <FlaskConical className="h-3.5 w-3.5 text-violet-500" />
                             <span>Sandbox</span>
                           </button>
+                          {/* Deploy to n8n button */}
+                          <button
+                            onClick={() => setDeployWorkflow(wf)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors cursor-pointer"
+                            title="Deploy 1-click to n8n Cloud"
+                          >
+                            <CloudUpload className="h-3.5 w-3.5 text-orange-500" />
+                            <span>Deploy</span>
+                          </button>
                         </div>
 
                         <button
@@ -834,6 +845,14 @@ export default function Dashboard() {
         workflowId={sandboxWorkflow?.id}
         isOpen={Boolean(sandboxWorkflow)}
         onClose={() => setSandboxWorkflow(null)}
+      />
+
+      {/* Deploy to n8n Cloud Modal */}
+      <DeployN8nModal
+        workflowId={deployWorkflow?.id}
+        workflowName={deployWorkflow?.name}
+        isOpen={Boolean(deployWorkflow)}
+        onClose={() => setDeployWorkflow(null)}
       />
     </div>
   );

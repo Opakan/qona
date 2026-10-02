@@ -19,6 +19,7 @@ import { simulationRouter } from './routes/simulation.routes.js';
 import { searchRouter } from './routes/search.routes.js';
 import { scheduleRouter } from './routes/schedule.routes.js';
 import { sandboxRouter } from './routes/sandbox.routes.js';
+import { deployRouter } from './routes/deploy.routes.js';
 
 export function createApp() {
   const app = express();
@@ -59,6 +60,7 @@ export function createApp() {
   app.use('/api', searchRouter);
   app.use('/api', scheduleRouter);
   app.use('/api', sandboxRouter);
+  app.use('/api', deployRouter);
   app.use('/', simulationRouter);
   app.use('/', sessionsRouter);
   app.use('/', debugRouter);
@@ -66,6 +68,7 @@ export function createApp() {
   app.use('/', searchRouter);
   app.use('/', scheduleRouter);
   app.use('/', sandboxRouter);
+  app.use('/', deployRouter);
   app.use(errorHandler);
   return app;
 }
