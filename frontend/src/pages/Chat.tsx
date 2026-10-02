@@ -5,7 +5,7 @@ import {
   LogOut, History, Loader2, LayoutDashboard, Download, Copy, Check,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
   Lightbulb, Crown, Paperclip, ChevronDown, Bot, User as UserIcon,
-  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical, CloudUpload,
+  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical, CloudUpload, Wand2,
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -15,6 +15,7 @@ import { UpgradeProModal } from '../components/chat/UpgradeProModal';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ExecutionSandbox } from '../components/ExecutionSandbox';
 import { DeployN8nModal } from '../components/DeployN8nModal';
+import { WorkflowOptimizerModal } from '../components/WorkflowOptimizerModal';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/shared/ThemeToggle';
@@ -99,6 +100,7 @@ export default function ChatPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showSandbox, setShowSandbox] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showOptimizeModal, setShowOptimizeModal] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -569,6 +571,17 @@ export default function ChatPage() {
               </button>
             )}
 
+            {currentWorkflow && (
+              <button
+                onClick={() => setShowOptimizeModal(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 px-3 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 shadow-2xs hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all cursor-pointer"
+                title="Run AI Self-Healing &amp; Graph Optimization"
+              >
+                <Wand2 className="h-3.5 w-3.5" />
+                <span>Optimize</span>
+              </button>
+            )}
+
             {sessionId && (
               <>
                 <button
@@ -985,6 +998,16 @@ export default function ChatPage() {
         workflowName={currentWorkflow?.metadata?.name || 'Studio Workflow'}
         isOpen={showDeployModal}
         onClose={() => setShowDeployModal(false)}
+      />
+
+      {/* AI Workflow Optimizer & Self-Healing Modal */}
+      <WorkflowOptimizerModal
+        graph={currentWorkflow}
+        isOpen={showOptimizeModal}
+        onClose={() => setShowOptimizeModal(false)}
+        onApplyOptimizations={(optimizedGraph) => {
+          setCurrentWorkflow(optimizedGraph);
+        }}
       />
     </div>
   );
