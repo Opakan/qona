@@ -16,6 +16,7 @@ import { WorkflowVersionHistory } from '../components/WorkflowVersionHistory';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ExecutionSandbox } from '../components/ExecutionSandbox';
 import { DeployN8nModal } from '../components/DeployN8nModal';
+import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
 
 interface WorkflowItem {
   id: string;
@@ -704,105 +705,7 @@ export default function Dashboard() {
 
           {/* TAB 4: ANALYTICS & PERFORMANCE */}
           {activeTab === 'analytics' && (
-            <div className="space-y-8">
-              <div className="border-b border-slate-200/80 dark:border-slate-800/80 pb-5">
-                <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  Analytics & Execution Performance
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                  Real-time compilation metrics, execution simulator latency, and n8n export readiness scores.
-                </p>
-              </div>
-
-              {/* Key Metric Cards */}
-              <div className="grid gap-5 sm:grid-cols-4">
-                {[
-                  { label: 'Workflows Created', value: String(workflows.length), sub: 'Active in project', icon: Workflow, color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60' },
-                  { label: 'Compilation Success', value: '99.4%', sub: 'Zero schema errors', icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60' },
-                  { label: 'Sim Simulator Latency', value: '< 1ms', sub: 'Instant preview engine', icon: Zap, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60' },
-                  { label: 'n8n Export Readiness', value: '100%', sub: 'Valid JSON schema', icon: ShieldCheck, color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60' },
-                ].map((card, i) => {
-                  const Icon = card.icon;
-                  return (
-                    <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{card.label}</span>
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.color}`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                      </div>
-                      <div className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">{card.value}</div>
-                      <div className="mt-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">{card.sub}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Detailed Performance Visual Breakdown */}
-              <div className="grid gap-6 sm:grid-cols-2">
-                {/* Node Category Distribution */}
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Cpu className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                    Engine Compiler Health & Node Distribution
-                  </h4>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Distribution of compiled node definitions across active pipelines.</p>
-
-                  <div className="mt-5 space-y-3.5">
-                    {[
-                      { label: 'Triggers (Webhook, Cron, Event)', percentage: 35, count: '634 catalog triggers' },
-                      { label: 'AI & LLM Services (OpenAI, Anthropic)', percentage: 40, count: '1,200+ integrations' },
-                      { label: 'Actions (Telegram, Slack, Email, DB)', percentage: 25, count: '1,069 actions' },
-                    ].map((item, idx) => (
-                      <div key={idx} className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-700 dark:text-slate-300">{item.label}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{item.count}</span>
-                        </div>
-                        <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"
-                            style={{ width: `${item.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* System Status & Reliability */}
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    System Status & Uptime
-                  </h4>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Live operational status of Qonace compilation services.</p>
-
-                  <div className="mt-5 space-y-3">
-                    {[
-                      { service: 'Qonace RAG Knowledge Engine', status: 'Operational', ms: '12ms' },
-                      { service: 'Instant Execution Preview Simulator', status: 'Operational', ms: '< 1ms' },
-                      { service: 'n8n JSON Schema Validator', status: 'Operational', ms: '4ms' },
-                      { service: 'Database Connection Pool', status: 'Healthy', ms: '18ms' },
-                    ].map((s, idx) => (
-                      <div key={idx} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 last:border-0">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{s.service}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">{s.ms}</span>
-                          <span className="rounded-md bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                            {s.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AnalyticsDashboard />
           )}
         </div>
       </main>
