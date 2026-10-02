@@ -37,8 +37,6 @@ simulationRouter.post('/sessions/:id/simulate', async (req: Request, res: Respon
     const trace = executionSimulator.simulateGraph(draftGraph, customTriggerPayload);
 
     res.json({ trace, sessionState: session.state });
-
-    res.json({ trace, sessionState: session.state });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to simulate session draft' });
   }

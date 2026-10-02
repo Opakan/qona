@@ -5,13 +5,15 @@ import {
   LogOut, History, Loader2, LayoutDashboard, Download, Copy, Check,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
   Lightbulb, Crown, Paperclip, ChevronDown, Bot, User as UserIcon,
-  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2
+  ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical,
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
 import { SetupGuideCard } from '../components/SetupGuideCard';
 import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionPreviewModal';
 import { UpgradeProModal } from '../components/chat/UpgradeProModal';
+import { ScheduleModal } from '../components/ScheduleModal';
+import { ExecutionSandbox } from '../components/ExecutionSandbox';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/shared/ThemeToggle';
@@ -93,6 +95,8 @@ export default function ChatPage() {
   const [simulating, setSimulating] = useState(false);
   const [simulationTrace, setSimulationTrace] = useState<any | null>(null);
   const [showSimulationModal, setShowSimulationModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showSandbox, setShowSandbox] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -530,6 +534,28 @@ export default function ChatPage() {
               <span>Simulate Run</span>
             </button>
 
+            {currentWorkflow && (
+              <button
+                onClick={() => setShowSandbox(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/60 px-3 py-1.5 text-xs font-bold text-violet-700 dark:text-violet-300 shadow-2xs hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-all cursor-pointer"
+                title="Open Live Execution Sandbox"
+              >
+                <FlaskConical className="h-3.5 w-3.5" />
+                <span>Sandbox</span>
+              </button>
+            )}
+
+            {currentWorkflow && (
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer"
+                title="Schedule recurring automated execution"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span>Schedule</span>
+              </button>
+            )}
+
             {sessionId && (
               <>
                 <button
@@ -921,6 +947,23 @@ export default function ChatPage() {
       <UpgradeProModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+
+      {/* Schedule Modal */}
+      {showScheduleModal && (
+        <ScheduleModal
+          workflowId={currentWorkflow?.id || sessionId || 'current-workflow'}
+          workflowName={currentWorkflow?.metadata?.name || 'Studio Workflow'}
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+        />
+      )}
+
+      {/* Live Execution Sandbox */}
+      <ExecutionSandbox
+        graph={currentWorkflow}
+        isOpen={showSandbox}
+        onClose={() => setShowSandbox(false)}
       />
     </div>
   );

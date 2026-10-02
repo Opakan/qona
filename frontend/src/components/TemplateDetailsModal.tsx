@@ -93,39 +93,40 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden z-10 flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-10 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-start justify-between p-6 pb-4 border-b border-slate-150 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/80">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 border border-indigo-150">
-                <Zap className="h-3.5 w-3.5 text-indigo-600" />
+              <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+                <Zap className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                 {template.category || 'AI Automation'}
               </span>
               <span className={`rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
                 template.difficulty === 'Advanced'
-                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                  ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60'
                   : template.difficulty === 'Intermediate'
-                  ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60'
               }`}>
                 {template.difficulty || 'Intermediate'}
               </span>
               {nodeCount > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                  <Layers className="h-3 w-3 text-slate-500" />
+                <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  <Layers className="h-3 w-3 text-slate-500 dark:text-slate-400" />
                   {nodeCount} Nodes
                 </span>
               )}
             </div>
-            <h3 className="text-xl sm:text-2xl font-black font-display text-slate-900 tracking-tight leading-snug">
+
+            <h3 className="text-xl sm:text-2xl font-black font-display text-slate-900 dark:text-white tracking-tight leading-snug">
               {template.name}
             </h3>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-200/80 hover:text-slate-700 transition-colors cursor-pointer"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -133,13 +134,13 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-slate-100 px-6 bg-white gap-6 text-xs font-bold">
+        <div className="flex border-b border-slate-150 dark:border-slate-800 px-6 bg-white dark:bg-slate-900 gap-6 text-xs font-bold">
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'overview'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Workflow className="h-3.5 w-3.5" />
@@ -149,8 +150,8 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
             onClick={() => setActiveTab('json')}
             className={`py-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'json'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Code2 className="h-3.5 w-3.5" />
@@ -164,10 +165,10 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
             <>
               {/* Description */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
                   Summary & Purpose
                 </h4>
-                <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-2xl border border-slate-150">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-150 dark:border-slate-800">
                   {template.description || 'Pre-configured workflow template ready for production deployment.'}
                 </p>
               </div>
@@ -175,19 +176,19 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
               {/* Step-by-Step Plain English Breakdown */}
               {Array.isArray(template.plainEnglishSummary) && template.plainEnglishSummary.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">
                     Execution Steps
                   </h4>
                   <div className="space-y-2.5">
                     {template.plainEnglishSummary.map((step, idx) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-3 p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs"
+                        className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 shadow-2xs"
                       >
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-extrabold mt-0.5">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 text-[11px] font-extrabold mt-0.5">
                           {idx + 1}
                         </div>
-                        <span className="text-xs font-bold text-slate-800 leading-relaxed">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed">
                           {step}
                         </span>
                       </div>
@@ -199,14 +200,14 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
               {/* Integrated Services & Tags */}
               {tags.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
                     Integrated Services & Apps
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-lg bg-slate-100 border border-slate-200/80 px-2.5 py-1 text-xs font-bold text-slate-800"
+                        className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-200"
                       >
                         {tag}
                       </span>
@@ -218,18 +219,18 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
           ) : (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   n8n-Compatible Workflow Schema
                 </span>
                 <button
                   onClick={handleCopyJson}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer"
                 >
-                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                   <span>{copied ? 'Copied' : 'Copy Code'}</span>
                 </button>
               </div>
-              <pre className="p-4 rounded-2xl bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto max-h-[300px] leading-relaxed border border-slate-800">
+              <pre className="p-4 rounded-2xl bg-slate-950 text-slate-200 font-mono text-[11px] overflow-x-auto max-h-[300px] leading-relaxed border border-slate-800">
                 {JSON.stringify(
                   {
                     name: template.name,
@@ -246,21 +247,21 @@ export const TemplateDetailsModal: React.FC<TemplateDetailsModalProps> = ({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-5 border-t border-slate-100 bg-slate-50/70">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-5 border-t border-slate-150 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/90">
           <button
             onClick={handleDownload}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition-all cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer"
           >
-            <Download className="h-4 w-4 text-slate-700" />
+            <Download className="h-4 w-4 text-slate-700 dark:text-slate-300" />
             <span>Download Workflow JSON</span>
           </button>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleCopyJson}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all cursor-pointer"
             >
-              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4 text-slate-500" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4 text-slate-500 dark:text-slate-400" />}
               <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
 
