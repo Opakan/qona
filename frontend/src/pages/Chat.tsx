@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
 import {
   Plus, MessageSquare, Trash2, ArrowUp, Sparkles, Workflow, Play,
   LogOut, History, Loader2, LayoutDashboard, Download, Copy, Check,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
   Lightbulb, Crown, Paperclip, ChevronDown, Bot, User as UserIcon,
   ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical, CloudUpload, Wand2,
+  Share2, Link2,
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
@@ -40,9 +41,10 @@ export default function ChatPage() {
   const { user, dbUser, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { id: routeChatId } = useParams<{ id?: string }>();
 
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(routeChatId || null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,6 +103,7 @@ export default function ChatPage() {
   const [showSandbox, setShowSandbox] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showOptimizeModal, setShowOptimizeModal] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -220,6 +223,14 @@ export default function ChatPage() {
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
   useEffect(() => { if (activeId && !isSendingRef.current) fetchMessages(activeId); }, [activeId, fetchMessages]);
 
+  // Sync route param /chat/:id to active conversation state
+  useEffect(() => {
+    if (routeChatId && routeChatId !== activeId) {
+      setActiveId(routeChatId);
+      fetchMessages(routeChatId);
+    }
+  }, [routeChatId, fetchMessages]);
+
   useEffect(() => {
     const selectedTemplate = location.state?.selectedTemplate;
     const initialPrompt = location.state?.initialPrompt;
@@ -260,6 +271,7 @@ export default function ChatPage() {
         const { data } = await apiClient.post<{ conversation: { id: string } }>('/conversations', { title: text.slice(0, 80) || 'New conversation' });
         convId = data.conversation.id;
         setActiveId(convId);
+        navigate(`/chat/${convId}`, { replace: true });
       }
 
       const { data } = await apiClient.post(`/conversations/${convId}/messages`, { content: text });
@@ -321,14 +333,27 @@ export default function ChatPage() {
 
   const handleSubmit = () => { const t = input.trim(); if (t && !loading) sendMessage(t); };
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
-  const newConversation = () => { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); };
+  const newConversation = () => { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); navigate('/chat'); };
   const deleteConversation = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
       await apiClient.delete(`/conversations/${id}`);
-      if (activeId === id) { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); }
+      if (activeId === id) { setActiveId(null); setMessages([]); setCurrentWorkflow(null); setSessionId(null); navigate('/chat'); }
       fetchConversations();
     } catch { /* ignore */ }
+  };
+
+  const handleShareChatLink = async () => {
+    const currentChatId = activeId || sessionId;
+    if (!currentChatId) return;
+    const shareUrl = `${window.location.origin}/chat/${currentChatId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      alert(`Chat URL: ${shareUrl}`);
+    }
   };
 
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'E';
@@ -386,7 +411,7 @@ export default function ChatPage() {
                 {conversations.map((conv) => (
                   <button
                     key={conv.id}
-                    onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); }}
+                    onClick={() => { setActiveId(conv.id); fetchMessages(conv.id); navigate(`/chat/${conv.id}`); }}
                     className={`group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium transition-all cursor-pointer ${
                       activeId === conv.id
                         ? 'bg-slate-200/80 dark:bg-slate-800 text-slate-900 dark:text-white font-bold shadow-2xs'
@@ -517,6 +542,26 @@ export default function ChatPage() {
 
           {/* Right Header Toolbar Actions */}
           <div className="flex items-center gap-2">
+            {/* Share Unique Chat URL Button */}
+            {(activeId || sessionId) && (
+              <button
+                onClick={handleShareChatLink}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs"
+                title="Copy unique chat link to clipboard"
+              >
+                {shareCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-emerald-600 dark:text-emerald-400">Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="h-3.5 w-3.5 text-indigo-500" />
+                    <span>Share Link</span>
+                  </>
+                )}
+              </button>
+            )}
             {/* Theme Toggle in Chat Top Bar */}
             <ThemeToggle />
 

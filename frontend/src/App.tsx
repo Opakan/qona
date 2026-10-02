@@ -66,6 +66,8 @@ export default function App() {
           {/* Auth pages (no layout) */}
           <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
           <Route path="/chat" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
+          <Route path="/chat/:id" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
+          <Route path="/c/:id" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
           <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
           <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
           <Route path="/auth/callback" element={<AuthCallback />} />
