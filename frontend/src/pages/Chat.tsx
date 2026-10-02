@@ -61,8 +61,7 @@ export default function ChatPage() {
   const [isResizingVisualizer, setIsResizingVisualizer] = useState(false);
   const [isVisualizerMaximized, setIsVisualizerMaximized] = useState(false);
 
-  const [selectedModel, setSelectedModel] = useState('Qonace 4o-mini (Workflow Compiler)');
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [selectedModel] = useState('Qonace Pro (n8n Expert Engine)');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Drag-to-resize listener
@@ -274,7 +273,7 @@ export default function ChatPage() {
         navigate(`/chat/${convId}`, { replace: true });
       }
 
-      const { data } = await apiClient.post(`/conversations/${convId}/messages`, { content: text });
+      const { data } = await apiClient.post(`/conversations/${convId}/messages`, { content: text, model: selectedModel });
 
       const meta: Record<string, unknown> = {};
       if (data.sessionId) { meta.sessionId = data.sessionId; setSessionId(data.sessionId as string); }
@@ -504,39 +503,13 @@ export default function ChatPage() {
               </button>
             )}
 
-            {/* ChatGPT-style Model Selector Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowModelDropdown(!showModelDropdown)}
-                className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-850 transition-all cursor-pointer"
-              >
-                <Bot className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                <span>{selectedModel}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-              </button>
-
-              {showModelDropdown && (
-                <div className="absolute left-0 mt-1.5 w-64 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-xl z-50 animate-in fade-in duration-150">
-                  {[
-                    { title: 'Qonace 4o-mini (Workflow Compiler)', desc: 'Fast, production-ready n8n node compilation', badge: 'Default' },
-                    { title: 'Qonace Pro (n8n Expert Engine)', desc: 'Advanced AI agent & custom HTTP workflow graph', badge: 'Pro' },
-                  ].map((m) => (
-                    <button
-                      key={m.title}
-                      onClick={() => { setSelectedModel(m.title); setShowModelDropdown(false); }}
-                      className={`flex w-full flex-col text-left p-2.5 rounded-xl transition-all cursor-pointer ${
-                        selectedModel === m.title ? 'bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">{m.title}</span>
-                        <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300">{m.badge}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{m.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* Qonace Pro Engine Indicator */}
+            <div className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-indigo-500/5 border border-purple-200/60 dark:border-purple-900/60">
+              <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <span>Qonace Pro (n8n Expert Engine)</span>
+              <span className="ml-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xs">
+                PRO ENGINE
+              </span>
             </div>
           </div>
 
