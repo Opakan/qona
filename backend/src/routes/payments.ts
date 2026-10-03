@@ -133,7 +133,7 @@ paymentsRouter.get('/verify', requireAuth, async (req, res, next) => {
 
     // If transaction_id is present, perform instant live verification with Flutterwave
     if (transactionId) {
-      const subscription = await paymentService.verifyAndActivatePayment(transactionId, txRef);
+      const subscription = await paymentService.verifyAndActivatePayment(transactionId, txRef, req.user);
       return res.json({ subscription });
     }
 

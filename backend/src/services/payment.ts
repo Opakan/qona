@@ -22,6 +22,28 @@ export interface PaymentResult {
   reference: string;
 }
 
+function extractFlutterwaveMeta(rawMeta: any): { userId?: string; planSlug: string; interval: 'month' | 'year' } {
+  let userId: string | undefined;
+  let planSlug = 'starter';
+  let interval: 'month' | 'year' = 'month';
+
+  if (Array.isArray(rawMeta)) {
+    for (const item of rawMeta) {
+      const name = String(item.metaname || item.name || item.key || '').toLowerCase();
+      const val = String(item.metavalue || item.value || '');
+      if (name === 'userid') userId = val;
+      if (name === 'plan' || name === 'planslug') planSlug = val;
+      if (name === 'interval' || name === 'billinginterval') interval = val as any;
+    }
+  } else if (rawMeta && typeof rawMeta === 'object') {
+    userId = rawMeta.userId || rawMeta.userid || rawMeta.user_id;
+    planSlug = rawMeta.plan || rawMeta.planSlug || 'starter';
+    interval = (rawMeta.interval || rawMeta.billingInterval || 'month') as any;
+  }
+
+  return { userId, planSlug, interval };
+}
+
 export const paymentService = {
   async initFlutterwave(params: InitPaymentParams): Promise<PaymentResult> {
     const ref = `QONA-FLW-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -165,32 +187,66 @@ export const paymentService = {
     });
   },
 
-  async verifyAndActivatePayment(transactionId: string | number, fallbackRef?: string) {
+  async verifyAndActivatePayment(transactionId: string | number, fallbackRef?: string, reqUser?: { authId: string; email: string; name?: string }) {
     const verifyData = await this.verifyFlutterwave(transactionId);
     if (verifyData.status !== 'success' || verifyData.data?.status !== 'successful') {
       throw new Error(`Flutterwave payment not successful: ${verifyData.message || 'Unknown error'}`);
     }
 
     const tx = verifyData.data;
-    const ref = tx.tx_ref || fallbackRef;
-    const meta = tx.meta ?? {};
-    let userId = meta.userId as string;
-    const planSlug = (meta.plan as string) || 'pro';
-    const interval = (meta.interval as 'month' | 'year') || 'month';
+    const ref = tx.tx_ref || fallbackRef || `QONA-FLW-${Date.now()}`;
+    const parsedMeta = extractFlutterwaveMeta(tx.meta);
+    const planSlug = parsedMeta.planSlug || 'starter';
+    const interval = parsedMeta.interval || 'month';
 
     const prisma = getPrisma();
-    if (!userId && tx.customer?.email) {
-      const user = await prisma.user.findFirst({ where: { email: tx.customer.email } });
-      if (user) userId = user.id;
+    let targetUserId = parsedMeta.userId;
+
+    // 1. Try resolving DB user from parsedMeta.userId
+    if (targetUserId) {
+      const existing = await prisma.user.findFirst({
+        where: { OR: [{ id: targetUserId }, { authId: targetUserId }] },
+      });
+      if (existing) targetUserId = existing.id;
     }
 
-    if (!userId) {
-      throw new Error('Transaction is missing associated user information');
+    // 2. Try resolving DB user from authenticated session user (reqUser)
+    if (!targetUserId && reqUser) {
+      let dbUser = await prisma.user.findFirst({
+        where: { OR: [{ authId: reqUser.authId }, { email: reqUser.email }] },
+      });
+      if (!dbUser) {
+        dbUser = await prisma.user.create({
+          data: { authId: reqUser.authId, email: reqUser.email, name: reqUser.name || 'User' },
+        });
+      }
+      targetUserId = dbUser.id;
     }
 
-    const subscription = await this.createSubscription(userId, planSlug, 'flutterwave', ref, interval);
+    // 3. Try resolving DB user from Flutterwave customer email
+    if (!targetUserId && tx.customer?.email) {
+      let dbUser = await prisma.user.findFirst({
+        where: { email: tx.customer.email },
+      });
+      if (!dbUser) {
+        dbUser = await prisma.user.create({
+          data: {
+            authId: `fw-user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            email: tx.customer.email,
+            name: tx.customer.name || tx.customer.email.split('@')[0],
+          },
+        });
+      }
+      targetUserId = dbUser.id;
+    }
+
+    if (!targetUserId) {
+      throw new Error('Transaction verified, but could not associate with a valid user record.');
+    }
+
+    const subscription = await this.createSubscription(targetUserId, planSlug, 'flutterwave', ref, interval);
     await this.createInvoice({
-      userId,
+      userId: targetUserId,
       subscriptionId: subscription.id,
       provider: 'flutterwave',
       providerRef: ref,
@@ -207,22 +263,39 @@ export const paymentService = {
     if (payload.event === 'charge.completed' && payload.data?.status === 'successful') {
       const tx = payload.data;
       const ref = tx.tx_ref;
-      const meta = tx.meta ?? {};
-      let userId = meta.userId as string;
-      const planSlug = (meta.plan as string) || 'pro';
-      const interval = (meta.interval as 'month' | 'year') || 'month';
+      const parsedMeta = extractFlutterwaveMeta(tx.meta);
+      const planSlug = parsedMeta.planSlug || 'starter';
+      const interval = parsedMeta.interval || 'month';
 
       const prisma = getPrisma();
-      if (!userId && tx.customer?.email) {
-        const user = await prisma.user.findFirst({ where: { email: tx.customer.email } });
-        if (user) userId = user.id;
+      let targetUserId = parsedMeta.userId;
+
+      if (targetUserId) {
+        const existing = await prisma.user.findFirst({
+          where: { OR: [{ id: targetUserId }, { authId: targetUserId }] },
+        });
+        if (existing) targetUserId = existing.id;
       }
 
-      if (!userId) throw new Error('Missing user metadata in webhook payload');
+      if (!targetUserId && tx.customer?.email) {
+        let dbUser = await prisma.user.findFirst({ where: { email: tx.customer.email } });
+        if (!dbUser) {
+          dbUser = await prisma.user.create({
+            data: {
+              authId: `fw-user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              email: tx.customer.email,
+              name: tx.customer.name || tx.customer.email.split('@')[0],
+            },
+          });
+        }
+        targetUserId = dbUser.id;
+      }
 
-      const subscription = await this.createSubscription(userId, planSlug, 'flutterwave', ref, interval);
+      if (!targetUserId) throw new Error('Missing user metadata in webhook payload');
+
+      const subscription = await this.createSubscription(targetUserId, planSlug, 'flutterwave', ref, interval);
       await this.createInvoice({
-        userId,
+        userId: targetUserId,
         subscriptionId: subscription.id,
         provider: 'flutterwave',
         providerRef: ref,
