@@ -35,9 +35,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   }
 
   const adminEmails = [
-    'opadboss@gmail.com',
     'opadgiant@gmail.com',
-    'opakan@gmail.com',
     'admin@qonace.com',
   ];
   const userEmail = (user?.email || dbUser?.email || '').toLowerCase();

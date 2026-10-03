@@ -13,7 +13,7 @@ export async function requireAdmin(req: Request, _res: Response, next: NextFunct
     if (!req.user) {
       throw new AppError('Authentication required', 401);
     }
-    const adminEmails = ['opadboss@gmail.com', 'opadgiant@gmail.com', 'opakan@gmail.com', 'admin@qonace.com'];
+    const adminEmails = ['opadgiant@gmail.com', 'admin@qonace.com'];
     const isOwner = Boolean(req.user.email && adminEmails.some((e) => e.toLowerCase() === req.user!.email.toLowerCase()));
     const devOverride = req.headers['x-developer-role'] === 'ADMIN';
 

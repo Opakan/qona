@@ -300,7 +300,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hasActiveSubscription =
-    (user?.email && ['opadgiant@gmail.com', 'opadboss@gmail.com'].includes(user.email.toLowerCase())) ||
+    (user?.email && ['opadgiant@gmail.com'].includes(user.email.toLowerCase())) ||
     dbUser?.role === 'ADMIN' ||
     Boolean(subscription && subscription.status === 'ACTIVE');
 
@@ -312,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user.app_metadata?.provider === 'google' ||
     user.app_metadata?.provider === 'github' ||
     (user.app_metadata?.providers as string[] | undefined)?.some((p) => ['google', 'github'].includes(p)) ||
-    ['opadgiant@gmail.com', 'opadboss@gmail.com', 'opakan@gmail.com'].includes((user.email ?? '').toLowerCase());
+    ['opadgiant@gmail.com'].includes((user.email ?? '').toLowerCase());
 
   return (
     <AuthContext.Provider
