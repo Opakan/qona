@@ -141,8 +141,10 @@ export async function requireSubscription(req: Request, _res: Response, next: Ne
       include: {
         subscriptions: {
           where: {
-            status: 'ACTIVE',
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            OR: [
+              { status: 'ACTIVE', OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+              { status: 'CANCELLED', expiresAt: { gt: new Date() } },
+            ],
           },
           include: { plan: true },
           take: 1,

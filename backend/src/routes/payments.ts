@@ -169,7 +169,25 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
       include: { plan: true, invoices: { orderBy: { createdAt: 'desc' }, take: 10 } },
     });
-    res.json({ subscription });
+
+    if (subscription) {
+      const now = new Date();
+      const expiresAtDate = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
+      const isUnexpired = Boolean(expiresAtDate && expiresAtDate > now);
+      const isAccessActive = subscription.status === 'ACTIVE' || (subscription.status === 'CANCELLED' && isUnexpired);
+      const remainingMs = expiresAtDate && isUnexpired ? expiresAtDate.getTime() - now.getTime() : 0;
+      const remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+
+      return res.json({
+        subscription: {
+          ...subscription,
+          isAccessActive,
+          remainingDays,
+        },
+      });
+    }
+
+    res.json({ subscription: null });
   } catch (err) { next(err); }
 });
 
@@ -184,10 +202,22 @@ paymentsRouter.post('/cancel', requireAuth, async (req, res, next) => {
     const { reason } = req.body || {};
     const subscription = await paymentService.cancelSubscription(user.id, reason);
 
+    const now = new Date();
+    const expiresAtDate = subscription.expiresAt ? new Date(subscription.expiresAt) : new Date();
+    const remainingMs = Math.max(0, expiresAtDate.getTime() - now.getTime());
+    const remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+    const formattedDate = expiresAtDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
     res.json({
       success: true,
-      message: 'Your subscription has been successfully cancelled.',
-      subscription,
+      message: `Your subscription has been cancelled. Auto-renewal is stopped, but you retain full access to your Pro features for the remaining ${remainingDays} day(s) (until ${formattedDate}).`,
+      subscription: {
+        ...subscription,
+        isAccessActive: remainingDays > 0,
+        remainingDays,
+      },
+      remainingDays,
+      expiresAt: subscription.expiresAt,
     });
   } catch (err) {
     next(err);

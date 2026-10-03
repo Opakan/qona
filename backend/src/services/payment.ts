@@ -310,7 +310,13 @@ export const paymentService = {
   async cancelSubscription(userId: string, _reason?: string) {
     const prisma = getPrisma();
     const subscription = await prisma.subscription.findFirst({
-      where: { userId, status: 'ACTIVE' },
+      where: {
+        userId,
+        OR: [
+          { status: 'ACTIVE' },
+          { status: 'CANCELLED', expiresAt: { gt: new Date() } },
+        ],
+      },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -339,11 +345,15 @@ export const paymentService = {
       // Gracefully ignore third-party API error if already cancelled or one-time charge
     }
 
+    // Ensure expiresAt is populated so user retains access for remaining duration
+    const finalExpiresAt = subscription.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
     const updated = await prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         status: 'CANCELLED',
         cancelledAt: new Date(),
+        expiresAt: finalExpiresAt,
       },
       include: { plan: true },
     });

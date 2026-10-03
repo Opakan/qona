@@ -299,10 +299,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const isSubAccessValid = Boolean(
+    subscription &&
+      (
+        subscription.status === 'ACTIVE' ||
+        subscription.isAccessActive === true ||
+        (subscription.status === 'CANCELLED' && subscription.expiresAt && new Date(subscription.expiresAt) > new Date())
+      )
+  );
+
   const hasActiveSubscription =
     (user?.email && ['opadgiant@gmail.com'].includes(user.email.toLowerCase())) ||
     dbUser?.role === 'ADMIN' ||
-    Boolean(subscription && subscription.status === 'ACTIVE');
+    isSubAccessValid;
 
   // isEmailVerified: true if the Supabase user has confirmed their email,
   // or if signed in via OAuth (Google/GitHub), or if they are a guest/admin.

@@ -63,8 +63,10 @@ export default function Billing() {
     }
   };
 
+  const isUnexpired = sub?.expiresAt ? new Date(sub.expiresAt) > new Date() : false;
   const isActive = sub && sub.status === 'ACTIVE';
   const isCancelled = sub && sub.status === 'CANCELLED';
+  const hasAccessWhileCancelled = isCancelled && isUnexpired;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 lg:px-6 lg:py-20">
@@ -115,25 +117,32 @@ export default function Billing() {
           <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className={`h-2.5 w-2.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                <span className={`h-2.5 w-2.5 rounded-full ${isActive || hasAccessWhileCancelled ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                 <span className="text-base font-bold text-gray-900 dark:text-white">{sub.plan.name} Plan</span>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize border ${
                 isActive
                   ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                  : hasAccessWhileCancelled
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60'
                   : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
               }`}>
-                {sub.status.toLowerCase()}
+                {isActive ? 'Active' : hasAccessWhileCancelled ? 'Cancelled (Access Active)' : 'Expired'}
               </span>
             </div>
 
-            <div className="mt-3 text-xs text-gray-500 dark:text-slate-400 space-y-1">
+            <div className="mt-3 text-xs text-gray-500 dark:text-slate-400 space-y-1.5">
               <p>
-                Paid via {sub.provider} {sub.expiresAt ? `• Renews / Expires: ${new Date(sub.expiresAt).toLocaleDateString()}` : ''}
+                Paid via {sub.provider} {sub.expiresAt ? `• Expiry date: ${new Date(sub.expiresAt).toLocaleDateString()}` : ''}
               </p>
-              {isCancelled && sub.cancelledAt && (
+              {hasAccessWhileCancelled && (
+                <div className="mt-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300">
+                  <strong>Plan Cancelled:</strong> Auto-renewal is stopped, but your <strong>{sub.plan.name}</strong> access remains fully active for the rest of your paid billing period (until {sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : 'period end'}).
+                </div>
+              )}
+              {isCancelled && !hasAccessWhileCancelled && (
                 <p className="text-amber-600 dark:text-amber-400 font-medium">
-                  Subscription cancelled on {new Date(sub.cancelledAt).toLocaleDateString()}.
+                  Subscription expired on {sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : 'period end'}.
                 </p>
               )}
             </div>
@@ -216,7 +225,7 @@ export default function Billing() {
             </div>
 
             <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-              Upon cancellation, your subscription will not renew, and future automatic charges will be stopped immediately. You can resubscribe anytime starting at just $1.
+              <strong>Keep your paid days:</strong> Auto-renewal will be stopped immediately so you won't be charged again. You retain full access to all <strong>{sub.plan.name}</strong> features for the remaining days of your current period (until {sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : 'period end'}).
             </div>
 
             <div className="mt-4">
