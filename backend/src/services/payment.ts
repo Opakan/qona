@@ -309,20 +309,14 @@ export const paymentService = {
 
   async cancelSubscription(userId: string, _reason?: string) {
     const prisma = getPrisma();
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        userId,
-        OR: [
-          { status: 'ACTIVE' },
-          { status: 'CANCELLED', expiresAt: { gt: new Date() } },
-        ],
-      },
+    let subscription = await prisma.subscription.findFirst({
+      where: { userId },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
     });
 
     if (!subscription) {
-      throw new Error('No active subscription found to cancel.');
+      throw new Error('No subscription record found to cancel.');
     }
 
     try {

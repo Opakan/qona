@@ -155,12 +155,23 @@ paymentsRouter.get('/verify', requireAuth, async (req, res, next) => {
 paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
   try {
     const prisma = getPrisma();
-    let user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: req.user!.authId },
+          { email: req.user!.email },
+        ],
+      },
+    });
+
     if (!user) {
-      user = await prisma.user.upsert({
-        where: { authId: req.user!.authId },
-        update: { email: req.user!.email, name: req.user!.name },
-        create: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name },
+      user = await prisma.user.create({
+        data: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name || 'User' },
+      });
+    } else if (user.authId !== req.user!.authId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { authId: req.user!.authId },
       });
     }
 
@@ -194,9 +205,22 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
 paymentsRouter.post('/cancel', requireAuth, async (req, res, next) => {
   try {
     const prisma = getPrisma();
-    const user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: req.user!.authId },
+          { email: req.user!.email },
+        ],
+      },
+    });
+
     if (!user) {
       throw new AppError('User not found', 404);
+    } else if (user.authId !== req.user!.authId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { authId: req.user!.authId },
+      });
     }
 
     const { reason } = req.body || {};
