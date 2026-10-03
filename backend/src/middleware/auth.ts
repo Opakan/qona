@@ -136,8 +136,13 @@ export async function requireSubscription(req: Request, _res: Response, next: Ne
 
     const { getPrisma } = await import('../lib/prisma.js');
     const prisma = getPrisma();
-    const user = await prisma.user.findUnique({
-      where: { authId: req.user.authId },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: req.user.authId },
+          { email: req.user.email },
+        ],
+      },
       include: {
         subscriptions: {
           where: {

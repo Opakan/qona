@@ -18,6 +18,9 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
 
     const authId = req.user!.authId;
     let user = await db.user.findByAuthId(authId);
+    if (!user && req.user!.email) {
+      user = await db.user.findByEmail(req.user!.email);
+    }
 
     // Geolocation logic
     let country: string | undefined = undefined;
