@@ -41,8 +41,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await apiClient.get('/auth/me');
         if (!cancelled && response.data) {
           if (response.data.user) setDbUser(response.data.user);
-          if (response.data.subscription) setSubscription(response.data.subscription);
+          setSubscription(response.data.subscription ?? null);
         }
+        // Always attempt fetching direct subscription to guarantee subscription state parity
+        try {
+          const subRes = await apiClient.get('/payments/subscription');
+          if (!cancelled && subRes.data && subRes.data.subscription) {
+            setSubscription(subRes.data.subscription);
+          }
+        } catch { /* ignore fallback */ }
+
         return; // success
       } catch (err) {
         lastErr = err;

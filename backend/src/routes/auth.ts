@@ -17,10 +17,6 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
     }
 
     const authId = req.user!.authId;
-    let user = await db.user.findByAuthId(authId);
-    if (!user && req.user!.email) {
-      user = await db.user.findByEmail(req.user!.email);
-    }
 
     // Geolocation logic
     let country: string | undefined = undefined;
@@ -40,6 +36,19 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
         }
       } catch (err) {
         console.warn(`[GeoIP] Failed to geolocate IP "${ip}":`, err instanceof Error ? err.message : err);
+      }
+    }
+
+    let user = await db.user.findByAuthId(authId);
+    if (!user && req.user!.email) {
+      user = await db.user.findByEmail(req.user!.email);
+      if (user) {
+        user = await db.user.upsertByAuthId({
+          authId,
+          email: req.user!.email,
+          name: req.user!.name || user.name,
+          country,
+        });
       }
     }
 
@@ -66,8 +75,10 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
     const subscription = await prisma.subscription.findFirst({
       where: {
         userId: user.id,
-        status: 'ACTIVE',
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        OR: [
+          { status: 'ACTIVE', OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+          { status: 'CANCELLED', expiresAt: { gt: new Date() } },
+        ],
       },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
