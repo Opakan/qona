@@ -55,8 +55,7 @@ export const paymentService = {
         tx_ref: ref,
         amount: params.amount,
         currency: 'USD',
-        // Pass clean redirect_url so Flutterwave can cleanly append query parameters without ? conflict
-        redirect_url: `${config.APP_URL}/payment/success`,
+        redirect_url: `${config.APP_URL}/payment/success?plan=${encodeURIComponent(params.planSlug)}`,
         payment_options: 'card,banktransfer,ussd,mobilemoney',
         customer: {
           email: params.email,

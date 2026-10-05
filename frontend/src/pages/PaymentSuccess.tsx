@@ -67,7 +67,8 @@ export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [copied, setCopied] = useState(false);
-  const { refreshSubscription } = useAuth();
+  const [verifiedSub, setVerifiedSub] = useState<any>(null);
+  const { subscription, refreshSubscription } = useAuth();
 
   // Extract params safely handling double question marks or raw window search
   const getParam = (key: string): string => {
@@ -81,7 +82,7 @@ export default function PaymentSuccess() {
   };
 
   const provider = getParam('provider') || 'flutterwave';
-  const planSlug = (getParam('plan') || 'pro').toLowerCase().split('?')[0].split('&')[0];
+  const queryPlan = getParam('plan') ? getParam('plan').toLowerCase().split('?')[0].split('&')[0] : '';
   
   let txRef = getParam('tx_ref') || getParam('reference') || getParam('txRef');
   let transactionId = getParam('transaction_id') || getParam('transactionId') || getParam('id');
@@ -102,7 +103,12 @@ export default function PaymentSuccess() {
     }
   }
 
-  const planInfo = PLAN_BENEFITS[planSlug] || PLAN_BENEFITS.pro;
+  // Determine active plan dynamically from verified subscription, AuthContext, or URL param
+  const activeSub = verifiedSub || subscription;
+  const activePlanSlug = (activeSub?.plan?.slug || queryPlan || 'starter').toLowerCase();
+  const planInfo = PLAN_BENEFITS[activePlanSlug] || PLAN_BENEFITS.starter;
+  const displayName = activeSub?.plan?.name ? `${activeSub.plan.name} Plan` : planInfo.name;
+  const displayPrice = activeSub?.plan?.price !== undefined ? `$${activeSub.plan.price}` : planInfo.priceFormatted;
 
   useEffect(() => {
     let isMounted = true;
@@ -126,7 +132,10 @@ export default function PaymentSuccess() {
         // Retry verify up to 3 times with progressive delay
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
-            await apiClient.get(`/payments/verify?${queryParams.toString()}`);
+            const res = await apiClient.get(`/payments/verify?${queryParams.toString()}`);
+            if (res.data?.subscription) {
+              setVerifiedSub(res.data.subscription);
+            }
             verified = true;
             break;
           } catch (err) {
@@ -226,11 +235,11 @@ export default function PaymentSuccess() {
 
               <div className="mt-4 flex items-baseline justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">{planInfo.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-900">{displayName}</h3>
                   <p className="text-xs text-slate-500">Billed securely via Flutterwave</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-2xl font-black text-slate-900">{planInfo.priceFormatted}</span>
+                  <span className="text-2xl font-black text-slate-900">{displayPrice}</span>
                 </div>
               </div>
 
