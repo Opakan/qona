@@ -18,7 +18,15 @@ os.makedirs(staging_dir, exist_ok=True)
 # 2. Prepare Shared workspace in staging
 shared_staging = os.path.join(staging_dir, 'shared')
 os.makedirs(shared_staging, exist_ok=True)
-shutil.copy2(os.path.join(root_dir, 'shared', 'package.json'), os.path.join(shared_staging, 'package.json'))
+
+shared_pkg_path = os.path.join(root_dir, 'shared', 'package.json')
+with open(shared_pkg_path, 'r', encoding='utf-8') as f:
+    shared_pkg = json.load(f)
+shared_pkg['devDependencies'] = {}
+
+with open(os.path.join(shared_staging, 'package.json'), 'w', encoding='utf-8') as f:
+    json.dump(shared_pkg, f, indent=2)
+
 shutil.copytree(os.path.join(root_dir, 'shared', 'dist'), os.path.join(shared_staging, 'dist'))
 
 # 3. Prepare Standalone root package.json
@@ -33,35 +41,46 @@ pkg['dependencies']['@qona/shared'] = 'file:./shared'
 if 'prisma' in pkg['dependencies']:
     del pkg['dependencies']['prisma']
 
+# Crucial: Strip devDependencies so npm install on EC2 doesn't download 1GB of vitest/tsc/eslint
+pkg['devDependencies'] = {}
+
 pkg['scripts'] = {
     'start': 'node start.js'
 }
 pkg['engines'] = {
-    'node': '>=20.0.0'
+    'node': '>=18.0.0'
 }
 
 with open(os.path.join(staging_dir, 'package.json'), 'w', encoding='utf-8') as f:
     json.dump(pkg, f, indent=2)
 
-# 3b. Create .npmrc for ultra-fast, silent install on EC2
+# 3b. Create .npmrc for ultra-fast, silent, dev-omitted install on EC2
 with open(os.path.join(staging_dir, '.npmrc'), 'w', encoding='utf-8', newline='\n') as f:
-    f.write('audit=false\nfund=false\nupdate-notifier=false\n')
+    f.write('audit=false\nfund=false\nupdate-notifier=false\nomit=dev\nengine-strict=false\n')
 
 # 3c. Create robust start.js launcher
 start_js_content = """import fs from 'node:fs';
 import path from 'node:path';
 
-// Restore .prisma from .prisma_bundle if missing
+// Crash prevention: log unhandled errors instead of silent failure
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled rejection at:', promise, 'reason:', reason);
+});
+
+// Restore native Linux Prisma engines and client unconditionally
 try {
   const root = process.cwd();
   const bundleDir = path.join(root, '.prisma_bundle');
   const targetDir = path.join(root, 'node_modules', '.prisma');
-  const targetSchema = path.join(targetDir, 'client', 'schema.prisma');
 
-  if (fs.existsSync(bundleDir) && !fs.existsSync(targetSchema)) {
+  if (fs.existsSync(bundleDir)) {
     fs.mkdirSync(path.join(targetDir, 'client'), { recursive: true });
     fs.cpSync(bundleDir, targetDir, { recursive: true, force: true });
-    console.log('[Prisma Failsafe] Restored .prisma from .prisma_bundle');
+    console.log('[Prisma Failsafe] Restored native Linux engines into node_modules/.prisma');
   }
 } catch (err) {
   console.warn('[Prisma Failsafe Warning]:', err);
@@ -77,6 +96,32 @@ with open(os.path.join(staging_dir, 'start.js'), 'w', encoding='utf-8', newline=
 # 4. Create Procfile (clean single command for systemd)
 with open(os.path.join(staging_dir, 'Procfile'), 'w', encoding='utf-8', newline='\n') as f:
     f.write('web: node start.js\n')
+
+# 4b. Create .ebextensions to guarantee swap space and default environment on EC2
+ebextensions_dir = os.path.join(staging_dir, '.ebextensions')
+os.makedirs(ebextensions_dir, exist_ok=True)
+
+# 01_swap.config: Allocates 2GB of swap so t2/t3.micro instances never suffer from Out-Of-Memory freezing
+swap_config = """commands:
+  01setup_swap:
+    test: test ! -e /swapfile
+    command: |
+      /bin/dd if=/dev/zero of=/swapfile bs=1M count=2048
+      /bin/chmod 600 /swapfile
+      /sbin/mkswap /swapfile
+      /sbin/swapon /swapfile
+"""
+with open(os.path.join(ebextensions_dir, '01_swap.config'), 'w', encoding='utf-8', newline='\n') as f:
+    f.write(swap_config)
+
+# 02_node.config: Fallback environment configuration
+node_config = """option_settings:
+  aws:elasticbeanstalk:application:environment:
+    PORT: 5000
+    NODE_ENV: production
+"""
+with open(os.path.join(ebextensions_dir, '02_node.config'), 'w', encoding='utf-8', newline='\n') as f:
+    f.write(node_config)
 
 # 5. Copy backend dist & prisma
 shutil.copytree(os.path.join(root_dir, 'backend', 'dist'), os.path.join(staging_dir, 'dist'))
