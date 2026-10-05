@@ -34,7 +34,8 @@ if 'prisma' in pkg['dependencies']:
     del pkg['dependencies']['prisma']
 
 pkg['scripts'] = {
-    'start': 'node dist/index.js'
+    'start': 'node dist/index.js',
+    'postinstall': 'node -e "const fs = require(\'fs\'); if (fs.existsSync(\'.prisma_bundle\')) fs.cpSync(\'.prisma_bundle\', \'node_modules/.prisma\', { recursive: true, force: true });"'
 }
 pkg['engines'] = {
     'node': '>=20.0.0'
@@ -49,11 +50,24 @@ with open(os.path.join(staging_dir, '.npmrc'), 'w', encoding='utf-8', newline='\
 
 # 4. Create Procfile
 with open(os.path.join(staging_dir, 'Procfile'), 'w', encoding='utf-8', newline='\n') as f:
-    f.write('web: node dist/index.js\n')
+    f.write('web: node -e "const fs = require(\'fs\'); if (fs.existsSync(\'.prisma_bundle\') && !fs.existsSync(\'node_modules/.prisma/client/schema.prisma\')) fs.cpSync(\'.prisma_bundle\', \'node_modules/.prisma\', { recursive: true, force: true });" && node dist/index.js\n')
 
 # 5. Copy backend dist & prisma
 shutil.copytree(os.path.join(root_dir, 'backend', 'dist'), os.path.join(staging_dir, 'dist'))
 shutil.copytree(os.path.join(root_dir, 'backend', 'prisma'), os.path.join(staging_dir, 'prisma'))
+
+# 5b. Bundle pre-generated Prisma client with Linux native engines into .prisma_bundle
+local_prisma = os.path.join(root_dir, 'node_modules', '.prisma')
+if not os.path.exists(local_prisma):
+    local_prisma = os.path.join(root_dir, 'backend', 'node_modules', '.prisma')
+
+if os.path.exists(local_prisma):
+    bundle_dest = os.path.join(staging_dir, '.prisma_bundle')
+    os.makedirs(bundle_dest, exist_ok=True)
+    def ignore_windows_junk(dir, files):
+        return [f for f in files if f.endswith('.tmp') or '.tmp' in f or f.endswith('.dll.node')]
+    shutil.copytree(local_prisma, bundle_dest, dirs_exist_ok=True, ignore=ignore_windows_junk)
+    print("   [OK] Bundled Linux-ready Prisma engines into .prisma_bundle")
 
 # 6. Create Linux-compliant Zip with POSIX forward slashes
 zip_path = os.path.join(root_dir, 'qonace-backend.zip')
