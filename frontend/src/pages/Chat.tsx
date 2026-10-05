@@ -38,7 +38,7 @@ interface Message {
 }
 
 export default function ChatPage() {
-  const { user, dbUser, signOut } = useAuth();
+  const { user, dbUser, subscription, hasActiveSubscription, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { id: routeChatId } = useParams<{ id?: string }>();
@@ -430,23 +430,64 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Sidebar Footer: Upgrade to Pro & User Profile */}
+        {/* Sidebar Footer: Subscription Plan Status & User Profile */}
         <div className="border-t border-slate-200/80 dark:border-slate-800 p-3 space-y-2 bg-[#f9f9fb] dark:bg-[#090d16]">
-          {/* Upgrade to Pro Card */}
-          <button
-            onClick={() => setShowUpgradeModal(true)}
-            className="flex w-full items-center justify-between rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 p-2.5 text-left transition-all hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 cursor-pointer group"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold shadow-2xs">
-                <Crown className="h-4 w-4" />
+          {/* Active Plan Card or Upgrade Card */}
+          {hasActiveSubscription || subscription?.plan ? (
+            <div className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50 p-2.5 transition-all">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold shadow-2xs">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-extrabold text-emerald-900 dark:text-emerald-200">
+                        {subscription?.plan?.name || 'Active'} Plan
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
+                        ACTIVE
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                      {subscription?.plan?.slug === 'starter' ? '10 exports / month' : subscription?.plan?.slug === 'pro' ? '100 exports / month' : 'Unlimited exports'}
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  to="/billing"
+                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 py-0.5"
+                  title="Manage Subscription"
+                >
+                  Manage
+                </Link>
               </div>
-              <div>
-                <div className="text-xs font-extrabold text-indigo-900 dark:text-indigo-200">Upgrade to Pro</div>
-                <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">Unlimited compilations</div>
-              </div>
+              {subscription?.plan?.slug === 'starter' && (
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600/10 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 px-2 py-1 text-[10px] font-bold transition-all cursor-pointer"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>Upgrade to Pro ($30) for 100 exports</span>
+                </button>
+              )}
             </div>
-          </button>
+          ) : (
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex w-full items-center justify-between rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 p-2.5 text-left transition-all hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold shadow-2xs">
+                  <Crown className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-extrabold text-indigo-900 dark:text-indigo-200">Subscribe (from $1)</div>
+                  <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">Starter & Pro workflows</div>
+                </div>
+              </div>
+            </button>
+          )}
 
           {/* User Profile Row */}
           <div className="flex items-center justify-between rounded-xl p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors">
@@ -538,14 +579,25 @@ export default function ChatPage() {
             {/* Theme Toggle in Chat Top Bar */}
             <ThemeToggle />
 
-            {/* Top Right ChatGPT-style Upgrade Button */}
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer shadow-2xs"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Upgrade</span>
-            </button>
+            {/* Top Right Subscription / Upgrade Button */}
+            {hasActiveSubscription || subscription?.plan ? (
+              <Link
+                to="/billing"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs"
+                title="Manage your active subscription"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{subscription?.plan?.name || 'Starter'} Active</span>
+              </Link>
+            ) : (
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer shadow-2xs"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Upgrade</span>
+              </button>
+            )}
 
             <button
               onClick={() => handleSimulateExecution()}

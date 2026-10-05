@@ -122,7 +122,7 @@ export default function PricingPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 lg:px-6 lg:py-24">
-      {requireSub && (
+      {requireSub && !hasActiveSubscription && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -137,6 +137,34 @@ export default function PricingPage() {
               To start creating automated workflows with Claude AI, please select any plan below (starting at just $1).
             </p>
           </div>
+        </motion.div>
+      )}
+
+      {hasActiveSubscription && subscription?.plan && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/90 dark:bg-emerald-950/50 p-4 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+              <Check className="h-5 w-5 stroke-[2.5]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-200">
+                You are currently on the {subscription.plan.name} Plan (${subscription.plan.price}/mo)
+              </h3>
+              <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                Your subscription is active. You can upgrade to a higher tier anytime below.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/billing')}
+            className="shrink-0 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline px-3.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 cursor-pointer shadow-2xs"
+          >
+            Manage Billing
+          </button>
         </motion.div>
       )}
 
@@ -256,7 +284,13 @@ export default function PricingPage() {
                 <hr className={`w-full my-6 ${isPlanPopular ? 'border-slate-800' : 'border-slate-100 dark:border-slate-800'}`} />
 
                 <button
-                  onClick={() => handleCheckout(plan.slug)}
+                  onClick={() => {
+                    if (currentPlanSlug === plan.slug) {
+                      navigate('/billing');
+                    } else {
+                      handleCheckout(plan.slug);
+                    }
+                  }}
                   disabled={loading === plan.slug}
                   className={`w-full py-3.5 px-4 rounded-xl text-sm font-semibold shadow-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
                     currentPlanSlug === plan.slug
@@ -269,7 +303,11 @@ export default function PricingPage() {
                   {loading === plan.slug ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : currentPlanSlug === plan.slug ? (
-                    'Current Plan (Renew)'
+                    'Current Active Plan (Manage)'
+                  ) : currentPlanSlug === 'starter' && plan.slug === 'pro' ? (
+                    'Upgrade to Pro ($30)'
+                  ) : currentPlanSlug === 'starter' && plan.slug === 'enterprise' ? (
+                    'Upgrade to Enterprise ($99)'
                   ) : (
                     plan.buttonText
                   )}
