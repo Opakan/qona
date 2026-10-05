@@ -43,7 +43,7 @@ const PLAN_BENEFITS: Record<string, PlanDetails> = {
     badge: 'Most Popular',
     benefits: [
       '100 workflow exports per month',
-      'Advanced Claude 3.5 AI workflow engine',
+      'Advanced Workflow AI Engine',
       'All platform exports (n8n, Zapier, Make, JSON)',
       'Unlimited version history & rollbacks',
       'Priority email support & faster generation queues',

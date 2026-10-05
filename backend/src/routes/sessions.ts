@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { planningSessionService } from '../services/planning-session.js';
 import { compileInternalGraph } from '../services/n8n-compiler.js';
 import { getPrisma } from '../lib/prisma.js';
+import { getUserExportQuota, recordExportHistory } from '../services/quota.service.js';
 import type { InternalGraph } from '@qona/shared';
 import { InternalGraphSchema, PLANNING_STATES } from '@qona/shared';
 
@@ -145,6 +146,18 @@ sessionsRouter.get('/sessions/:id/compile/download', requireAuth, async (req, re
       return;
     }
 
+    // Check export quota
+    const quota = await getUserExportQuota(req.user!.authId);
+    if (!quota.canExport) {
+      res.status(403).json({
+        error: quota.remaining <= 0
+          ? `You have reached your monthly export cap of ${quota.cap} exports. Exports reset at the start of your next billing cycle.`
+          : 'An active subscription is required to export workflows.',
+        quota,
+      });
+      return;
+    }
+
     const g = await resolveGraph(sess);
     if (!g) {
       res.status(404).json({ error: 'No workflow draft found' });
@@ -156,6 +169,15 @@ sessionsRouter.get('/sessions/:id/compile/download', requireAuth, async (req, re
       res.status(422).json({ compiled: false, error: 'Compilation failed', errors: r.errors });
       return;
     }
+
+    // Record export
+    await recordExportHistory({
+      userId: req.user!.authId,
+      workflowId: sess.graph?.id || sess.id,
+      platform: 'n8n',
+      format: 'json',
+      metadata: { sessionId: id, workflowName: g.metadata.name || 'Untitled' },
+    });
 
     const fn = (g.metadata.name || 'workflow').replace(/\s+/g, '_') + '_n8n.json';
     res.setHeader('Content-Type', 'application/json');

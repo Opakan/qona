@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { workflowService } from '../services/workflow.service.js';
 import { buildExport, validateForExport, getSetupInstructions } from '../services/export-engine.js';
 import { db } from '../services/db.js';
+import { getUserExportQuota, recordExportHistory } from '../services/quota.service.js';
 
 export const workflowsRouter = Router();
 
@@ -107,6 +108,18 @@ workflowsRouter.post('/:id/export', requireAuth, requireSubscription, validate(E
       return;
     }
 
+    // Verify monthly export quota
+    const quota = await getUserExportQuota(req.user!.authId || workflow.userId);
+    if (!quota.canExport) {
+      res.status(403).json({
+        error: quota.remaining <= 0
+          ? `You have reached your monthly export cap of ${quota.cap} exports. Exports reset at the start of your next billing cycle.`
+          : 'An active subscription is required to export workflows.',
+        quota,
+      });
+      return;
+    }
+
     const platform = req.body.platform;
     const definition = workflow.definition as Record<string, unknown>;
 
@@ -122,7 +135,7 @@ workflowsRouter.post('/:id/export', requireAuth, requireSubscription, validate(E
 
     const exportResult = buildExport(definition as any, platform);
 
-    await db.exportHistory.create({
+    await recordExportHistory({
       userId: workflow.userId,
       workflowId: workflow.id,
       platform,
@@ -137,6 +150,11 @@ workflowsRouter.post('/:id/export', requireAuth, requireSubscription, validate(E
       filename: exportResult.filename,
       instructions: exportResult.instructions,
       warnings: exportResult.warnings,
+      quota: {
+        cap: quota.cap,
+        used: quota.used + 1,
+        remaining: Math.max(0, quota.remaining - 1),
+      },
     });
   } catch (err) {
     next(err);
@@ -152,6 +170,18 @@ workflowsRouter.post('/:id/export/download', requireAuth, validate(ExportSchema)
       return;
     }
 
+    // Verify monthly export quota
+    const quota = await getUserExportQuota(req.user!.authId || workflow.userId);
+    if (!quota.canExport) {
+      res.status(403).json({
+        error: quota.remaining <= 0
+          ? `You have reached your monthly export cap of ${quota.cap} exports. Exports reset at the start of your next billing cycle.`
+          : 'An active subscription is required to export workflows.',
+        quota,
+      });
+      return;
+    }
+
     const platform = req.body.platform;
     const definition = workflow.definition as Record<string, unknown>;
 
@@ -167,7 +197,7 @@ workflowsRouter.post('/:id/export/download', requireAuth, validate(ExportSchema)
 
     const exportResult = buildExport(definition as any, platform);
 
-    await db.exportHistory.create({
+    await recordExportHistory({
       userId: workflow.userId,
       workflowId: workflow.id,
       platform,

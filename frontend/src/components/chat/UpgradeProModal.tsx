@@ -50,7 +50,7 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({ isOpen, onClos
         <div className="space-y-3.5 mb-8">
           {[
             { title: '100 AI Workflow Exports per Month', desc: '10x more capacity than Starter plan.' },
-            { title: 'Advanced Claude 3.5 AI Workflow Engine', desc: 'Smarter reasoning, complex community nodes & LangChain agents.' },
+            { title: 'Advanced Workflow AI Reasoning Engine', desc: 'Smarter multi-step logic, complex community nodes & LangChain agents.' },
             { title: 'Instant Execution Simulator', desc: 'Full step-by-step trace simulation with custom test payloads.' },
             { title: '1-Click Direct n8n Export & Clipboard Copy', desc: 'Instant JSON exports compatible with n8n Cloud & Self-Hosted.' },
             { title: 'Priority RAG Knowledge Retrieval', desc: 'Faster compilation with access to 2,903+ n8n workflows.' },

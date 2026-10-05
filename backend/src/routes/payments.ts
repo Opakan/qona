@@ -7,6 +7,7 @@ import { paymentService } from '../services/payment.js';
 import { config } from '../config.js';
 import { getPrisma } from '../lib/prisma.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { getUserExportQuota } from '../services/quota.service.js';
 
 export const paymentsRouter = Router();
 
@@ -50,7 +51,7 @@ paymentsRouter.get('/plans', async (_req, res, next) => {
           currency: 'USD',
           interval: 'month',
           exports: 100,
-          features: ['100 workflow exports', 'Advanced Claude 3.5 AI', 'All platform exports', 'Version history', 'Priority email support'],
+          features: ['100 workflow exports', 'Advanced Workflow AI Engine', 'All platform exports', 'Version history', 'Priority email support'],
           active: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -216,6 +217,8 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
       },
     });
 
+    const exportQuota = await getUserExportQuota(user.id);
+
     if (subscription) {
       const subExpiresAt = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
       const subUnexpired = Boolean(subExpiresAt && subExpiresAt > now);
@@ -229,12 +232,14 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
           invoices: allInvoices,
           isAccessActive,
           remainingDays,
+          exportQuota,
         },
         invoices: allInvoices,
+        exportQuota,
       });
     }
 
-    res.json({ subscription: null, invoices: allInvoices });
+    res.json({ subscription: null, invoices: allInvoices, exportQuota });
   } catch (err) { next(err); }
 });
 

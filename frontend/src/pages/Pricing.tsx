@@ -40,7 +40,7 @@ const plans = [
     period: 'mo',
     slug: 'pro',
     description: 'For professionals and growing teams.',
-    features: ['100 workflow exports', 'Advanced Bedrock Claude AI', 'All platform exports', 'Version history', 'Priority email support'],
+    features: ['100 workflow exports', 'Advanced AI Reasoning Engine', 'All platform exports', 'Version history', 'Priority email support'],
     isPopular: true,
     buttonText: 'Subscribe to Pro',
   },
@@ -134,7 +134,7 @@ export default function PricingPage() {
           <div>
             <h3 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">Active Plan Required</h3>
             <p className="text-xs text-indigo-700 dark:text-indigo-300">
-              To start creating automated workflows with Claude AI, please select any plan below (starting at just $1).
+              To start creating automated workflows with Qonace AI, please select any plan below (starting at just $1).
             </p>
           </div>
         </motion.div>

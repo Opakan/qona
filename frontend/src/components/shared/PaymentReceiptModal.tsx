@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { X, Printer, Download, CheckCircle2, ShieldCheck, CreditCard } from 'lucide-react';
+import { X, Printer, Download, CheckCircle2, ShieldCheck, CreditCard, FileDown } from 'lucide-react';
+import { generateReceiptPdf } from '../../utils/generateReceiptPdf';
 
 export interface InvoiceData {
   id: string;
@@ -58,108 +59,8 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
     window.print();
   };
 
-  const handleDownloadHtml = () => {
-    const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Receipt ${receiptNumber} - Qonace</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 40px; background: #fff; }
-    .receipt-container { max-width: 680px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; padding: 40px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 24px; }
-    .logo { font-size: 24px; font-weight: 900; color: #4f46e5; letter-spacing: -0.5px; }
-    .badge { background: #ecfdf5; color: #059669; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; border: 1px solid #a7f3d0; text-transform: uppercase; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; font-size: 13px; line-height: 1.6; }
-    .info-title { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    th { text-align: left; padding: 12px; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-    td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
-    .totals { margin-left: auto; width: 280px; margin-bottom: 32px; font-size: 13px; }
-    .totals-row { display: flex; justify-content: space-between; padding: 6px 0; color: #64748b; }
-    .totals-total { display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #0f172a; font-size: 16px; font-weight: 800; color: #0f172a; }
-    .footer { text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 24px; }
-  </style>
-</head>
-<body>
-  <div class="receipt-container">
-    <div class="header">
-      <div>
-        <div class="logo">Qonace AI</div>
-        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">AI Automation &amp; n8n Workflow Studio</div>
-      </div>
-      <div style="text-align: right;">
-        <span class="badge">PAID • VERIFIED</span>
-        <div style="font-size: 12px; font-weight: 700; color: #334155; margin-top: 8px;">${receiptNumber}</div>
-      </div>
-    </div>
-
-    <div class="info-grid">
-      <div>
-        <div class="info-title">Billed To</div>
-        <div style="font-weight: 700; color: #0f172a;">${clientName}</div>
-        <div>${clientEmail}</div>
-      </div>
-      <div>
-        <div class="info-title">Payment Info</div>
-        <div><strong>Date:</strong> ${paymentDate}</div>
-        <div><strong>Processor:</strong> Flutterwave</div>
-        <div style="word-break: break-all;"><strong>Ref:</strong> ${transactionRef}</div>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th style="text-align: center;">Qty</th>
-          <th style="text-align: right;">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>
-            <div style="font-weight: 700; color: #0f172a;">${planName} Subscription</div>
-            <div style="font-size: 12px; color: #64748b;">Full platform workflow generation &amp; n8n export access</div>
-          </td>
-          <td style="text-align: center;">1</td>
-          <td style="text-align: right; font-weight: 700;">${amountFormatted}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="totals">
-      <div class="totals-row">
-        <span>Subtotal</span>
-        <span>${amountFormatted}</span>
-      </div>
-      <div class="totals-row">
-        <span>Taxes / VAT (0%)</span>
-        <span>$0.00 USD</span>
-      </div>
-      <div class="totals-total">
-        <span>Total Paid</span>
-        <span>${amountFormatted}</span>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p>Thank you for building with Qonace! This receipt serves as official proof of payment for your accounting records.</p>
-      <p>Need help? Contact support@qonace.com • https://qonace.com</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Qonace-Receipt-${receiptNumber}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownloadPdf = () => {
+    generateReceiptPdf(invoice, clientName, clientEmail);
   };
 
   return (
@@ -210,12 +111,12 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
             </button>
 
             <button
-              onClick={handleDownloadHtml}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors cursor-pointer shadow-2xs"
-              title="Download standalone HTML receipt"
+              onClick={handleDownloadPdf}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors cursor-pointer shadow-2xs"
+              title="Download official PDF receipt file"
             >
-              <Download className="h-3.5 w-3.5" />
-              <span>Download (.html)</span>
+              <FileDown className="h-3.5 w-3.5" />
+              <span>Download PDF</span>
             </button>
 
             <button
@@ -299,7 +200,7 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
                   <td className="py-3 px-4">
                     <div className="font-bold text-slate-900 dark:text-white">{planName}</div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Standard Claude AI workflow builder + direct n8n JSON exports
+                      Automated workflow builder + direct n8n JSON exports
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center text-slate-600 dark:text-slate-400 font-medium">
