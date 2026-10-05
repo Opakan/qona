@@ -17,7 +17,10 @@ import {
   Palette,
   Laptop,
   Sun,
-  Moon
+  Moon,
+  FileText,
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 import { ThemeToggle } from './shared/ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
@@ -424,79 +427,174 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
             )}
 
             {/* BILLING TAB */}
-            {activeTab === 'billing' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-base font-black font-display text-slate-950 dark:text-white">
-                    Plan &amp; Subscription
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Review your active tier, workflow limits, and billing status.
-                  </p>
-                </div>
+            {activeTab === 'billing' && (() => {
+              const planSlug = (subscription?.plan?.slug?.toLowerCase() || '') as 'starter' | 'pro' | 'enterprise' | '';
+              const isStarter = hasActiveSubscription && planSlug === 'starter';
+              const isPro = hasActiveSubscription && planSlug === 'pro';
+              const isEnterprise = hasActiveSubscription && planSlug === 'enterprise';
 
-                <div className="p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-gradient-to-br from-slate-50 dark:from-slate-950/70 to-indigo-50/30 dark:to-indigo-950/20 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        Current Status
+              const planName = hasActiveSubscription ? `${subscription?.plan?.name ?? 'Starter'} Plan` : 'Free Sandbox';
+              const planPrice = hasActiveSubscription ? `$${subscription?.plan?.price ?? (isStarter ? 1 : isPro ? 30 : 99)}/mo` : '$0';
+              const aiEngine = isStarter
+                ? 'Standard AI (Claude 3.5 Haiku)'
+                : isPro
+                ? 'Advanced Pro AI (Claude 3.7 Sonnet)'
+                : isEnterprise
+                ? 'Unlimited Fine-Tuned Claude Engine'
+                : 'View / Sandbox Only';
+              const exportQuota = isStarter
+                ? '10 exports / month'
+                : isPro
+                ? '100 exports / month'
+                : isEnterprise
+                ? 'Unlimited exports'
+                : '0 exports (Preview only)';
+              const directExport = isStarter
+                ? 'Active (10 exports / mo in n8n JSON)'
+                : isPro
+                ? 'Active (100 exports / mo in all formats)'
+                : isEnterprise
+                ? 'Unlimited active exports'
+                : 'Template Preview Only';
+
+              return (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-base font-black font-display text-slate-950 dark:text-white">
+                      Plan &amp; Subscription
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Review your active tier, workflow limits, and billing status.
+                    </p>
+                  </div>
+
+                  <div className="p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-gradient-to-br from-slate-50 dark:from-slate-950/70 to-indigo-50/30 dark:to-indigo-950/20 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          Current Status
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-lg font-black font-display text-slate-900 dark:text-white">
+                            {planName}
+                          </h4>
+                          {hasActiveSubscription && (
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                              ({planPrice})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
+                        hasActiveSubscription
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-yellow-50 dark:bg-yellow-950/50 text-yellow-800 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'
+                      }`}>
+                        {hasActiveSubscription ? 'Active Subscription' : 'No Active Plan'}
                       </span>
-                      <h4 className="text-lg font-black font-display text-slate-900 dark:text-white">
-                        {hasActiveSubscription ? (subscription?.plan?.name ?? 'Pro Plan') : 'No Active Plan'}
-                      </h4>
                     </div>
 
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
-                      hasActiveSubscription
-                        ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                        : 'bg-yellow-50 dark:bg-yellow-950/50 text-yellow-800 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'
-                    }`}>
-                      {hasActiveSubscription ? 'Active Subscription' : 'No Active Plan'}
-                    </span>
+                    <div className="border-t border-slate-200/60 dark:border-slate-800/80 pt-3 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>AI Workflow Generation:</span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {aiEngine}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span>Monthly Workflow Exports:</span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {exportQuota}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span>Direct n8n Export:</span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {directExport}
+                        </span>
+                      </div>
+
+                      {subscription?.expiresAt && (
+                        <div className="flex items-center justify-between">
+                          <span>Billing Renewal / Expiry:</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {new Date(subscription.expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="border-t border-slate-200/60 dark:border-slate-800/80 pt-3 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                    <span>AI Workflow Generation:</span>
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {hasActiveSubscription ? 'Unlimited' : 'View / Sandbox Only'}
-                    </span>
-                  </div>
+                  {/* Payment History & Invoice Quick Card */}
+                  <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                        <FileText className="h-4.5 w-4.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-white">Payment History &amp; Invoices</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">View past payments and download official tax receipts.</div>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                    <span>Direct n8n Export:</span>
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {hasActiveSubscription ? 'Enabled' : 'Template Preview Only'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <button
-                    onClick={() => {
-                      onClose();
-                      navigate('/billing');
-                    }}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
-                  >
-                    <Sparkles className="h-3.5 w-3.5 text-yellow-300" />
-                    <span>{hasActiveSubscription ? 'Manage Subscription' : 'Get Starter ($1) or Pro'}</span>
-                    <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                  </button>
-
-                  {hasActiveSubscription && (
                     <button
                       onClick={() => {
                         onClose();
                         navigate('/billing');
                       }}
-                      className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl transition-all cursor-pointer"
                     >
-                      Cancel Plan Anytime
+                      <span>View Invoices</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </button>
-                  )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          onClose();
+                          navigate('/billing');
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span>Manage Invoices &amp; Billing</span>
+                      </button>
+
+                      {isStarter && (
+                        <button
+                          onClick={() => {
+                            onClose();
+                            navigate('/pricing');
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                          <span>Upgrade to Pro ($30)</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {hasActiveSubscription && (
+                      <button
+                        onClick={() => {
+                          onClose();
+                          navigate('/billing');
+                        }}
+                        className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      >
+                        Cancel Plan Anytime
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       </div>

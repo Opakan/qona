@@ -6,13 +6,14 @@ import {
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
   Lightbulb, Crown, Paperclip, ChevronDown, Bot, User as UserIcon,
   ShieldCheck, RefreshCw, Cpu, Layers, Maximize2, Minimize2, Clock, FlaskConical, CloudUpload, Wand2,
-  Share2, Link2,
+  Share2, Link2, Settings,
 } from 'lucide-react';
 import apiClient from '../api/client';
 import WorkflowGraph from '../components/chat/WorkflowGraph';
 import { SetupGuideCard } from '../components/SetupGuideCard';
 import { ExecutionPreviewModal } from '../components/ExecutionPreview/ExecutionPreviewModal';
 import { UpgradeProModal } from '../components/chat/UpgradeProModal';
+import { AccountSettingsModal } from '../components/AccountSettingsModal';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ExecutionSandbox } from '../components/ExecutionSandbox';
 import { DeployN8nModal } from '../components/DeployN8nModal';
@@ -63,6 +64,7 @@ export default function ChatPage() {
 
   const [selectedModel] = useState('Qonace Pro (n8n Expert Engine)');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Drag-to-resize listener
   useEffect(() => {
@@ -491,23 +493,37 @@ export default function ChatPage() {
 
           {/* User Profile Row */}
           <div className="flex items-center justify-between rounded-xl p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors">
-            <div className="flex items-center gap-2.5 truncate">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-extrabold text-xs uppercase shadow-2xs">
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="flex items-center gap-2.5 truncate text-left cursor-pointer group flex-1 min-w-0"
+              title="Account Settings & Billing"
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-extrabold text-xs uppercase shadow-2xs group-hover:scale-105 transition-transform">
                 {userInitial}
               </div>
               <div className="truncate">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{userName}</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{userName}</div>
                 <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{user?.email}</div>
               </div>
-            </div>
-
-            <button
-              onClick={async () => { await signOut(); navigate('/sign-in'); }}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Sign out"
-            >
-              <LogOut className="h-3.5 w-3.5" />
             </button>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Account Settings & Billing"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </button>
+
+              <button
+                onClick={async () => { await signOut(); navigate('/sign-in'); }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Sign out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -1043,6 +1059,12 @@ export default function ChatPage() {
       <UpgradeProModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+
+      {/* Account & Billing Settings Modal */}
+      <AccountSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
       />
 
       {/* Schedule Modal */}

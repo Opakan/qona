@@ -205,6 +205,17 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
       }
     }
 
+    // Fetch all user invoices (including plan details if linked to a subscription)
+    const allInvoices = await prisma.invoice.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        subscription: {
+          include: { plan: true },
+        },
+      },
+    });
+
     if (subscription) {
       const subExpiresAt = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
       const subUnexpired = Boolean(subExpiresAt && subExpiresAt > now);
@@ -215,13 +226,107 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
       return res.json({
         subscription: {
           ...subscription,
+          invoices: allInvoices,
           isAccessActive,
           remainingDays,
         },
+        invoices: allInvoices,
       });
     }
 
-    res.json({ subscription: null });
+    res.json({ subscription: null, invoices: allInvoices });
+  } catch (err) { next(err); }
+});
+
+paymentsRouter.get('/invoices', requireAuth, async (req, res, next) => {
+  try {
+    const prisma = getPrisma();
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: req.user!.authId },
+          { email: req.user!.email },
+        ],
+      },
+    });
+
+    if (!user) {
+      return res.json({ invoices: [] });
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        subscription: {
+          include: { plan: true },
+        },
+      },
+    });
+
+    res.json({ invoices });
+  } catch (err) { next(err); }
+});
+
+paymentsRouter.get('/invoices/:id/receipt', requireAuth, async (req, res, next) => {
+  try {
+    const prisma = getPrisma();
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: req.user!.authId },
+          { email: req.user!.email },
+        ],
+      },
+    });
+
+    if (!user) throw new AppError('User not found', 404);
+
+    const invoiceId = String(req.params.id);
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        userId: user.id,
+      },
+      include: {
+        subscription: {
+          include: { plan: true },
+        },
+      },
+    });
+
+    if (!invoice) throw new AppError('Invoice not found', 404);
+
+    const invoiceWithSub = invoice as typeof invoice & { subscription?: { plan?: { name?: string } } | null };
+    const planName = invoiceWithSub.subscription?.plan?.name || (invoice.metadata as any)?.plan || 'Starter';
+    const interval = (invoice.metadata as any)?.interval || 'month';
+
+    res.json({
+      receipt: {
+        invoiceId: invoice.id,
+        receiptNumber: `INV-${invoice.providerRef.replace(/[^a-zA-Z0-9]/g, '').slice(-12).toUpperCase()}`,
+        reference: invoice.providerRef,
+        provider: invoice.provider,
+        amount: invoice.amount,
+        currency: invoice.currency || 'USD',
+        status: invoice.status,
+        paidAt: invoice.paidAt || invoice.createdAt,
+        createdAt: invoice.createdAt,
+        customer: {
+          name: user.name || 'Valued Customer',
+          email: user.email,
+        },
+        plan: {
+          name: planName,
+          interval,
+        },
+        company: {
+          name: 'Qonace Inc.',
+          url: 'https://qonace.com',
+          supportEmail: 'support@qonace.com',
+        },
+      },
+    });
   } catch (err) { next(err); }
 });
 
