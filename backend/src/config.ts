@@ -48,10 +48,24 @@ for (const [key, val] of Object.entries(envObj)) {
   }
 }
 
+function getDatabaseUrl(): string {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  if (process.env.RDS_HOSTNAME) {
+    const user = process.env.RDS_USERNAME || 'postgres';
+    const pass = process.env.RDS_PASSWORD ? `:${encodeURIComponent(process.env.RDS_PASSWORD)}` : '';
+    const host = process.env.RDS_HOSTNAME;
+    const port = process.env.RDS_PORT || '5432';
+    const db = process.env.RDS_DB_NAME || 'ebdb';
+    return `postgresql://${user}${pass}@${host}:${port}/${db}`;
+  }
+  return 'postgresql://qona:qona_dev@localhost:5432/qona_dev';
+}
+
 export const config = {
   PORT: parseInt(process.env.PORT || '5000', 10),
   NODE_ENV: process.env.NODE_ENV ?? 'development',
-  DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://qona:qona_dev@localhost:5432/qona_dev',
+  DATABASE_URL: getDatabaseUrl(),
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
 
   SUPABASE_URL: process.env.SUPABASE_URL ?? 'https://icxlfpmldbpjjqxmjpol.supabase.co',
