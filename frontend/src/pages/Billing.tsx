@@ -225,7 +225,7 @@ export default function Billing() {
             </div>
 
             <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-              <strong>Keep your paid days:</strong> Auto-renewal will be stopped immediately so you won't be charged again. You retain full access to all <strong>{sub.plan.name}</strong> features for the remaining days of your current period (until {sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : 'period end'}).
+              <strong>Keep your paid days:</strong> Auto-renewal will be stopped immediately so you won't be charged again. You retain full access to all <strong>{sub?.plan?.name || 'Active Plan'}</strong> features for the remaining days of your current period (until {sub?.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : 'period end'}).
             </div>
 
             <div className="mt-4">

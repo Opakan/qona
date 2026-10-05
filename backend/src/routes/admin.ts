@@ -127,6 +127,65 @@ adminRouter.patch('/users/:id/role', async (req, res, next) => {
 });
 
 /**
+ * POST /api/admin/upgrade-user
+ * Manually activates a subscription for a user by email.
+ * Body: { email: string, plan: 'starter' | 'pro' | 'enterprise', interval?: 'month' | 'year' }
+ */
+adminRouter.post('/upgrade-user', async (req, res, next) => {
+  try {
+    const { getPrisma } = await import('../lib/prisma.js');
+    const prisma = getPrisma();
+    const { email, plan = 'starter', interval = 'month' } = req.body;
+
+    if (!email) throw new AppError('email is required', 400);
+
+    // Find the user
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) throw new AppError(`No user found with email: ${email}`, 404);
+
+    // Ensure plan exists
+    let dbPlan = await prisma.subscriptionPlan.findFirst({ where: { slug: plan } });
+    if (!dbPlan) {
+      const planDefaults: Record<string, { name: string; price: number; description: string; exports: number }> = {
+        starter: { name: 'Starter', price: 1, description: 'Start building workflows.', exports: 10 },
+        pro: { name: 'Pro', price: 30, description: 'For professionals and growing teams.', exports: 100 },
+        enterprise: { name: 'Enterprise', price: 99, description: 'For growing businesses.', exports: 1000 },
+      };
+      const def = planDefaults[plan] || planDefaults.starter;
+      dbPlan = await prisma.subscriptionPlan.create({
+        data: { name: def.name, slug: plan, description: def.description, price: def.price, currency: 'USD', interval, exports: def.exports, features: JSON.stringify([`${def.exports} workflow exports`, 'AI generation', 'n8n format export']), active: true },
+      });
+    }
+
+    // Cancel any existing active subs
+    await prisma.subscription.updateMany({
+      where: { userId: user.id, status: 'ACTIVE' },
+      data: { status: 'CANCELLED', cancelledAt: new Date() },
+    });
+
+    // Create new active subscription
+    const expiresAt = new Date();
+    if (interval === 'year') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    else expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+    const ref = `ADMIN-UPGRADE-${Date.now()}-${email.split('@')[0]}`;
+    const subscription = await prisma.subscription.create({
+      data: { userId: user.id, planId: dbPlan.id, provider: 'flutterwave', providerRef: ref, status: 'ACTIVE', expiresAt },
+      include: { plan: true },
+    });
+
+    // Create invoice record
+    await prisma.invoice.create({
+      data: { userId: user.id, subscriptionId: subscription.id, provider: 'flutterwave', providerRef: `${ref}-inv`, amount: dbPlan.price, currency: 'USD', status: 'PAID', paidAt: new Date(), metadata: { plan, interval, note: 'Manual admin upgrade' } },
+    });
+
+    res.json({ success: true, message: `${email} upgraded to ${dbPlan.name} (${interval})`, subscription });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/admin/users/:id
  * Deletes a user from the database.
  */

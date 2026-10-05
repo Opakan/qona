@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import {
   CheckCircle2,
   XCircle,
@@ -66,20 +67,51 @@ export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [copied, setCopied] = useState(false);
-  const provider = searchParams.get('provider') || 'flutterwave';
-  const planSlug = (searchParams.get('plan') || 'pro').toLowerCase();
-  const txRef = searchParams.get('tx_ref') || searchParams.get('reference') || '';
-  const transactionId = searchParams.get('transaction_id') || searchParams.get('transactionId') || '';
+  const { refreshSubscription } = useAuth();
+
+  // Extract params safely handling double question marks or raw window search
+  const getParam = (key: string): string => {
+    let val = searchParams.get(key);
+    if (!val && typeof window !== 'undefined' && window.location.search) {
+      const normalized = window.location.search.replace(/\?/g, '&').replace(/^&/, '?');
+      const fallbackParams = new URLSearchParams(normalized);
+      val = fallbackParams.get(key);
+    }
+    return val || '';
+  };
+
+  const provider = getParam('provider') || 'flutterwave';
+  const planSlug = (getParam('plan') || 'pro').toLowerCase().split('?')[0].split('&')[0];
+  
+  let txRef = getParam('tx_ref') || getParam('reference') || getParam('txRef');
+  let transactionId = getParam('transaction_id') || getParam('transactionId') || getParam('id');
+
+  // Check for embedded JSON payload in 'resp' or 'response' (Flutterwave format)
+  if (!transactionId || !txRef) {
+    const rawResp = getParam('resp') || getParam('response');
+    if (rawResp) {
+      try {
+        const parsed = JSON.parse(rawResp);
+        if (!transactionId) {
+          transactionId = String(parsed.id || parsed.data?.id || parsed.transaction_id || '');
+        }
+        if (!txRef) {
+          txRef = String(parsed.tx_ref || parsed.data?.tx_ref || parsed.txRef || parsed.reference || '');
+        }
+      } catch { /* ignore JSON parse error */ }
+    }
+  }
 
   const planInfo = PLAN_BENEFITS[planSlug] || PLAN_BENEFITS.pro;
 
   useEffect(() => {
+    let isMounted = true;
+
     const verify = async () => {
       try {
-        const paymentStatus = searchParams.get('status');
-
+        const paymentStatus = getParam('status');
         if (paymentStatus === 'cancelled' || paymentStatus === 'failed') {
-          setStatus('error');
+          if (isMounted) setStatus('error');
           return;
         }
 
@@ -88,22 +120,53 @@ export default function PaymentSuccess() {
         if (transactionId) queryParams.set('transaction_id', transactionId);
         if (provider) queryParams.set('provider', provider);
 
-        await apiClient.get(`/payments/verify?${queryParams.toString()}`);
-        setStatus('success');
+        let verified = false;
+        let lastError: unknown;
 
-        // Trigger celebratory confetti burst
-        confetti({
-          particleCount: 80,
-          spread: 80,
-          origin: { y: 0.55 },
-          colors: ['#4f46e5', '#6366f1', '#10b981', '#fbbf24', '#ffffff'],
-        });
-      } catch {
-        setStatus('error');
+        // Retry verify up to 3 times with progressive delay
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            await apiClient.get(`/payments/verify?${queryParams.toString()}`);
+            verified = true;
+            break;
+          } catch (err) {
+            lastError = err;
+            if (attempt < 2) {
+              await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+            }
+          }
+        }
+
+        // Always refresh subscription in AuthContext
+        await refreshSubscription();
+
+        if (verified) {
+          if (isMounted) {
+            setStatus('success');
+            confetti({
+              particleCount: 80,
+              spread: 80,
+              origin: { y: 0.55 },
+              colors: ['#4f46e5', '#6366f1', '#10b981', '#fbbf24', '#ffffff'],
+            });
+          }
+        } else {
+          console.error('[PaymentSuccess] Verify failed after retries:', lastError);
+          if (isMounted) setStatus('error');
+        }
+      } catch (err) {
+        console.error('[PaymentSuccess] Unexpected error:', err);
+        try { await refreshSubscription(); } catch { /* ignore */ }
+        if (isMounted) setStatus('error');
       }
     };
+
     verify();
-  }, [searchParams, provider, txRef, transactionId]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [txRef, transactionId, provider, refreshSubscription]);
 
   const handleCopyRef = () => {
     if (txRef || transactionId) {

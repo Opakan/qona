@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { z } from 'zod';
 import { paymentService } from '../services/payment.js';
@@ -81,27 +81,29 @@ paymentsRouter.get('/keys', (_req, res) => {
 
 paymentsRouter.post('/initialize', requireAuth, validate(InitPaymentSchema), async (req, res, next) => {
   try {
-    let userId = req.user!.authId;
-    let userEmail = req.user!.email;
-    let userName = req.user!.name;
+    const prisma = getPrisma();
 
-    try {
-      const prisma = getPrisma();
-      let user = await prisma.user.findUnique({ where: { authId: req.user!.authId } });
-      if (!user) {
-        user = await prisma.user.upsert({
-          where: { authId: req.user!.authId },
-          update: { email: req.user!.email, name: req.user!.name },
-          create: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name },
-        });
-      }
-      if (user) {
-        userId = user.id;
-        userEmail = user.email;
-        userName = user.name;
-      }
-    } catch (dbErr) {
-      console.warn('[Payments] DB user lookup warning (proceeding with session info):', (dbErr as Error).message);
+    // Resolve user by authId OR email (handles stale/fake authIds from manual admin operations)
+    let dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: req.user!.authId },
+          { email: req.user!.email },
+        ],
+      },
+    });
+
+    if (!dbUser) {
+      dbUser = await prisma.user.create({
+        data: { authId: req.user!.authId, email: req.user!.email, name: req.user!.name || 'User' },
+      });
+    } else if (dbUser.authId !== req.user!.authId) {
+      // Bind the real Supabase authId to this user record
+      dbUser = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { authId: req.user!.authId },
+      });
+      console.log(`[Payments] Bound real authId ${req.user!.authId} to user ${dbUser.email}`);
     }
 
     const planSlug = req.body.plan as 'starter' | 'pro' | 'enterprise';
@@ -110,12 +112,12 @@ paymentsRouter.post('/initialize', requireAuth, validate(InitPaymentSchema), asy
     const amount = interval === 'year' ? pricing.year : pricing.month;
 
     const result = await paymentService.initFlutterwave({
-      email: userEmail,
+      email: dbUser.email,
       amount,
       planSlug,
-      userId,
+      userId: dbUser.id,
       billingInterval: interval,
-      metadata: { name: userName, interval },
+      metadata: { name: dbUser.name, interval },
     });
 
     res.json(result);
@@ -125,19 +127,20 @@ paymentsRouter.post('/initialize', requireAuth, validate(InitPaymentSchema), asy
   }
 });
 
-paymentsRouter.get('/verify', requireAuth, async (req, res, next) => {
+paymentsRouter.get('/verify', optionalAuth, async (req, res, next) => {
   try {
     const prisma = getPrisma();
-    const txRef = (req.query.reference || req.query.tx_ref) as string | undefined;
-    const transactionId = (req.query.transaction_id || req.query.transactionId) as string | undefined;
+    const txRef = (req.query.reference || req.query.tx_ref || req.query.txRef) as string | undefined;
+    const transactionId = (req.query.transaction_id || req.query.transactionId || req.query.id) as string | undefined;
 
-    // If transaction_id is present, perform instant live verification with Flutterwave
-    if (transactionId) {
-      const subscription = await paymentService.verifyAndActivatePayment(transactionId, txRef, req.user);
+    // 1. If transactionId OR txRef is present, verify directly with Flutterwave live
+    const identifier = transactionId || txRef;
+    if (identifier) {
+      const subscription = await paymentService.verifyAndActivatePayment(identifier, txRef, req.user);
       return res.json({ subscription });
     }
 
-    // Fallback: check database for existing active subscription
+    // 2. Fallback: check database for existing active subscription by providerRef
     if (txRef) {
       const subscription = await prisma.subscription.findUnique({
         where: { providerRef: txRef },
@@ -148,7 +151,7 @@ paymentsRouter.get('/verify', requireAuth, async (req, res, next) => {
       }
     }
 
-    throw new AppError('Unable to verify transaction. Please provide transaction ID or contact support.', 400);
+    throw new AppError('Unable to verify transaction. Please provide transaction ID or reference.', 400);
   } catch (err) { next(err); }
 });
 
@@ -175,18 +178,38 @@ paymentsRouter.get('/subscription', requireAuth, async (req, res, next) => {
       });
     }
 
-    const subscription = await prisma.subscription.findFirst({
+    let subscription = await prisma.subscription.findFirst({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       include: { plan: true, invoices: { orderBy: { createdAt: 'desc' }, take: 10 } },
     });
 
+    // Check if subscription is actively valid
+    const now = new Date();
+    const expiresAtDate = subscription?.expiresAt ? new Date(subscription.expiresAt) : null;
+    const isUnexpired = Boolean(expiresAtDate && expiresAtDate > now);
+    let isCurrentlyActive = subscription && (
+      subscription.status === 'ACTIVE' || 
+      (subscription.status === 'CANCELLED' && isUnexpired)
+    );
+
+    // If user has no active subscription in DB, auto-reconcile with Flutterwave
+    if (!isCurrentlyActive && user.email) {
+      const reconciled = await paymentService.reconcileUserPayment(user);
+      if (reconciled) {
+        subscription = await prisma.subscription.findFirst({
+          where: { userId: user.id },
+          orderBy: { createdAt: 'desc' },
+          include: { plan: true, invoices: { orderBy: { createdAt: 'desc' }, take: 10 } },
+        });
+      }
+    }
+
     if (subscription) {
-      const now = new Date();
-      const expiresAtDate = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
-      const isUnexpired = Boolean(expiresAtDate && expiresAtDate > now);
-      const isAccessActive = subscription.status === 'ACTIVE' || (subscription.status === 'CANCELLED' && isUnexpired);
-      const remainingMs = expiresAtDate && isUnexpired ? expiresAtDate.getTime() - now.getTime() : 0;
+      const subExpiresAt = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
+      const subUnexpired = Boolean(subExpiresAt && subExpiresAt > now);
+      const isAccessActive = subscription.status === 'ACTIVE' || (subscription.status === 'CANCELLED' && subUnexpired);
+      const remainingMs = subExpiresAt && subUnexpired ? subExpiresAt.getTime() - now.getTime() : 0;
       const remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
 
       return res.json({

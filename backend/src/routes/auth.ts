@@ -72,7 +72,7 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
 
     const { getPrisma } = await import('../lib/prisma.js');
     const prisma = getPrisma();
-    const subscription = await prisma.subscription.findFirst({
+    let subscription = await prisma.subscription.findFirst({
       where: {
         userId: user.id,
         OR: [
@@ -83,6 +83,22 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (!subscription && user.email) {
+      try {
+        const { paymentService } = await import('../services/payment.js');
+        const reconciled = await paymentService.reconcileUserPayment(user);
+        if (reconciled) {
+          subscription = await prisma.subscription.findFirst({
+            where: { userId: user.id },
+            include: { plan: true },
+            orderBy: { createdAt: 'desc' },
+          });
+        }
+      } catch (recErr) {
+        console.warn('[Auth Me] Auto-reconciliation check error:', recErr);
+      }
+    }
 
     res.json({ user, subscription });
   } catch (error) {

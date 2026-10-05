@@ -55,8 +55,8 @@ export const paymentService = {
         tx_ref: ref,
         amount: params.amount,
         currency: 'USD',
-        redirect_url: `${config.APP_URL}/payment/success?provider=flutterwave&plan=${params.planSlug}`,
-        // Offer card, bank transfer, and USSD — bank transfer/USSD skip OTP entirely
+        // Pass clean redirect_url so Flutterwave can cleanly append query parameters without ? conflict
+        redirect_url: `${config.APP_URL}/payment/success`,
         payment_options: 'card,banktransfer,ussd,mobilemoney',
         customer: {
           email: params.email,
@@ -86,12 +86,75 @@ export const paymentService = {
     return { provider: 'flutterwave', authorizationUrl: data.data.link, reference: ref };
   },
 
-  async verifyFlutterwave(transactionId: string | number) {
+  async verifyFlutterwave(transactionIdOrRef: string | number) {
+    const trimmed = String(transactionIdOrRef).trim();
+    const isId = /^\d+$/.test(trimmed);
+    const url = isId
+      ? `${FLUTTERWAVE_BASE}/transactions/${trimmed}/verify`
+      : `${FLUTTERWAVE_BASE}/transactions/verify_by_reference?tx_ref=${encodeURIComponent(trimmed)}`;
+
     const { data } = await axios.get(
-      `${FLUTTERWAVE_BASE}/transactions/${transactionId}/verify`,
+      url,
       { headers: { Authorization: `Bearer ${config.FLUTTERWAVE_SECRET_KEY}` } },
     );
     return data;
+  },
+
+  async resolveDbUser(params: {
+    userIdMeta?: string;
+    customerEmail?: string;
+    customerName?: string;
+    reqUser?: { authId: string; email: string; name?: string };
+  }): Promise<{ id: string; authId: string; email: string; name: string }> {
+    const prisma = getPrisma();
+
+    const candidateEmails = [
+      params.customerEmail,
+      params.reqUser?.email,
+    ].filter((e): e is string => Boolean(e) && typeof e === 'string')
+     .map(e => e.toLowerCase().trim());
+
+    const candidateIds = [
+      params.userIdMeta,
+      params.reqUser?.authId,
+    ].filter((id): id is string => Boolean(id) && typeof id === 'string')
+     .map(id => id.trim());
+
+    // 1. Try finding existing DB user by email or by known ID/authId
+    let dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...candidateEmails.map(email => ({ email: { equals: email, mode: 'insensitive' as const } })),
+          ...candidateIds.flatMap(id => [{ id }, { authId: id }]),
+        ],
+      },
+    });
+
+    const preferredAuthId = params.reqUser?.authId || (params.userIdMeta && params.userIdMeta.length > 8 ? params.userIdMeta : undefined);
+    const primaryEmail = candidateEmails[0] || (params.reqUser?.email ? String(params.reqUser.email).toLowerCase().trim() : undefined);
+
+    if (!dbUser) {
+      if (!primaryEmail) {
+        throw new Error('Unable to resolve user: no valid email address found in transaction or session.');
+      }
+      dbUser = await prisma.user.create({
+        data: {
+          authId: preferredAuthId || `flw-user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          email: primaryEmail,
+          name: params.customerName || params.reqUser?.name || primaryEmail.split('@')[0],
+        },
+      });
+      console.log(`[Payment] Created new DB user ${dbUser.id} for ${primaryEmail}`);
+    } else if (preferredAuthId && dbUser.authId !== preferredAuthId) {
+      // Synchronize authId if it changed or was a placeholder
+      dbUser = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { authId: preferredAuthId },
+      });
+      console.log(`[Payment] Synced authId ${preferredAuthId} for user ${dbUser.email}`);
+    }
+
+    return dbUser;
   },
 
   async createSubscription(userId: string, planSlug: string, provider: PaymentProvider, providerRef: string, interval: 'month' | 'year' = 'month') {
@@ -187,8 +250,8 @@ export const paymentService = {
     });
   },
 
-  async verifyAndActivatePayment(transactionId: string | number, fallbackRef?: string, reqUser?: { authId: string; email: string; name?: string }) {
-    const verifyData = await this.verifyFlutterwave(transactionId);
+  async verifyAndActivatePayment(transactionIdOrRef: string | number, fallbackRef?: string, reqUser?: { authId: string; email: string; name?: string }) {
+    const verifyData = await this.verifyFlutterwave(transactionIdOrRef);
     if (verifyData.status !== 'success' || verifyData.data?.status !== 'successful') {
       throw new Error(`Flutterwave payment not successful: ${verifyData.message || 'Unknown error'}`);
     }
@@ -199,54 +262,16 @@ export const paymentService = {
     const planSlug = parsedMeta.planSlug || 'starter';
     const interval = parsedMeta.interval || 'month';
 
-    const prisma = getPrisma();
-    let targetUserId = parsedMeta.userId;
+    const dbUser = await this.resolveDbUser({
+      userIdMeta: parsedMeta.userId,
+      customerEmail: tx.customer?.email,
+      customerName: tx.customer?.name,
+      reqUser,
+    });
 
-    // 1. Try resolving DB user from parsedMeta.userId
-    if (targetUserId) {
-      const existing = await prisma.user.findFirst({
-        where: { OR: [{ id: targetUserId }, { authId: targetUserId }] },
-      });
-      if (existing) targetUserId = existing.id;
-    }
-
-    // 2. Try resolving DB user from authenticated session user (reqUser)
-    if (!targetUserId && reqUser) {
-      let dbUser = await prisma.user.findFirst({
-        where: { OR: [{ authId: reqUser.authId }, { email: reqUser.email }] },
-      });
-      if (!dbUser) {
-        dbUser = await prisma.user.create({
-          data: { authId: reqUser.authId, email: reqUser.email, name: reqUser.name || 'User' },
-        });
-      }
-      targetUserId = dbUser.id;
-    }
-
-    // 3. Try resolving DB user from Flutterwave customer email
-    if (!targetUserId && tx.customer?.email) {
-      let dbUser = await prisma.user.findFirst({
-        where: { email: tx.customer.email },
-      });
-      if (!dbUser) {
-        dbUser = await prisma.user.create({
-          data: {
-            authId: `fw-user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            email: tx.customer.email,
-            name: tx.customer.name || tx.customer.email.split('@')[0],
-          },
-        });
-      }
-      targetUserId = dbUser.id;
-    }
-
-    if (!targetUserId) {
-      throw new Error('Transaction verified, but could not associate with a valid user record.');
-    }
-
-    const subscription = await this.createSubscription(targetUserId, planSlug, 'flutterwave', ref, interval);
+    const subscription = await this.createSubscription(dbUser.id, planSlug, 'flutterwave', ref, interval);
     await this.createInvoice({
-      userId: targetUserId,
+      userId: dbUser.id,
       subscriptionId: subscription.id,
       provider: 'flutterwave',
       providerRef: ref,
@@ -256,6 +281,7 @@ export const paymentService = {
       metadata: { plan: planSlug, interval, email: tx.customer?.email, flutterwaveId: tx.id },
     });
 
+    console.log(`[Payment] Successfully activated ${planSlug} subscription for user ${dbUser.email} (ref: ${ref})`);
     return subscription;
   },
 
@@ -267,35 +293,15 @@ export const paymentService = {
       const planSlug = parsedMeta.planSlug || 'starter';
       const interval = parsedMeta.interval || 'month';
 
-      const prisma = getPrisma();
-      let targetUserId = parsedMeta.userId;
+      const dbUser = await this.resolveDbUser({
+        userIdMeta: parsedMeta.userId,
+        customerEmail: tx.customer?.email,
+        customerName: tx.customer?.name,
+      });
 
-      if (targetUserId) {
-        const existing = await prisma.user.findFirst({
-          where: { OR: [{ id: targetUserId }, { authId: targetUserId }] },
-        });
-        if (existing) targetUserId = existing.id;
-      }
-
-      if (!targetUserId && tx.customer?.email) {
-        let dbUser = await prisma.user.findFirst({ where: { email: tx.customer.email } });
-        if (!dbUser) {
-          dbUser = await prisma.user.create({
-            data: {
-              authId: `fw-user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-              email: tx.customer.email,
-              name: tx.customer.name || tx.customer.email.split('@')[0],
-            },
-          });
-        }
-        targetUserId = dbUser.id;
-      }
-
-      if (!targetUserId) throw new Error('Missing user metadata in webhook payload');
-
-      const subscription = await this.createSubscription(targetUserId, planSlug, 'flutterwave', ref, interval);
+      const subscription = await this.createSubscription(dbUser.id, planSlug, 'flutterwave', ref, interval);
       await this.createInvoice({
-        userId: targetUserId,
+        userId: dbUser.id,
         subscriptionId: subscription.id,
         provider: 'flutterwave',
         providerRef: ref,
@@ -304,7 +310,45 @@ export const paymentService = {
         status: 'PAID',
         metadata: { plan: planSlug, interval, email: tx.customer?.email, webhookEvent: payload.event },
       });
+      console.log(`[Webhook] Activated ${planSlug} subscription for ${dbUser.email}`);
     }
+  },
+
+  async reconcileUserPayment(user: { id: string; email: string; authId?: string; name?: string }) {
+    if (!user.email || !config.FLUTTERWAVE_SECRET_KEY) return null;
+    try {
+      const fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const toDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const encodedEmail = encodeURIComponent(user.email.toLowerCase().trim());
+
+      const { data } = await axios.get(
+        `${FLUTTERWAVE_BASE}/transactions?from=${fromDate}&to=${toDate}&customer_email=${encodedEmail}`,
+        {
+          headers: { Authorization: `Bearer ${config.FLUTTERWAVE_SECRET_KEY}` },
+          timeout: 7000,
+        },
+      );
+
+      if (data?.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+        const successfulTxs = data.data
+          .filter((t: any) => t.status === 'successful')
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        if (successfulTxs.length > 0) {
+          const latestTx = successfulTxs[0];
+          console.log(`[Reconcile] Auto-activating successful Flutterwave payment for ${user.email}, txId: ${latestTx.id}`);
+          const sub = await this.verifyAndActivatePayment(latestTx.id, latestTx.tx_ref, {
+            authId: user.authId || user.id,
+            email: user.email,
+            name: user.name,
+          });
+          return sub;
+        }
+      }
+    } catch (err) {
+      console.warn(`[Payment Reconciliation Warning] Could not check Flutterwave transactions for ${user.email}:`, err instanceof Error ? err.message : err);
+    }
+    return null;
   },
 
   async cancelSubscription(userId: string, _reason?: string) {
