@@ -34,8 +34,7 @@ if 'prisma' in pkg['dependencies']:
     del pkg['dependencies']['prisma']
 
 pkg['scripts'] = {
-    'start': 'node dist/index.js',
-    'postinstall': 'node -e "const fs = require(\'fs\'); if (fs.existsSync(\'.prisma_bundle\')) fs.cpSync(\'.prisma_bundle\', \'node_modules/.prisma\', { recursive: true, force: true });"'
+    'start': 'node start.js'
 }
 pkg['engines'] = {
     'node': '>=20.0.0'
@@ -48,9 +47,36 @@ with open(os.path.join(staging_dir, 'package.json'), 'w', encoding='utf-8') as f
 with open(os.path.join(staging_dir, '.npmrc'), 'w', encoding='utf-8', newline='\n') as f:
     f.write('audit=false\nfund=false\nupdate-notifier=false\n')
 
-# 4. Create Procfile
+# 3c. Create robust start.js launcher
+start_js_content = """import fs from 'node:fs';
+import path from 'node:path';
+
+// Restore .prisma from .prisma_bundle if missing
+try {
+  const root = process.cwd();
+  const bundleDir = path.join(root, '.prisma_bundle');
+  const targetDir = path.join(root, 'node_modules', '.prisma');
+  const targetSchema = path.join(targetDir, 'client', 'schema.prisma');
+
+  if (fs.existsSync(bundleDir) && !fs.existsSync(targetSchema)) {
+    fs.mkdirSync(path.join(targetDir, 'client'), { recursive: true });
+    fs.cpSync(bundleDir, targetDir, { recursive: true, force: true });
+    console.log('[Prisma Failsafe] Restored .prisma from .prisma_bundle');
+  }
+} catch (err) {
+  console.warn('[Prisma Failsafe Warning]:', err);
+}
+
+// Start backend server
+await import('./dist/index.js');
+"""
+
+with open(os.path.join(staging_dir, 'start.js'), 'w', encoding='utf-8', newline='\n') as f:
+    f.write(start_js_content)
+
+# 4. Create Procfile (clean single command for systemd)
 with open(os.path.join(staging_dir, 'Procfile'), 'w', encoding='utf-8', newline='\n') as f:
-    f.write('web: node -e "const fs = require(\'fs\'); if (fs.existsSync(\'.prisma_bundle\') && !fs.existsSync(\'node_modules/.prisma/client/schema.prisma\')) fs.cpSync(\'.prisma_bundle\', \'node_modules/.prisma\', { recursive: true, force: true });" && node dist/index.js\n')
+    f.write('web: node start.js\n')
 
 # 5. Copy backend dist & prisma
 shutil.copytree(os.path.join(root_dir, 'backend', 'dist'), os.path.join(staging_dir, 'dist'))

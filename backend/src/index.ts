@@ -17,7 +17,9 @@ app.listen(port, '0.0.0.0', () => {
         ? 'backend/prisma/schema.prisma'
         : null;
 
-    if (schemaPath) {
+    const hasPrismaCli = fs.existsSync('node_modules/.bin/prisma') || fs.existsSync('node_modules/prisma');
+
+    if (schemaPath && (hasPrismaCli || process.env.AUTO_MIGRATE === 'true')) {
       console.log(`[Qona API] Synchronizing Prisma schema with database using ${schemaPath}...`);
       exec(`npx prisma db push --accept-data-loss --schema=${schemaPath}`, (error, stdout) => {
         if (error) {
