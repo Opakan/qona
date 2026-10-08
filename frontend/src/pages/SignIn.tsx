@@ -72,8 +72,8 @@ export default function SignIn() {
       return;
     }
 
-    if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters. Use a mix of letters, numbers, and symbols for better security.');
       return;
     }
 
