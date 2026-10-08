@@ -207,7 +207,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
   useEffect(() => {
     let cancelled = false;
     const fetchTemplates = async () => {
-      // 1. Load instant static CDN catalog (2,903 templates available immediately)
+      // 1. Load instant static CDN catalog (14,000+ templates available immediately)
       try {
         const staticRes = await fetch('/templates-catalog.json');
         if (staticRes.ok) {

@@ -1,5 +1,6 @@
 import { chatCompletion } from './bedrock.js';
 import { nodeRegistry } from './node-registry.js';
+import { templateSearchService } from './template-search.service.js';
 import { CREDENTIAL_GUARD_PROMPT } from '@qona/shared';
 
 export interface PlannerRequirement {
@@ -20,8 +21,9 @@ export class WorkflowPlannerError extends Error {
   }
 }
 
-function buildPlannerPrompt(): string {
+function buildPlannerPrompt(fewShotContext?: string): string {
   const registryCtx = nodeRegistry.buildRegistryContext();
+  const fewShotBlock = fewShotContext ? `\n\n${fewShotContext}` : '';
 
   return `You are the Workflow Planner for Qona.
 Your job is NOT to build workflows. Your job is to discover missing requirements.
@@ -43,6 +45,8 @@ ${registryCtx}
 
 ${CREDENTIAL_GUARD_PROMPT}
 
+${fewShotBlock}
+
 Respond with ONLY this JSON structure:
 
 {
@@ -62,20 +66,24 @@ Respond with ONLY this JSON structure:
 }
 
 export async function planWorkflow(prompt: string): Promise<PlannerResult> {
-  if (!prompt || prompt.trim().length === 0) {
+  const cleanPrompt = prompt ? prompt.trim() : '';
+  if (!cleanPrompt) {
     throw new WorkflowPlannerError('Prompt cannot be empty');
   }
 
-  if (prompt.trim().length > 5000) {
+  if (cleanPrompt.length > 5000) {
     throw new WorkflowPlannerError('Prompt exceeds maximum length of 5000 characters');
   }
 
-  const systemPrompt = buildPlannerPrompt();
+  // Retrieve relevant reference templates from 14,000+ library
+  const relevantTemplates = templateSearchService.findRelevantTemplatesForAI(cleanPrompt, 2);
+  const fewShotCtx = templateSearchService.formatFewShotContext(relevantTemplates);
+  const systemPrompt = buildPlannerPrompt(fewShotCtx);
 
   const raw = await chatCompletion(
     [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: prompt.trim() },
+      { role: 'user', content: cleanPrompt },
     ],
     { temperature: 0.2, max_tokens: 2000, retries: 2, modelTier: 'haiku' },
   );

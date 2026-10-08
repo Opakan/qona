@@ -21,6 +21,8 @@ export interface ParsedTemplate {
   n8nDefinition: Record<string, unknown>;
   nodeTypes: string[];
   triggerTypes: string[];
+  totalViews?: number;
+  recentViews?: number;
   updatedAt: string;
 }
 

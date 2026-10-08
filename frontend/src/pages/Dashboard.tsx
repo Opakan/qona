@@ -400,7 +400,7 @@ export default function Dashboard() {
                     Ready-Made Automation Templates
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                    Launch pre-configured n8n workflows instantly from our library of 2,903+ automation templates.
+                    Launch pre-configured n8n workflows instantly from our library of 14,000+ automation templates.
                   </p>
                 </div>
                 <TemplateGallery />

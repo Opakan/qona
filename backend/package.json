@@ -17,6 +17,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "ingest:workflows": "tsx src/scripts/ingest-n8n-workflows.ts",
+    "ingest:community": "tsx src/scripts/ingest-n8n-community.ts",
     "db:studio": "prisma studio",
     "clean": "rm -rf dist"
   },

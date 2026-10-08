@@ -64,6 +64,12 @@ Rules:
 - Otherwise set "type" to "workflow" and include the full workflow graph`;
   },
 
+  buildGenerateWorkflowPrompt(fewShotContext?: string): string {
+    const base = this.GENERATE_WORKFLOW;
+    if (!fewShotContext || fewShotContext.trim().length === 0) return base;
+    return `${base}\n\n${fewShotContext}`;
+  },
+
   GET_CLARIFICATION: `You are Qonace. The user described an automation but details are missing.
 
 Analyze the request and return:

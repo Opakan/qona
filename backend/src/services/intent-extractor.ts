@@ -3,10 +3,12 @@ import { IntentExtractionResultSchema, CREDENTIAL_GUARD_PROMPT } from '@qona/sha
 import type { IntentExtractionResult } from '@qona/shared';
 import { nodeRegistry } from './node-registry.js';
 import { workflowMemory } from './workflow-memory.js';
+import { templateSearchService } from './template-search.service.js';
 
-function buildPrompt(memoryContext?: string): string {
+function buildPrompt(memoryContext?: string, fewShotContext?: string): string {
   const registryCtx = nodeRegistry.buildRegistryContext();
   const memoryBlock = memoryContext ?? '';
+  const fewShotBlock = fewShotContext ? `\n\n${fewShotContext}` : '';
   return `You are Qonace's intent extraction engine. Your job is to parse a user's automation request and extract structured information.
 
 Analyze the user's prompt and return a JSON object in this EXACT format:
@@ -67,7 +69,8 @@ Rules:
 
 ${CREDENTIAL_GUARD_PROMPT}
 
-${memoryBlock}`;}
+${memoryBlock}${fewShotBlock}`;
+}
 
 export class IntentExtractionError extends Error {
   constructor(message: string, public readonly rawResponse?: string) {
@@ -123,7 +126,11 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
     };
   }
 
-  // Fetch similar successful workflows from memory
+  // 1. Fetch top relevant few-shot templates from the 14,000+ n8n library via RAG
+  const relevantTemplates = templateSearchService.findRelevantTemplatesForAI(cleanPrompt, 3);
+  const fewShotCtx = templateSearchService.formatFewShotContext(relevantTemplates);
+
+  // 2. Fetch similar successful workflows from memory
   const memoryCtx = await workflowMemory.buildMemoryContext({
     goal: cleanPrompt,
     triggerType: '',
@@ -131,7 +138,7 @@ export async function extractIntent(prompt: string): Promise<IntentExtractionRes
     integrationTypes: [],
   });
 
-  const systemPrompt = buildPrompt(memoryCtx);
+  const systemPrompt = buildPrompt(memoryCtx, fewShotCtx);
 
   const raw = await chatCompletion(
     [

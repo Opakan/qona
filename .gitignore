@@ -26,3 +26,7 @@ playwright-report/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scraped cache
+scratch_templates_index.json
+.eb_staging/

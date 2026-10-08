@@ -12,6 +12,7 @@ import { compileInternalGraph } from './n8n-compiler.js';
 import { nodeRegistry } from './node-registry.js';
 import { workflowMemory } from './workflow-memory.js';
 import { resolveUserId } from './user-sync.js';
+import { templateSearchService } from './template-search.service.js';
 import {
   AIClarificationResponseSchema,
   InternalGraphSchema,
@@ -827,8 +828,13 @@ export const conversationEngine = {
     log('info', 'Sending prompt to AWS Bedrock', { promptLength: userMessage.length });
 
     try {
+      // 1. Retrieve top 2-3 matched real-world workflows from 14,000+ catalog
+      const relevantTemplates = templateSearchService.findRelevantTemplatesForAI(userMessage, 3);
+      const fewShotContext = templateSearchService.formatFewShotContext(relevantTemplates);
+      const systemPrompt = AI_PROMPTS.buildGenerateWorkflowPrompt(fewShotContext);
+
       const rawContent = await chatCompletion([
-        { role: 'system', content: AI_PROMPTS.GENERATE_WORKFLOW },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
       ], { modelTier: 'sonnet' });
 

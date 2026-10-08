@@ -53,7 +53,7 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({ isOpen, onClos
             { title: 'Advanced Workflow AI Reasoning Engine', desc: 'Smarter multi-step logic, complex community nodes & LangChain agents.' },
             { title: 'Instant Execution Simulator', desc: 'Full step-by-step trace simulation with custom test payloads.' },
             { title: '1-Click Direct n8n Export & Clipboard Copy', desc: 'Instant JSON exports compatible with n8n Cloud & Self-Hosted.' },
-            { title: 'Priority RAG Knowledge Retrieval', desc: 'Faster compilation with access to 2,903+ n8n workflows.' },
+            { title: 'Priority RAG Knowledge Retrieval', desc: 'Faster compilation with access to 14,000+ n8n workflows.' },
           ].map((feature, i) => (
             <div key={i} className="flex items-start gap-3">
               <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 mt-0.5">
