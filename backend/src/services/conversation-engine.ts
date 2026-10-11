@@ -3,7 +3,7 @@ import { AI_PROMPTS } from './ai-prompts.js';
 import { conversationService } from './conversation.service.js';
 import { planningSessionService } from './planning-session.js';
 import { checkWorkflowCompleteness } from './workflow-safety.js';
-import { extractIntent } from './intent-extractor.js';
+import { extractIntent, heuristicExtractIntent } from './intent-extractor.js';
 import { buildInitialPlan, collectAnswer, generateAIQuestion, detectMissingRequirements } from './requirement-collector.js';
 import { buildInternalGraph, validatePlanForGraphBuild } from './internal-graph-builder.js';
 import { getPrisma } from '../lib/prisma.js';
@@ -182,34 +182,37 @@ Formatting & Architecture Guidelines:
     );
     return summary;
   } catch {
+    const triggerLabel = plan.trigger?.label || plan.trigger?.type?.replace(/^n8n-nodes-base\./, '') || 'Trigger Node';
+    const actionNodes = plan.actions.map((a) => {
+      let lbl = a.label || a.type.replace(/^n8n-nodes-base\./, '');
+      if (a.config?.url) {
+        lbl += ` (${a.config.method || 'GET'} ${a.config.url})`;
+      }
+      return `[${lbl}]`;
+    });
+
+    const flowDiagram = [`[${triggerLabel}]`, ...actionNodes.map((n) => `       ↓\n${n}`)].join('\n');
+
     return `### 🚀 Automated Workflow Architecture for: "${plan.goal}"
 
-Here is how we can build this automation for you:
+Here is how your n8n automation is designed:
 
 \`\`\`text
-[Input Trigger] 
-       ↓
-[Process Data / Audio] 
-       ↓
-[AI Intelligence & Formatting]
-       ↓
- ┌──────────────┬──────────────┬──────────────┐
- ↓              ↓              ↓              ↓
-[Show Notes]   [Summaries]   [Social Posts] [Action Items]
- └──────────────┴──────────────┴──────────────┘
-       ↓
-[Save to Google Drive / Notion / Slack / Email]
+${flowDiagram}
 \`\`\`
 
 **⚡ 1. The Trigger (When something happens...)**
-- **${plan.trigger?.label || 'Starting Event'}**: Kicks off the workflow automatically whenever new input or a webhook is received.
+- **${triggerLabel}**: ${plan.trigger?.description || 'Kicks off the workflow automatically whenever triggered.'}
 
-**⚙️ 2. The Actions (Do something with another app...)**
-${plan.actions.map((a, i) => `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Processes and transforms your data'}`).join('\n')}
+**⚙️ 2. The Actions (Automated steps...)**
+${plan.actions.map((a, i) => {
+  const cfg = a.config?.url ? ` Target URL: \`${a.config.url}\`` : '';
+  return `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Executes automated operation.'}${cfg}`;
+}).join('\n')}
 
 ---
 
-${nextQuestionText || 'Would you like to customize any steps, or shall I compile and export this n8n workflow?'}`;
+${nextQuestionText || 'Everything is structured on your canvas! Would you like to build and export this n8n workflow?'}`;
   }
 }
 
@@ -396,32 +399,8 @@ export const conversationEngine = {
       intent = await extractIntent(userMessage);
       log('info', 'Intent extracted', { trigger: intent.trigger.type, actions: intent.actions.length, confidence: intent.confidence });
     } catch (err) {
-      log('warn', 'Intent extraction failed', { error: (err as Error).message });
-      const friendlyHelp = `I'd love to help you build that! Could you tell me a bit more about what apps you want to connect and what the automation should do?`;
-
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: friendlyHelp,
-        metadata: { sessionId, sessionState: 'collecting_intent' },
-      });
-      return {
-        type: 'question',
-        sessionId,
-        sessionState: 'collecting_intent',
-        explanation: friendlyHelp,
-        singleQuestion: {
-          id: 'q_starter_goal',
-          question: 'What workflow would you like to build today?',
-          field: 'workflow_goal',
-          options: [
-            'AI Podcast Summarizer & Enhancer',
-            'Customer Support & Ticket Auto-Responder',
-            'New Lead / Payment Notifications (Slack/Email)',
-            'Daily Database / Google Sheets Summary',
-          ],
-          required: true,
-        },
-      };
+      log('warn', 'Intent extraction threw error, falling back to heuristic intent extractor', { error: (err as Error).message });
+      intent = heuristicExtractIntent(userMessage);
     }
 
     await planningSessionService.setExtractedIntent(sessionId, intent);

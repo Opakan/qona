@@ -212,6 +212,21 @@ async function callDeepSeek(
   return cleanJsonOutput(text);
 }
 
+function isFatalAuthError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    msg.includes('error 002') ||
+    msg.includes('not allowed for this account') ||
+    msg.includes('unrecognizedclientexception') ||
+    msg.includes('invalidclienttokenid') ||
+    msg.includes('accessdenied') ||
+    msg.includes('status code 401') ||
+    msg.includes('status code 402') ||
+    msg.includes('status code 403')
+  );
+}
+
 /**
  * Invoke Anthropic Claude with multiple retries and provider fallback
  */
@@ -221,6 +236,7 @@ export async function chatCompletion(
 ): Promise<string> {
   const maxRetries = options?.retries ?? 2;
   let lastError: Error | null = null;
+  let lastDeepSeekError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -244,8 +260,13 @@ export async function chatCompletion(
           console.log('[Claude AI] Attempting fallback to DeepSeek API...');
           return await callDeepSeek(messages, options);
         } catch (deepseekErr: unknown) {
+          lastDeepSeekError = deepseekErr as Error;
           console.warn('[Claude AI] DeepSeek fallback error:', (deepseekErr as Error).message);
         }
+      }
+
+      if (isFatalAuthError(err) && (!config.DEEPSEEK_API_KEY || isFatalAuthError(lastDeepSeekError))) {
+        break;
       }
 
       if (attempt < maxRetries) {

@@ -118,6 +118,7 @@ export function determineRequirements(nodeType: string, config: Record<string, u
   }
   if (!operation) {
     if (n8nType === 'n8n-nodes-base.webhook') operation = 'listen';
+    else if (n8nType.includes('manualTrigger') || n8nType === 'manual') operation = 'manual';
     else if (n8nType.includes('emailSend') || n8nType.includes('gmail')) operation = 'send';
     else if (n8nType.includes('slack')) operation = 'postMessage';
     else if (n8nType.includes('telegram')) operation = 'sendMessage';
@@ -134,6 +135,7 @@ export function determineRequirements(nodeType: string, config: Record<string, u
 
   const noResourceNodes = [
     'n8n-nodes-base.httpRequest',
+    'n8n-nodes-base.manualTrigger',
     'n8n-nodes-base.code',
     'n8n-nodes-base.noOp',
     'n8n-nodes-base.wait',
