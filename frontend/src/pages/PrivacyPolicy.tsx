@@ -78,7 +78,7 @@ export default function PrivacyPolicy() {
                 No Public Model Training on Private Prompts
               </p>
               <p>
-                When you generate or refine a workflow, prompts are transmitted via enterprise APIs (AWS Bedrock Anthropic Claude 3.5 Sonnet and DeepSeek) solely for the purpose of constructing your n8n workflow graph. We do not sell your automation structures, and your private prompts are not used to train public foundation models without your explicit consent.
+                When you generate or refine a workflow, prompts are transmitted via enterprise APIs (AWS Bedrock Anthropic Claude 3.5 Sonnet) solely for the purpose of constructing your n8n workflow graph. We do not sell your automation structures, and your private prompts are not used to train public foundation models without your explicit consent.
               </p>
             </div>
           </section>

@@ -301,7 +301,7 @@ export const workflowMemory = {
     });
   },
 
-  // ── Build context string for DeepSeek ──
+  // ── Build context string for Claude / Bedrock ──
   async buildMemoryContext(query: {
     goal: string;
     triggerType: string;

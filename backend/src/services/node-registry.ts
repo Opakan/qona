@@ -143,7 +143,7 @@ export const nodeRegistry = {
 
   /**
    * Build a text summary of all registered nodes for injection
-   * into DeepSeek system prompts. Tells the AI exactly what node
+   * into AI system prompts. Tells the AI exactly what node
    * types and fields are available.
    */
   buildRegistryContext(): string {

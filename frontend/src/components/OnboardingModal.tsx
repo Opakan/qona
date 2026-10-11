@@ -39,7 +39,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
       icon: <Bot className="h-8 w-8 text-indigo-600" />,
       bullets: [
         'Over 200+ built-in service connectors: Slack, Stripe, Gmail, PostgreSQL, and more',
-        'Intelligent multi-step reasoning powered by Claude 3.5 Sonnet and DeepSeek',
+        'Intelligent multi-step reasoning powered by Claude 3.5 Sonnet',
         'Automatic credential isolation: zero sensitive API keys stored on server',
       ],
       preview: (

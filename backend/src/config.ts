@@ -72,8 +72,6 @@ export const config = {
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? 'sb_publishable_n70nfEz0nzetwwsrtG3LYA_AuKWCLg4',
   SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET ?? '',
 
-  DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? '',
-
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022',
 

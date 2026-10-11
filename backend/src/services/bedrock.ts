@@ -161,57 +161,6 @@ async function callBedrock(
   return cleanJsonOutput(text);
 }
 
-/**
- * Call DeepSeek API as high-availability fallback
- */
-async function callDeepSeek(
-  messages: ChatMessage[],
-  options?: ChatCompletionOptions,
-): Promise<string> {
-  const systemMessage = messages
-    .filter((m) => m.role === 'system')
-    .map((m) => m.content)
-    .join('\n\n');
-
-  const conversationMessages = messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-    }));
-
-  if (conversationMessages.length === 0) {
-    conversationMessages.push({ role: 'user', content: 'Generate the response in JSON format.' });
-  }
-
-  const response = await axios.post(
-    'https://api.deepseek.com/chat/completions',
-    {
-      model: 'deepseek-chat',
-      messages: [
-        ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
-        ...conversationMessages,
-      ],
-      temperature: options?.temperature ?? 0.2,
-      max_tokens: options?.max_tokens ?? 4096,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${config.DEEPSEEK_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 60000,
-    },
-  );
-
-  const text = response.data?.choices?.[0]?.message?.content;
-  if (!text) {
-    throw new Error('Empty response received from DeepSeek API');
-  }
-
-  return cleanJsonOutput(text);
-}
-
 function isFatalAuthError(err: unknown): boolean {
   if (!err) return false;
   const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
@@ -228,7 +177,7 @@ function isFatalAuthError(err: unknown): boolean {
 }
 
 /**
- * Invoke Anthropic Claude with multiple retries and provider fallback
+ * Invoke Anthropic Claude with retries
  */
 export async function chatCompletion(
   messages: ChatMessage[],
@@ -236,7 +185,6 @@ export async function chatCompletion(
 ): Promise<string> {
   const maxRetries = options?.retries ?? 2;
   let lastError: Error | null = null;
-  let lastDeepSeekError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -254,18 +202,7 @@ export async function chatCompletion(
       lastError = err as Error;
       console.error(`[Claude AI] Error on attempt ${attempt + 1}/${maxRetries + 1}:`, (err as Error).message);
 
-      // Attempt DeepSeek fallback if Bedrock/Claude encounters network/auth/model errors
-      if (config.DEEPSEEK_API_KEY) {
-        try {
-          console.log('[Claude AI] Attempting fallback to DeepSeek API...');
-          return await callDeepSeek(messages, options);
-        } catch (deepseekErr: unknown) {
-          lastDeepSeekError = deepseekErr as Error;
-          console.warn('[Claude AI] DeepSeek fallback error:', (deepseekErr as Error).message);
-        }
-      }
-
-      if (isFatalAuthError(err) && (!config.DEEPSEEK_API_KEY || isFatalAuthError(lastDeepSeekError))) {
+      if (isFatalAuthError(err)) {
         break;
       }
 

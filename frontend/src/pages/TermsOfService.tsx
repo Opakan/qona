@@ -53,7 +53,7 @@ export default function TermsOfService() {
           <section className="space-y-3">
             <h2 className="text-xl font-black font-display text-slate-950">2. Description of the Service</h2>
             <p>
-              Qonace provides an AI-powered automation architecture suite. The Service utilizes large language models (including Anthropic Claude 3.5 Sonnet and DeepSeek) paired with an automated compiler to translate natural language user prompts into workflow structures and JSON representations compatible with the open-source automation platform <strong>n8n</strong>.
+              Qonace provides an AI-powered automation architecture suite. The Service utilizes large language models (including Anthropic Claude 3.5 Sonnet) paired with an automated compiler to translate natural language user prompts into workflow structures and JSON representations compatible with the open-source automation platform <strong>n8n</strong>.
             </p>
             <p>
               Features include conversational workflow planning, live 3-pane interactive visual node graphs, ready-to-run automation templates, and direct workflow export in n8n-compliant JSON formats.

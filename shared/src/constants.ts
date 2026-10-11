@@ -75,7 +75,7 @@ export const CREDENTIAL_FIELDS = new Set([
   'jwtSecret', 'jwt_secret', 'signingKey', 'signing_key',
   'encryptionKey', 'encryption_key',
   'supabaseKey', 'supabase_key', 'supabaseServiceKey',
-  'deepseekKey', 'openaiKey', 'stripeKey', 'paystackKey', 'flutterwaveKey',
+  'openaiKey', 'stripeKey', 'paystackKey', 'flutterwaveKey',
 ]);
 
 export const CREDENTIAL_GUARD_PROMPT = `
