@@ -32,7 +32,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       const codeMatch = remaining.match(/^`([^`]+)`/);
       if (codeMatch) {
         parts.push(
-          <code key={key++} className="px-1.5 py-0.5 rounded-md bg-slate-100 text-indigo-700 font-mono text-[11px] font-semibold border border-slate-200/80">
+          <code key={key++} className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 font-mono text-[11px] font-semibold border border-slate-200/80 dark:border-slate-700">
             {codeMatch[1]}
           </code>
         );
@@ -43,7 +43,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       // Bold **bold**
       const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/);
       if (boldMatch) {
-        parts.push(<strong key={key++} className="font-bold text-slate-900">{parseInline(boldMatch[1])}</strong>);
+        parts.push(<strong key={key++} className="font-bold text-slate-900 dark:text-white">{parseInline(boldMatch[1])}</strong>);
         remaining = remaining.slice(boldMatch[0].length);
         continue;
       }
@@ -51,7 +51,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       // Italic *italic* or _italic_
       const italicMatch = remaining.match(/^\*([^*]+)\*/) || remaining.match(/^_([^_]+)_/);
       if (italicMatch) {
-        parts.push(<em key={key++} className="italic text-slate-700">{parseInline(italicMatch[1])}</em>);
+        parts.push(<em key={key++} className="italic text-slate-700 dark:text-slate-300">{parseInline(italicMatch[1])}</em>);
         remaining = remaining.slice(italicMatch[0].length);
         continue;
       }
@@ -60,7 +60,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
         parts.push(
-          <a key={key++} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline hover:text-indigo-800 font-medium">
+          <a key={key++} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
             {linkMatch[1]}
           </a>
         );
@@ -181,32 +181,32 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
 
     // Headers
     if (line.startsWith('# ')) {
-      elements.push(<h1 key={i} className="text-base sm:text-lg font-extrabold text-slate-900 mt-3 mb-1.5 tracking-tight">{parseInline(line.slice(2))}</h1>);
+      elements.push(<h1 key={i} className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white mt-3 mb-1.5 tracking-tight">{parseInline(line.slice(2))}</h1>);
       continue;
     }
     if (line.startsWith('## ')) {
-      elements.push(<h2 key={i} className="text-sm sm:text-base font-bold text-slate-900 mt-3 mb-1.5 tracking-tight">{parseInline(line.slice(3))}</h2>);
+      elements.push(<h2 key={i} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mt-3 mb-1.5 tracking-tight">{parseInline(line.slice(3))}</h2>);
       continue;
     }
     if (line.startsWith('### ')) {
-      elements.push(<h3 key={i} className="text-xs sm:text-sm font-bold text-slate-900 mt-2.5 mb-1">{parseInline(line.slice(4))}</h3>);
+      elements.push(<h3 key={i} className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2.5 mb-1">{parseInline(line.slice(4))}</h3>);
       continue;
     }
     if (line.startsWith('#### ')) {
-      elements.push(<h4 key={i} className="text-xs font-bold text-slate-800 mt-2 mb-1">{parseInline(line.slice(5))}</h4>);
+      elements.push(<h4 key={i} className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-2 mb-1">{parseInline(line.slice(5))}</h4>);
       continue;
     }
 
     // Horizontal rule
     if (line.trim() === '---' || line.trim() === '***' || line.trim() === '___') {
-      elements.push(<hr key={i} className="my-3 border-slate-200/80" />);
+      elements.push(<hr key={i} className="my-3 border-slate-200/80 dark:border-slate-800" />);
       continue;
     }
 
     // Blockquote
     if (line.startsWith('> ')) {
       elements.push(
-        <blockquote key={i} className="my-2 border-l-3 border-indigo-500 bg-indigo-50/50 rounded-r-xl px-3.5 py-2 text-xs sm:text-[13px] text-slate-700 italic">
+        <blockquote key={i} className="my-2 border-l-3 border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 rounded-r-xl px-3.5 py-2 text-xs sm:text-[13px] text-slate-700 dark:text-slate-300 italic">
           {parseInline(line.slice(2))}
         </blockquote>
       );
@@ -218,7 +218,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       const indent = line.search(/\S/);
       const content = line.replace(/^\s*[-*•]\s+/, '');
       elements.push(
-        <div key={i} className={`flex items-start gap-2 my-1 text-xs sm:text-sm text-slate-800 ${indent > 0 ? 'ml-4' : 'ml-1'}`}>
+        <div key={i} className={`flex items-start gap-2 my-1 text-xs sm:text-sm text-slate-800 dark:text-slate-200 ${indent > 0 ? 'ml-4' : 'ml-1'}`}>
           <span className="text-indigo-500 font-bold mt-1 text-xs leading-none">•</span>
           <span className="flex-1 leading-relaxed">{parseInline(content)}</span>
         </div>
@@ -231,8 +231,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
       const match = line.match(/^\s*(\d+)\.\s+(.*)$/);
       if (match) {
         elements.push(
-          <div key={i} className="flex items-start gap-2 my-1.5 text-xs sm:text-sm text-slate-800 ml-1">
-            <span className="font-bold text-indigo-600 shrink-0 text-xs">{match[1]}.</span>
+          <div key={i} className="flex items-start gap-2 my-1.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 ml-1">
+            <span className="font-bold text-indigo-600 dark:text-indigo-400 shrink-0 text-xs">{match[1]}.</span>
             <span className="flex-1 leading-relaxed">{parseInline(match[2])}</span>
           </div>
         );
@@ -242,7 +242,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
 
     // Regular paragraph
     elements.push(
-      <p key={i} className="my-1 text-xs sm:text-sm text-slate-800 leading-relaxed font-normal">
+      <p key={i} className="my-1 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
         {parseInline(line)}
       </p>
     );

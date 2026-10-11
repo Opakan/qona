@@ -434,62 +434,7 @@ export default function ChatPage() {
 
         {/* Sidebar Footer: Subscription Plan Status & User Profile */}
         <div className="border-t border-slate-200/80 dark:border-slate-800 p-3 space-y-2 bg-[#f9f9fb] dark:bg-[#090d16]">
-          {/* Active Plan Card or Upgrade Card */}
-          {hasActiveSubscription || subscription?.plan ? (
-            <div className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50 p-2.5 transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold shadow-2xs">
-                    <ShieldCheck className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-extrabold text-emerald-900 dark:text-emerald-200">
-                        {subscription?.plan?.name || 'Active'} Plan
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
-                        ACTIVE
-                      </span>
-                    </div>
-                    <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                      {subscription?.plan?.slug === 'starter' ? '10 exports / month' : subscription?.plan?.slug === 'pro' ? '100 exports / month' : 'Unlimited exports'}
-                    </div>
-                  </div>
-                </div>
-                <Link
-                  to="/billing"
-                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 py-0.5"
-                  title="Manage Subscription"
-                >
-                  Manage
-                </Link>
-              </div>
-              {subscription?.plan?.slug === 'starter' && (
-                <button
-                  onClick={() => setShowUpgradeModal(true)}
-                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600/10 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 px-2 py-1 text-[10px] font-bold transition-all cursor-pointer"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  <span>Upgrade to Pro ($30) for 100 exports</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="flex w-full items-center justify-between rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 p-2.5 text-left transition-all hover:bg-indigo-100/80 dark:hover:bg-indigo-900/60 cursor-pointer group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold shadow-2xs">
-                  <Crown className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-extrabold text-indigo-900 dark:text-indigo-200">Subscribe (from $1)</div>
-                  <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">Starter & Pro workflows</div>
-                </div>
-              </div>
-            </button>
-          )}
+
 
           {/* User Profile Row */}
           <div className="flex items-center justify-between rounded-xl p-2 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors">
@@ -570,137 +515,195 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Right Header Toolbar Actions */}
-          <div className="flex items-center gap-2">
+          {/* Right Header Toolbar Actions: Vivid Icon Buttons with Hover Tooltips */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Share Unique Chat URL Button */}
             {(activeId || sessionId) && (
-              <button
-                onClick={handleShareChatLink}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs"
-                title="Copy unique chat link to clipboard"
-              >
-                {shareCopied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-emerald-600 dark:text-emerald-400">Link Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="h-3.5 w-3.5 text-indigo-500" />
-                    <span>Share Link</span>
-                  </>
-                )}
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={handleShareChatLink}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 shadow-2xs transition-all cursor-pointer"
+                  aria-label="Share Link"
+                >
+                  {shareCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Share2 className="h-4 w-4" />}
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  {shareCopied ? 'Link Copied!' : 'Share Link'}
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
             )}
+
             {/* Theme Toggle in Chat Top Bar */}
-            <ThemeToggle />
+            <div className="relative group">
+              <ThemeToggle />
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                Toggle Theme
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+              </div>
+            </div>
 
-            {/* Top Right Subscription / Upgrade Button */}
+            {/* Subscription / Plan Status Icon Button */}
             {hasActiveSubscription || subscription?.plan ? (
-              <Link
-                to="/billing"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs"
-                title="Manage your active subscription"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>{subscription?.plan?.name || 'Starter'} Active</span>
-              </Link>
+              <div className="relative group">
+                <Link
+                  to="/billing"
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 shadow-2xs transition-all cursor-pointer"
+                  aria-label="Active Plan"
+                >
+                  <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </Link>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  {subscription?.plan?.name || 'Starter'} Active
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
             ) : (
-              <button
-                onClick={() => setShowUpgradeModal(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer shadow-2xs"
-              >
-                <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>Upgrade</span>
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-2xs transition-all cursor-pointer"
+                  aria-label="Upgrade"
+                >
+                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  Upgrade Plan
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
             )}
 
-            <button
-              onClick={() => handleSimulateExecution()}
-              disabled={simulating || !currentWorkflow}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-2xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition-all cursor-pointer"
-            >
-              {simulating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5 fill-current" />}
-              <span>Simulate Run</span>
-            </button>
+            {/* Simulate Run Icon Button */}
+            <div className="relative group">
+              <button
+                onClick={() => handleSimulateExecution()}
+                disabled={simulating || !currentWorkflow}
+                className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shadow-2xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition-all cursor-pointer"
+                aria-label="Simulate Run"
+              >
+                {simulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-emerald-600 dark:fill-emerald-400 text-emerald-600 dark:text-emerald-400" />}
+              </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                Simulate Run
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+              </div>
+            </div>
 
             {currentWorkflow && (
-              <button
-                onClick={() => setShowSandbox(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/60 px-3 py-1.5 text-xs font-bold text-violet-700 dark:text-violet-300 shadow-2xs hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-all cursor-pointer"
-                title="Open Live Execution Sandbox"
-              >
-                <FlaskConical className="h-3.5 w-3.5" />
-                <span>Sandbox</span>
-              </button>
-            )}
-
-            {currentWorkflow && (
-              <button
-                onClick={() => setShowScheduleModal(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer"
-                title="Schedule recurring automated execution"
-              >
-                <Clock className="h-3.5 w-3.5" />
-                <span>Schedule</span>
-              </button>
-            )}
-
-            {currentWorkflow && (
-              <button
-                onClick={() => setShowDeployModal(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/60 px-3 py-1.5 text-xs font-bold text-orange-700 dark:text-orange-300 shadow-2xs hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-all cursor-pointer"
-                title="Deploy 1-click to n8n Cloud or Self-Hosted instance"
-              >
-                <CloudUpload className="h-3.5 w-3.5" />
-                <span>Deploy n8n</span>
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={() => setShowSandbox(true)}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 shadow-2xs hover:bg-violet-100 dark:hover:bg-violet-900/60 transition-all cursor-pointer"
+                  aria-label="Sandbox"
+                >
+                  <FlaskConical className="h-4 w-4" />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  Execution Sandbox
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
             )}
 
             {currentWorkflow && (
-              <button
-                onClick={() => setShowOptimizeModal(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 px-3 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 shadow-2xs hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all cursor-pointer"
-                title="Run AI Self-Healing &amp; Graph Optimization"
-              >
-                <Wand2 className="h-3.5 w-3.5" />
-                <span>Optimize</span>
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={() => setShowScheduleModal(true)}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 shadow-2xs hover:bg-cyan-100 dark:hover:bg-cyan-900/60 transition-all cursor-pointer"
+                  aria-label="Schedule"
+                >
+                  <Clock className="h-4 w-4" />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  Schedule Automation
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
+            )}
+
+            {currentWorkflow && (
+              <div className="relative group">
+                <button
+                  onClick={() => setShowDeployModal(true)}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 shadow-2xs hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-all cursor-pointer"
+                  aria-label="Deploy n8n"
+                >
+                  <CloudUpload className="h-4 w-4" />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  Deploy to n8n
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
+            )}
+
+            {currentWorkflow && (
+              <div className="relative group">
+                <button
+                  onClick={() => setShowOptimizeModal(true)}
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-600 dark:text-fuchsia-400 shadow-2xs hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/60 transition-all cursor-pointer"
+                  aria-label="Optimize"
+                >
+                  <Wand2 className="h-4 w-4" />
+                </button>
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                  AI Optimize &amp; Healing
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                </div>
+              </div>
             )}
 
             {sessionId && (
               <>
-                <button
-                  onClick={handleCopyForN8n}
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all cursor-pointer"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                  <span>{copied ? 'Copied!' : 'Copy n8n'}</span>
-                </button>
+                <div className="relative group">
+                  <button
+                    onClick={handleCopyForN8n}
+                    className="flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shadow-2xs hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-all cursor-pointer"
+                    aria-label="Copy n8n"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                    {copied ? 'Copied to Clipboard!' : 'Copy n8n JSON'}
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                  </div>
+                </div>
 
-                <button
-                  onClick={handleExportSession}
-                  disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 dark:hover:bg-indigo-500 disabled:opacity-50 transition-all cursor-pointer"
-                >
-                  {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                  <span>Export</span>
-                </button>
+                <div className="relative group">
+                  <button
+                    onClick={handleExportSession}
+                    disabled={exporting}
+                    className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 disabled:opacity-50 shadow-xs transition-all cursor-pointer"
+                    aria-label="Export"
+                  >
+                    {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  </button>
+                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                    Export n8n File
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+                  </div>
+                </div>
               </>
             )}
 
-            <button
-              onClick={() => setShowVisualizer(!showVisualizer)}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                showVisualizer
-                  ? 'border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-2xs'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
-              title="Toggle Workflow Canvas Split-View"
-            >
-              {showVisualizer ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-              <span className="hidden xs:inline">Canvas</span>
-            </button>
+            <div className="relative group">
+              <button
+                onClick={() => setShowVisualizer(!showVisualizer)}
+                className={`flex h-8.5 w-8.5 items-center justify-center rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                  showVisualizer
+                    ? 'border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+                aria-label="Toggle Canvas"
+              >
+                {showVisualizer ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </button>
+              <div className="absolute top-full mt-2 right-0 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
+                {showVisualizer ? 'Hide Canvas' : 'Show Canvas'}
+                <div className="absolute -top-1 right-3 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
+              </div>
+            </div>
           </div>
         </header>
 
@@ -764,80 +767,72 @@ export default function ChatPage() {
           ) : (
             <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 py-8">
               {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                >
-                  {/* Avatar */}
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-2xs select-none ${
-                      msg.role === 'user'
-                        ? 'bg-slate-900 dark:bg-indigo-600 text-white'
-                        : 'bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-750 p-1'
-                    }`}
-                  >
-                    {msg.role === 'user' ? userInitial : <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />}
-                  </div>
-
-                  {/* Message Bubble */}
-                  <div
-                    className={`rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed max-w-[85%] shadow-2xs ${
-                      msg.role === 'user'
-                        ? 'bg-slate-900 dark:bg-indigo-600 text-white font-medium'
-                        : 'bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-slate-100 border border-slate-200/70 dark:border-slate-750 font-normal'
-                    }`}
-                  >
-                    {/* Message Text Content */}
-                    {msg.role === 'user' ? (
-                      <div className="whitespace-pre-wrap leading-relaxed font-medium">{msg.content}</div>
-                    ) : (
-                      <MarkdownRenderer content={msg.content} />
-                    )}
-
-                    {/* Interactive Clickable Option Pills for Non-Technical Users */}
-                    {Boolean((msg.metadata?.singleQuestion as any)?.options?.length || (msg.metadata?.question as any)?.options?.length) && (
-                      <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-700">
-                        <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                          Quick Select Options:
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {(((msg.metadata?.singleQuestion as any)?.options || (msg.metadata?.question as any)?.options) as string[]).map((opt, i) => (
+                <div key={msg.id} className="w-full">
+                  {msg.role === 'user' ? (
+                    /* User Message Row */
+                    <div className="flex gap-3 justify-end items-start">
+                      <div className="rounded-2xl rounded-tr-xs px-5 py-3.5 text-xs sm:text-sm leading-relaxed max-w-[82%] shadow-2xs bg-slate-900 dark:bg-indigo-600 text-white font-normal selection:bg-indigo-500 selection:text-white">
+                        <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                      </div>
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 dark:bg-indigo-600 text-white text-xs font-bold shadow-2xs select-none">
+                        {userInitial}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Assistant Message Row */
+                    <div className="flex gap-3 items-start">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-750 p-1.5 shadow-2xs select-none">
+                        <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0 max-w-[88%]">
+                        <div className="rounded-2xl rounded-tl-xs bg-slate-50/90 dark:bg-slate-850/80 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs">
+                          {/* Header row with Title and Copy response button */}
+                          <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-800/80">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">Qonace AI</span>
+                              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">• Workflow Architect</span>
+                            </div>
                             <button
-                              key={i}
-                              disabled={loading}
-                              onClick={() => sendMessage(opt)}
-                              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                              onClick={() => {
+                                navigator.clipboard.writeText(msg.content);
+                              }}
+                              className="flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                              title="Copy response to clipboard"
                             >
-                              {opt}
+                              <Copy className="h-3 w-3" />
+                              <span className="hidden sm:inline">Copy</span>
                             </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          </div>
 
-                    {/* Assistant Graph Summary Card */}
-                    {Boolean(msg.metadata?.graph) && (
-                      <div className="mt-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 p-3.5 shadow-2xs text-slate-900 dark:text-white">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 dark:text-indigo-400">
-                            <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                            Workflow Compiled
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
-                            Ready on Canvas
-                          </span>
-                        </div>
-                        <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
-                          {String((msg.metadata as any)?.graph?.metadata?.name || 'Compiled Automation')}
+                          {/* Render Clean Markdown */}
+                          <MarkdownRenderer content={msg.content} />
+
+                          {/* Assistant Graph Summary Card if present */}
+                          {Boolean(msg.metadata?.graph) && (
+                            <div className="mt-4 rounded-xl border border-indigo-200 dark:border-indigo-800/70 bg-indigo-50/50 dark:bg-slate-800/80 p-3.5 shadow-2xs text-slate-900 dark:text-white">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                                  <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                                  Workflow Compiled
+                                </span>
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                                  Ready on Canvas
+                                </span>
+                              </div>
+                              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+                                {String((msg.metadata as any)?.graph?.metadata?.name || 'Compiled Automation')}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
 
               {typing && (
-                <div className="flex gap-4 items-start">
+                <div className="flex gap-3 items-start">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-2xs">
                     <Workflow className="h-4 w-4 animate-spin" />
                   </div>
@@ -854,26 +849,6 @@ export default function ChatPage() {
               <div ref={bottomRef} />
             </div>
           )}
-        </div>
-
-        {/* Floating Quick Controls Toolbar */}
-        <div className="absolute right-4 top-20 flex flex-col gap-2 z-10">
-          <div className="backdrop-blur-md bg-white/80 dark:bg-slate-850/80 border border-slate-200/90 dark:border-slate-750 rounded-2xl p-1.5 shadow-lg flex flex-col gap-1.5">
-            <button
-              onClick={newConversation}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-all cursor-pointer"
-              title="New Chat"
-            >
-              <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            </button>
-            <button
-              onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-              title="Scroll to Bottom"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
-          </div>
         </div>
 
         {/* ChatGPT Bottom Input Box */}

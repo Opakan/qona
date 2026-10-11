@@ -243,8 +243,8 @@ export default function PricingPage() {
                   {plan.description}
                 </p>
 
-                <div className="mt-6 flex items-baseline gap-1 justify-center">
-                  <span className={`text-5xl font-extrabold tracking-tight ${isPlanPopular ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                <div className="mt-8 flex items-baseline justify-center gap-1.5 py-2">
+                  <span className={`text-6xl sm:text-7xl font-black tracking-tighter ${isPlanPopular ? 'text-white' : 'text-slate-950 dark:text-white'}`}>
                     <NumberFlow
                       value={isMonthly ? plan.price : plan.yearlyPrice}
                       format={{
@@ -260,14 +260,14 @@ export default function PricingPage() {
                     />
                   </span>
                   {plan.slug !== 'free' && (
-                    <span className={`text-sm font-medium ${isPlanPopular ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                    <span className={`text-base sm:text-lg font-extrabold ${isPlanPopular ? 'text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}>
                       /mo
                     </span>
                   )}
                 </div>
                 
-                <p className={`text-[10px] mt-1.5 ${isPlanPopular ? 'text-slate-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                  {plan.slug === 'free' ? 'always free' : (isMonthly ? 'billed monthly' : 'billed annually')}
+                <p className={`text-xs font-semibold text-center mt-1 uppercase tracking-wider ${isPlanPopular ? 'text-indigo-300/80' : 'text-slate-400 dark:text-slate-500'}`}>
+                  {plan.slug === 'free' ? 'always free' : (isMonthly ? 'billed monthly' : 'billed annually (save 20%)')}
                 </p>
 
                 <ul className="mt-8 space-y-4">

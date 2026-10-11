@@ -70,9 +70,9 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({ isOpen, onClos
         {/* Pricing Card Footer */}
         <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200/80 mb-6 flex items-center justify-between">
           <div>
-            <div className="text-2xl font-black text-slate-900">
+            <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               {isStarter ? '$30' : isPro ? '$30' : '$1 / $30'}
-              <span className="text-xs font-bold text-slate-500">{isStarter ? ' / month (Pro Plan)' : isPro ? ' / month (Active)' : ' Starter or Pro'}</span>
+              <span className="text-xs sm:text-sm font-bold text-slate-500 ml-1">{isStarter ? '/mo (Pro Plan)' : isPro ? '/mo (Active)' : 'Starter or Pro'}</span>
             </div>
             <div className="text-[10px] font-semibold text-slate-400">
               {isStarter ? 'Upgrade anytime. Your $1 Starter plan is currently active.' : 'Cancel or switch plans anytime'}
