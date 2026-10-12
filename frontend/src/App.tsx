@@ -32,6 +32,7 @@ import GuestGuard from './components/auth/GuestGuard';
 import SubscriptionGuard from './components/auth/SubscriptionGuard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminGuard from './components/auth/AdminGuard';
+import Templates from './pages/Templates';
 
 export default function App() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/chat/:id" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
           <Route path="/c/:id" element={<AuthGuard><SubscriptionGuard><Chat /></SubscriptionGuard></AuthGuard>} />
           <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
+          <Route path="/templates" element={<Templates />} />
           <Route path="/payment/success" element={<AuthGuard><PaymentSuccess /></AuthGuard>} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/admin" element={<AuthGuard><AdminGuard><AdminDashboard /></AdminGuard></AuthGuard>} />

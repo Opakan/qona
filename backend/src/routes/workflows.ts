@@ -7,6 +7,7 @@ import { workflowService } from '../services/workflow.service.js';
 import { buildExport, validateForExport, getSetupInstructions } from '../services/export-engine.js';
 import { db } from '../services/db.js';
 import { getUserExportQuota, recordExportHistory } from '../services/quota.service.js';
+import { resolveUserId } from '../services/user-sync.js';
 
 export const workflowsRouter = Router();
 
@@ -26,12 +27,29 @@ const UpdateWorkflowSchema = z.object({
 workflowsRouter.get('/', requireAuth, async (req, res, next) => {
   try {
     const { status, skip, take } = req.query;
-    const result = await workflowService.list(req.user!.authId, {
+    const userId = await resolveUserId(req.user!.authId, req.user!.email, req.user!.name);
+    const result = await workflowService.list(userId, {
       status: status as WorkflowStatus | undefined,
       skip: skip ? parseInt(skip as string) : undefined,
       take: take ? parseInt(take as string) : undefined,
     });
-    res.json(result);
+
+    const workflowsWithNodes = result.workflows.map((w: any) => {
+      let nodesCount = 0;
+      if (w.definition && typeof w.definition === 'object') {
+        if (Array.isArray(w.definition.nodes)) {
+          nodesCount = w.definition.nodes.length;
+        } else if (w.definition.workflow && Array.isArray(w.definition.workflow.nodes)) {
+          nodesCount = w.definition.workflow.nodes.length;
+        }
+      }
+      return {
+        ...w,
+        nodesCount: nodesCount || undefined,
+      };
+    });
+
+    res.json({ workflows: workflowsWithNodes, total: result.total });
   } catch (err) {
     next(err);
   }
@@ -53,8 +71,9 @@ workflowsRouter.get('/:id', requireAuth, async (req, res, next) => {
 
 workflowsRouter.post('/', requireAuth, requireSubscription, validate(CreateWorkflowSchema), async (req, res, next) => {
   try {
+    const userId = await resolveUserId(req.user!.authId, req.user!.email, req.user!.name);
     const workflow = await workflowService.create({
-      userId: req.user!.authId,
+      userId,
       name: req.body.name,
       description: req.body.description,
       definition: req.body.definition,

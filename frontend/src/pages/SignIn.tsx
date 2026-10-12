@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 import { DISPOSABLE_EMAIL_DOMAINS } from '@qona/shared';
 
 export default function SignIn() {
-  const { signInWithGoogle, signInWithGitHub, signInWithEmail, signUpWithEmail, resetPassword, resendVerificationEmail } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithGitHub,
+    signInWithEmail,
+    signUpWithEmail,
+    resetPassword,
+    resendVerificationEmail,
+    signInAsGuest,
+  } = useAuth();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
@@ -227,6 +235,21 @@ export default function SignIn() {
                     </svg>
                   )}
                   <span>Continue with GitHub</span>
+                </button>
+
+                {/* Instant Demo Access Button */}
+                <button
+                  type="button"
+                  id="guest-demo-signin-btn"
+                  onClick={async () => {
+                    await signInAsGuest();
+                    navigate('/dashboard');
+                  }}
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-dashed border-indigo-300 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-950/40 px-4 py-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs transition-all hover:bg-indigo-100/80 dark:hover:bg-indigo-900/50 active:scale-[0.99] cursor-pointer"
+                >
+                  <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Explore Demo Workspace (Instant Access)</span>
                 </button>
               </div>
 

@@ -7,7 +7,6 @@ import {
   AlertTriangle, Loader2, Clock, FlaskConical, CloudUpload,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { TemplateGallery } from '../components/TemplateGallery';
 import { OnboardingModal } from '../components/OnboardingModal';
 import { AccountSettingsModal } from '../components/AccountSettingsModal';
 import ThemeToggle from '../components/shared/ThemeToggle';
@@ -260,7 +259,7 @@ export default function Dashboard() {
         <div className="mx-auto flex max-w-6xl items-center justify-between overflow-x-auto scrollbar-none">
           <div className="flex items-center gap-1 sm:gap-2">
             {[
-              { id: 'overview', label: 'Overview & Templates', icon: LayoutDashboard },
+              { id: 'overview', label: 'Overview', icon: LayoutDashboard },
               { id: 'recent', label: 'Recent Workflows', icon: History, badge: workflows.length > 0 ? workflows.length : undefined },
               { id: 'schedules', label: 'Schedules', icon: Clock, badge: schedulesList.filter((s) => s.isScheduledAndActive).length > 0 ? schedulesList.filter((s) => s.isScheduledAndActive).length : undefined },
               { id: 'analytics', label: 'Analytics & Performance', icon: BarChart3 },
@@ -291,6 +290,14 @@ export default function Dashboard() {
                 </button>
               );
             })}
+
+            <Link
+              to="/templates"
+              className="flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all whitespace-nowrap"
+            >
+              <Sparkles className="h-4 w-4 text-indigo-500" />
+              <span>Templates Library</span>
+            </Link>
           </div>
 
           <Link
@@ -329,11 +336,12 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Quick Action Feature Cards */}
-              <div className="grid gap-5 sm:grid-cols-3">
+              {/* 4 Quick Action Cards Grid */}
+              <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Card 1: New Workflow */}
                 <Link
                   to="/chat"
-                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer overflow-hidden"
+                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 h-20 w-20 bg-gradient-to-br from-indigo-50/60 to-transparent dark:from-indigo-950/30 rounded-bl-full -z-0" />
                   <div>
@@ -342,7 +350,7 @@ export default function Dashboard() {
                     </div>
                     <span className="text-sm font-bold text-slate-900 dark:text-white">New AI Workflow</span>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Describe your workflow idea in plain English and let Qonace compile nodes.
+                      Describe your automation idea in natural English and let Qonace compile nodes.
                     </p>
                   </div>
                   <div className="mt-4 flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">
@@ -351,29 +359,62 @@ export default function Dashboard() {
                   </div>
                 </Link>
 
+                {/* Card 2: Recent Workflows */}
                 <button
                   onClick={() => setActiveTab('recent')}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer text-left overflow-hidden"
+                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer text-left overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 h-20 w-20 bg-gradient-to-br from-indigo-50/60 to-transparent dark:from-indigo-950/30 rounded-bl-full -z-0" />
                   <div>
                     <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
                       <History className="h-5 w-5" />
                     </div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">Recent Workflows</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">Recent Workflows</span>
+                      <span className="rounded-full bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400">
+                        {workflows.length}
+                      </span>
+                    </div>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Review, manage, and continue editing your active automation projects ({workflows.length}).
+                      Manage, continue editing, and deploy your active automation pipelines.
                     </p>
                   </div>
                   <div className="mt-4 flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">
-                    <span>View Workflows</span>
+                    <span>View Projects</span>
                     <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </div>
                 </button>
 
+                {/* Card 3: Templates (4th Card linking to separate dedicated /templates page) */}
+                <Link
+                  to="/templates"
+                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 h-20 w-20 bg-gradient-to-br from-purple-50/60 to-transparent dark:from-purple-950/30 rounded-bl-full -z-0" />
+                  <div>
+                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 transition-colors group-hover:bg-purple-600 group-hover:text-white">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">Templates Library</span>
+                      <span className="rounded-full bg-purple-50 dark:bg-purple-950 px-2 py-0.5 text-[10px] font-black text-purple-600 dark:text-purple-400">
+                        14,000+
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Explore pre-built automation blueprints sorted by use cases with instant search.
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center text-xs font-bold text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition-transform">
+                    <span>Explore Blueprints</span>
+                    <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </div>
+                </Link>
+
+                {/* Card 4: Analytics */}
                 <button
                   onClick={() => setActiveTab('analytics')}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer text-left overflow-hidden"
+                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer text-left overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 h-20 w-20 bg-gradient-to-br from-indigo-50/60 to-transparent dark:from-indigo-950/30 rounded-bl-full -z-0" />
                   <div>
@@ -382,7 +423,7 @@ export default function Dashboard() {
                     </div>
                     <span className="text-sm font-bold text-slate-900 dark:text-white">Performance Analytics</span>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Monitor compilation success, execution latency, and export readiness metrics.
+                      Monitor node execution latency, compilation success, and export readiness.
                     </p>
                   </div>
                   <div className="mt-4 flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">
@@ -392,18 +433,109 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Ready-Made Automation Templates Section */}
-              <div className="pt-2">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                    Ready-Made Automation Templates
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                    Launch pre-configured n8n workflows instantly from our library of 14,000+ automation templates.
-                  </p>
+              {/* Premium Overview Section: Recent Workflows Quick View */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                      <History className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+                      <span>Recent Workflows</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                      Your latest automation projects compiled with Qonace AI.
+                    </p>
+                  </div>
+
+                  {workflows.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab('recent')}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                    >
+                      <span>View All ({workflows.length})</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
-                <TemplateGallery />
+
+                {loadingWorkflows ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                  </div>
+                ) : workflows.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 text-center">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-3">
+                      <Workflow className="h-5 w-5" />
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">No active workflows yet</h4>
+                    <p className="mt-1 text-[11px] text-slate-400 max-w-xs mx-auto">
+                      Start your first workflow in natural English or explore ready-made templates.
+                    </p>
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => navigate('/chat')}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-indigo-700 transition-colors cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Create in AI Studio</span>
+                      </button>
+                      <Link
+                        to="/templates"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+                        <span>Browse Templates</span>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {workflows.slice(0, 3).map((wf) => (
+                      <div
+                        key={wf.id}
+                        className="group flex flex-col justify-between rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-2xs hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-xs transition-all"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span
+                              className={`rounded-md px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
+                                wf.status === 'PUBLISHED'
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {wf.status || 'DRAFT'}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(wf.updatedAt || wf.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {wf.name}
+                          </h4>
+                          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                            {wf.description || 'n8n workflow compiled via Qonace AI'}
+                          </p>
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                          <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                            <Layers className="h-3 w-3" />
+                            {wf.nodesCount ?? 3} Nodes
+                          </span>
+
+                          <button
+                            onClick={() => navigate('/chat', { state: { workflowId: wf.id } })}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                          >
+                            <span>Open Builder</span>
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -53,9 +53,9 @@ export default function ChatPage() {
   const [currentWorkflow, setCurrentWorkflow] = useState<InternalGraph | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   
-  // Interactive & Resizable Layout State
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [showVisualizer, setShowVisualizer] = useState(true);
+  // Interactive & Resizable Layout State (Mobile responsive defaults)
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
+  const [showVisualizer, setShowVisualizer] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   const [sidebarWidth, setSidebarWidth] = useState<number>(260);
   const [visualizerWidth, setVisualizerWidth] = useState<number>(520);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
@@ -235,7 +235,26 @@ export default function ChatPage() {
   useEffect(() => {
     const selectedTemplate = location.state?.selectedTemplate;
     const initialPrompt = location.state?.initialPrompt;
-    if (selectedTemplate) {
+    const workflowId = location.state?.workflowId;
+
+    if (workflowId) {
+      apiClient.get(`/workflows/${workflowId}`).then((res) => {
+        if (res.data?.workflow?.definition) {
+          const def = res.data.workflow.definition;
+          if (def.nodes && def.edges) {
+            setCurrentWorkflow(def as InternalGraph);
+          } else if (def.nodes) {
+            setCurrentWorkflow({
+              metadata: { name: res.data.workflow.name, description: res.data.workflow.description || '', version: 1, tags: [] },
+              nodes: def.nodes,
+              edges: def.connections || [],
+            } as any);
+          }
+          setShowVisualizer(true);
+        }
+      }).catch(console.warn);
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (selectedTemplate) {
       const prompt = `I want to use the ready-made template: "${selectedTemplate.name}". ${selectedTemplate.description}`;
       sendMessage(prompt);
       navigate(location.pathname, { replace: true, state: {} });
@@ -362,6 +381,14 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-slate-900 antialiased font-sans">
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-35 md:hidden transition-opacity"
+        />
+      )}
+
       {/* ════════════════════════════════════════════════════════════════ */}
       {/* 1. LEFT SIDEBAR (Clean White ChatGPT Style)                     */}
       {/* ════════════════════════════════════════════════════════════════ */}
@@ -369,7 +396,7 @@ export default function ChatPage() {
         style={{ width: sidebarOpen ? `${sidebarWidth}px` : 0 }}
         className={`flex flex-col border-r border-slate-200 dark:border-slate-800 bg-[#f9f9fb] dark:bg-[#090d16] text-slate-800 dark:text-slate-200 ${
           isResizingSidebar ? 'select-none' : 'transition-[width] duration-200 ease-in-out'
-        } relative z-30 shrink-0 overflow-hidden ${!sidebarOpen && 'border-r-0'}`}
+        } fixed inset-y-0 left-0 z-40 md:relative md:z-30 shrink-0 overflow-hidden shadow-2xl md:shadow-none ${!sidebarOpen && 'border-r-0'}`}
       >
         {/* Sidebar Top Header */}
         <div className="flex h-14 items-center justify-between px-3.5 border-b border-slate-200/60 dark:border-slate-800/80">
@@ -493,8 +520,8 @@ export default function ChatPage() {
       {/* ════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-1 flex-col min-w-0 bg-white dark:bg-[#090d16] text-slate-900 dark:text-slate-100 relative">
         {/* Main Header Bar (ChatGPT style) */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 bg-white dark:bg-[#090d16] z-20">
-          <div className="flex items-center gap-3">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-6 bg-white dark:bg-[#090d16] z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -505,18 +532,21 @@ export default function ChatPage() {
               </button>
             )}
 
-            {/* Qonace Pro Engine Indicator */}
-            <div className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-indigo-500/5 border border-purple-200/60 dark:border-purple-900/60">
-              <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span>Qonace Pro (n8n Expert Engine)</span>
-              <span className="ml-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-2xs">
-                PRO ENGINE
+            {/* Clean Brand Studio Link */}
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+              title="Return to Dashboard"
+            >
+              <img src="/logo.png" alt="Qonace" className="h-5 w-5 object-contain" />
+              <span className="text-xs font-bold font-display tracking-tight text-slate-800 dark:text-slate-200 hidden sm:inline">
+                Qonace Studio
               </span>
-            </div>
+            </Link>
           </div>
 
           {/* Right Header Toolbar Actions: Vivid Icon Buttons with Hover Tooltips */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
             {/* Share Unique Chat URL Button */}
             {(activeId || sessionId) && (
               <div className="relative group">
@@ -542,37 +572,6 @@ export default function ChatPage() {
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
               </div>
             </div>
-
-            {/* Subscription / Plan Status Icon Button */}
-            {hasActiveSubscription || subscription?.plan ? (
-              <div className="relative group">
-                <Link
-                  to="/billing"
-                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 shadow-2xs transition-all cursor-pointer"
-                  aria-label="Active Plan"
-                >
-                  <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </Link>
-                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
-                  {subscription?.plan?.name || 'Starter'} Active
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
-                </div>
-              </div>
-            ) : (
-              <div className="relative group">
-                <button
-                  onClick={() => setShowUpgradeModal(true)}
-                  className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-2xs transition-all cursor-pointer"
-                  aria-label="Upgrade"
-                >
-                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                </button>
-                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700/60">
-                  Upgrade Plan
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45 border-t border-l border-slate-700/60" />
-                </div>
-              </div>
-            )}
 
             {/* Simulate Run Icon Button */}
             <div className="relative group">
@@ -927,7 +926,7 @@ export default function ChatPage() {
         <div
           onMouseDown={() => setIsResizingVisualizer(true)}
           onDoubleClick={() => setShowVisualizer(false)}
-          className={`relative w-1.5 hover:w-2 bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
+          className={`hidden md:block relative w-1.5 hover:w-2 bg-slate-200/60 dark:bg-slate-800 hover:bg-indigo-500 transition-all cursor-col-resize z-40 group shrink-0 select-none ${
             isResizingVisualizer ? 'bg-indigo-600 w-2 shadow-sm' : ''
           }`}
           title="Drag to resize visualizer • Double-click to collapse"
@@ -942,14 +941,14 @@ export default function ChatPage() {
           width: isVisualizerMaximized
             ? '100%'
             : showVisualizer
-            ? `${visualizerWidth}px`
+            ? (typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${visualizerWidth}px`)
             : 0,
         }}
         className={`flex flex-col border-l border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-[#070a12] ${
           isResizingVisualizer ? 'select-none' : 'transition-[width] duration-200 ease-in-out'
         } ${
-          isVisualizerMaximized ? 'fixed inset-0 z-50' : 'relative z-20'
-        } shrink-0 overflow-hidden ${!showVisualizer && 'border-l-0'}`}
+          isVisualizerMaximized ? 'fixed inset-0 z-50' : 'fixed inset-0 md:relative z-40 md:z-20'
+        } shrink-0 overflow-hidden ${!showVisualizer ? 'border-l-0 pointer-events-none md:pointer-events-auto' : ''}`}
       >
         {/* Canvas Header */}
         <div className="flex h-14 items-center justify-between border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-5 flex-shrink-0 bg-white dark:bg-[#090d16]">

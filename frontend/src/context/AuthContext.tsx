@@ -112,16 +112,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Check for stored demo session first to prevent session drops
+    try {
+      const storedDemo = localStorage.getItem('qonace-demo-session');
+      if (storedDemo) {
+        const parsed = JSON.parse(storedDemo);
+        if (parsed?.user) {
+          setSession(parsed.session);
+          setUser(parsed.user);
+          setDbUser(parsed.dbUser);
+          setIsLoading(false);
+          fetchDbUser(cancelled);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
+
     supabase.auth
       .getSession()
       .then(({ data: { session: initialSession } }) => {
         if (cancelled) return;
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        if (initialSession?.user) {
+        if (initialSession) {
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
           fetchDbUser(cancelled);
           cleanHash();
         } else {
+          setSession(null);
+          setUser(null);
           setDbUser(null);
         }
         setIsLoading(false);
@@ -268,7 +286,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: mockUser,
     };
 
+    const mockDbUser = {
+      id: 'mock-user-12345',
+      authId: 'mock-user-12345',
+      email: 'tester@qonace.com',
+      name: 'Guest User',
+      role: 'USER',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
+      localStorage.setItem('qonace-demo-session', JSON.stringify({
+        session: mockSession,
+        user: mockUser,
+        dbUser: mockDbUser,
+      }));
       localStorage.setItem('qonace-auth-token', JSON.stringify(mockSession));
       localStorage.setItem('qonace-guest-token', token);
       localStorage.removeItem('qonace-developer-role');
@@ -287,19 +320,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setSession(mockSession);
     setUser(mockUser);
-    setDbUser({
-      id: 'mock-user-12345',
-      authId: 'mock-user-12345',
-      email: 'tester@qonace.com',
-      name: 'Guest User',
-      role: 'USER',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    setDbUser(mockDbUser);
   }, []);
 
   const signOut = useCallback(async () => {
     try {
+      localStorage.removeItem('qonace-demo-session');
       localStorage.removeItem('qonace-guest-token');
       localStorage.removeItem('qonace-auth-token');
       localStorage.removeItem('qonace-developer-role');
@@ -317,7 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const hasActiveSubscription =
-    (user?.email && ['opadgiant@gmail.com'].includes(user.email.toLowerCase())) ||
+    (user?.email && ['opadgiant@gmail.com', 'tester@qonace.com'].includes(user.email.toLowerCase())) ||
     dbUser?.role === 'ADMIN' ||
     isSubAccessValid;
 
@@ -329,7 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user.app_metadata?.provider === 'google' ||
     user.app_metadata?.provider === 'github' ||
     (user.app_metadata?.providers as string[] | undefined)?.some((p) => ['google', 'github'].includes(p)) ||
-    ['opadgiant@gmail.com'].includes((user.email ?? '').toLowerCase());
+    ['opadgiant@gmail.com', 'tester@qonace.com'].includes((user.email ?? '').toLowerCase());
 
   return (
     <AuthContext.Provider

@@ -11,7 +11,14 @@ export class WorkflowRepository extends BaseRepository {
 
   async findByUserId(userId: string, options?: { status?: WorkflowStatus; skip?: number; take?: number }) {
     return this.prisma.workflow.findMany({
-      where: { userId, ...(options?.status ? { status: options.status } : {}) },
+      where: {
+        OR: [
+          { userId },
+          { user: { authId: userId } },
+          { user: { email: userId } },
+        ],
+        ...(options?.status ? { status: options.status } : {}),
+      },
       orderBy: { updatedAt: 'desc' },
       skip: options?.skip,
       take: options?.take,
@@ -19,7 +26,15 @@ export class WorkflowRepository extends BaseRepository {
   }
 
   async countByUserId(userId: string) {
-    return this.prisma.workflow.count({ where: { userId } });
+    return this.prisma.workflow.count({
+      where: {
+        OR: [
+          { userId },
+          { user: { authId: userId } },
+          { user: { email: userId } },
+        ],
+      },
+    });
   }
 
   async create(data: {

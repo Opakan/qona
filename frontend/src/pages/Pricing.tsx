@@ -244,23 +244,11 @@ export default function PricingPage() {
                 </p>
 
                 <div className="mt-8 flex items-baseline justify-center gap-1.5 py-2">
-                  <span className={`text-6xl sm:text-7xl font-black tracking-tighter ${isPlanPopular ? 'text-white' : 'text-slate-950 dark:text-white'}`}>
-                    <NumberFlow
-                      value={isMonthly ? plan.price : plan.yearlyPrice}
-                      format={{
-                        style: 'currency',
-                        currency: 'USD',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      }}
-                      transformTiming={{
-                        duration: 400,
-                        easing: 'ease-out',
-                      }}
-                    />
+                  <span className={`text-5xl sm:text-6xl font-black tracking-tight ${isPlanPopular ? 'text-white' : 'text-slate-950 dark:text-white'}`}>
+                    ${isMonthly ? plan.price : plan.yearlyPrice}
                   </span>
                   {plan.slug !== 'free' && (
-                    <span className={`text-base sm:text-lg font-extrabold ${isPlanPopular ? 'text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                    <span className={`text-base sm:text-lg font-bold ${isPlanPopular ? 'text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}>
                       /mo
                     </span>
                   )}
