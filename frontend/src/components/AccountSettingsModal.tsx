@@ -111,7 +111,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-2xl shadow-slate-900/30 overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-2xl sm:max-w-[680px] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-2xl shadow-slate-900/30 overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/80">
           <div className="flex items-center gap-2.5">
@@ -433,20 +433,26 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
 
             {/* BILLING TAB */}
             {activeTab === 'billing' && (() => {
-              const planSlug = (subscription?.plan?.slug?.toLowerCase() || '') as 'starter' | 'pro' | 'enterprise' | '';
-              const isStarter = hasActiveSubscription && planSlug === 'starter';
-              const isPro = hasActiveSubscription && planSlug === 'pro';
-              const isEnterprise = hasActiveSubscription && planSlug === 'enterprise';
+              const rawPlanName = subscription?.plan?.name || subscription?.plan?.slug || (hasActiveSubscription ? 'Pro' : 'Free');
+              const planSlug = (subscription?.plan?.slug?.toLowerCase() || rawPlanName.toLowerCase() || '') as string;
 
-              const planName = hasActiveSubscription ? `${subscription?.plan?.name ?? 'Starter'} Plan` : 'Free Sandbox';
-              const planPrice = hasActiveSubscription ? `$${subscription?.plan?.price ?? (isStarter ? 1 : isPro ? 30 : 99)}/mo` : '$0';
+              const isStarter = hasActiveSubscription && planSlug.includes('starter');
+              const isPro = hasActiveSubscription && (planSlug.includes('pro') || (!isStarter && !planSlug.includes('enterprise')));
+              const isEnterprise = hasActiveSubscription && planSlug.includes('enterprise');
+
+              const planName = hasActiveSubscription 
+                ? (subscription?.plan?.name ? `${subscription.plan.name} Plan` : isStarter ? 'Starter Plan' : isEnterprise ? 'Enterprise Plan' : 'Pro Plan')
+                : 'Free Sandbox';
+
+              const planPrice = hasActiveSubscription 
+                ? `$${subscription?.plan?.price ?? (isStarter ? 1 : isPro ? 30 : 99)}/mo` 
+                : '$0';
               
               // Dynamic monthly export quota calculation (capped, resets monthly, zero rollover)
-              const defaultCap = isStarter ? 10 : isPro ? 100 : isEnterprise ? 1000 : 0;
+              const defaultCap = isStarter ? 10 : isEnterprise ? 1000 : 100;
               const cap = subscription?.exportQuota?.cap ?? defaultCap;
               const used = subscription?.exportQuota?.used ?? 0;
               const remaining = subscription?.exportQuota?.remaining ?? (hasActiveSubscription ? Math.max(0, cap - used) : 0);
-              const remainingExportsText = `${remaining} Exports`;
               const usagePercent = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
 
               const latestInvoice = subscription?.invoices?.[0];
@@ -473,177 +479,41 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
               };
 
               return (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-base font-black font-display text-slate-950 dark:text-white">
+                <div className="space-y-5">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Plan &amp; Subscription
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      Review your active tier, workflow limits, and billing status.
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Manage your active tier, monthly export quota, and billing receipts.
                     </p>
                   </div>
 
                   {/* Main Active Tier Card */}
-                  <div className="relative overflow-hidden rounded-3xl border border-slate-250/90 dark:border-slate-800 bg-gradient-to-b from-white via-slate-50/70 to-indigo-50/20 dark:from-slate-900/90 dark:via-slate-900/60 dark:to-indigo-950/20 p-5 sm:p-6 shadow-sm">
-                    {/* Background subtle glow */}
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-indigo-500/10 dark:bg-indigo-500/15 blur-3xl" />
-                    
-                    {/* Header: Status and Plan */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200/70 dark:border-slate-800">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                            Current Status
-                          </span>
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-extrabold rounded-full border ${
-                            hasActiveSubscription
-                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
-                              : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
-                          }`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${hasActiveSubscription ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                            {hasActiveSubscription ? 'Active Subscription' : 'No Active Plan'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-baseline gap-2">
-                          <h4 className="text-xl font-black font-display text-slate-900 dark:text-white tracking-tight">
+                  <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-2xs space-y-4">
+                    {/* Header: Status, Plan and Price */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-lg font-bold text-slate-900 dark:text-white">
                             {planName}
                           </h4>
-                          {hasActiveSubscription && (
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                              ({planPrice})
-                            </span>
-                          )}
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full ${
+                            hasActiveSubscription
+                              ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60'
+                              : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
+                          }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${hasActiveSubscription ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                            {hasActiveSubscription ? 'Active' : 'Free Sandbox'}
+                          </span>
                         </div>
+
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {hasActiveSubscription
+                            ? `${planPrice} • ${renewalDateFormatted ? `Renews on ${renewalDateFormatted}` : 'Billed monthly'}`
+                            : 'Upgrade to export production-ready n8n automations.'}
+                        </p>
                       </div>
-
-                      {renewalDateFormatted && (
-                        <div className="text-left sm:text-right">
-                          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                            Billing Renewal / Expiry
-                          </div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
-                            {renewalDateFormatted}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Dynamic Exports Quota Section */}
-                    <div className="pt-5 space-y-4">
-                      {/* Metric Cards Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        {/* Monthly Workflow Exports */}
-                        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-250 dark:border-slate-800 shadow-2xs space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                              Monthly Workflow Exports:
-                            </span>
-                            <span className="text-base font-black font-display text-slate-900 dark:text-white">
-                              {remainingExportsText}
-                            </span>
-                          </div>
-
-                          {/* Progress bar */}
-                          {hasActiveSubscription && cap > 0 && (
-                            <div className="space-y-1.5 pt-0.5">
-                              <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.max(6, 100 - usagePercent)}%` }}
-                                />
-                              </div>
-                              <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                                <span>{remaining} of {cap} available</span>
-                                <span>Capped at {cap}/mo</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Direct n8n Export */}
-                        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-250 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                              Direct n8n Export:
-                            </span>
-                            <span className="text-base font-black font-display text-slate-900 dark:text-white">
-                              {remainingExportsText}
-                            </span>
-                          </div>
-
-                          <div className="mt-2.5 flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                            <span>Active (n8n JSON format)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* No-Rollover Policy Notice */}
-                      <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-850/60 border border-slate-200/60 dark:border-slate-800/80 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                        <RefreshCw className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                        <div>
-                          <strong className="text-slate-800 dark:text-slate-200 font-bold">Monthly Reset (No Rollover):</strong>{' '}
-                          Workflows are capped at your allowed plan limit each billing period. Unused workflows do not roll over to subsequent months and automatically reset to the monthly cap upon cycle renewal.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment History & Invoice Quick Card with direct PDF download */}
-                  <div className="p-4 rounded-2xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-white">Payment Receipts &amp; Tax Invoices</div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {latestInvoice 
-                            ? `Latest: INV-${(latestInvoice.providerRef || latestInvoice.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase()} • $${Number(latestInvoice.amount).toFixed(2)}`
-                            : 'Download official proof of payment and tax invoices as PDF.'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      {latestInvoice && (
-                        <button
-                          onClick={handleDownloadLatestReceipt}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] rounded-xl shadow-xs transition-all cursor-pointer"
-                          title="Download latest payment receipt as a PDF document"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          <span>Download PDF</span>
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => {
-                          onClose();
-                          navigate('/billing');
-                        }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
-                      >
-                        <span>All Invoices</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          onClose();
-                          navigate('/billing');
-                        }}
-                        className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        <span>Manage Billing &amp; Invoices</span>
-                      </button>
 
                       {isStarter && (
                         <button
@@ -651,13 +521,122 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                             onClose();
                             navigate('/pricing');
                           }}
-                          className="flex items-center gap-1.5 px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl border border-indigo-200/80 dark:border-indigo-800/60 transition-colors cursor-pointer shrink-0"
                         >
-                          <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                          <span>Upgrade to Pro ($30)</span>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>Upgrade to Pro</span>
                         </button>
                       )}
                     </div>
+
+                    {/* Single Clean Workflow Exports Quota Bar */}
+                    {hasActiveSubscription && cap > 0 && (
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-850/60 border border-slate-100 dark:border-slate-800/80 p-4 space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            Monthly Workflow Exports
+                          </span>
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{remaining}</span> of {cap} available
+                          </span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="h-2 w-full bg-slate-200/70 dark:bg-slate-700/60 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(4, 100 - usagePercent)}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                          <span className="flex items-center gap-1.5 min-w-0 truncate">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            <span className="truncate">Direct n8n exports</span>
+                          </span>
+                          <span className="shrink-0 text-slate-400 dark:text-slate-500">Resets monthly • No rollover</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {!hasActiveSubscription && (
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-850/60 border border-slate-100 dark:border-slate-800/80 p-4 flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Starter Plan available for just $1/mo
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Get 10 workflow exports and community n8n nodes.
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            onClose();
+                            navigate('/pricing');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-all cursor-pointer shrink-0"
+                        >
+                          View Plans
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Receipts & Tax Invoices */}
+                  <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                        <FileText className="h-4.5 w-4.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          Payment Receipts &amp; Invoices
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {latestInvoice 
+                            ? `Latest: INV-${(latestInvoice.providerRef || latestInvoice.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase()} • $${Number(latestInvoice.amount).toFixed(2)}`
+                            : 'Download official payment receipts & invoices.'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {latestInvoice && (
+                        <button
+                          onClick={handleDownloadLatestReceipt}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                          title="Download latest payment receipt as a PDF document"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Receipt PDF</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          onClose();
+                          navigate('/billing');
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      >
+                        <span>All Invoices</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => {
+                        onClose();
+                        navigate('/billing');
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span>Manage Subscription &amp; Billing</span>
+                    </button>
 
                     {hasActiveSubscription && (
                       <button
@@ -665,9 +644,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                           onClose();
                           navigate('/billing');
                         }}
-                        className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                        className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                       >
-                        Cancel Plan Anytime
+                        Cancel subscription
                       </button>
                     )}
                   </div>
