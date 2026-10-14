@@ -35,7 +35,7 @@ html.light {
 }
 
 /* Headings — Sora bold for maximum visual impact */
-h1, h2, h3, h4, h5, h6, .font-display {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -43,29 +43,26 @@ h1, h2, h3, h4, h5, h6, .font-display {
   color: #0a0d18;
 }
 
+.font-display {
+  font-family: var(--font-display);
+}
+
 html.dark h1,
 html.dark h2,
 html.dark h3,
 html.dark h4,
 html.dark h5,
-html.dark h6,
-html.dark .font-display {
+html.dark h6 {
   color: #f0f2ff;
 }
 
-/* Ensure heading sizes are never too small */
-h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; }
-h2 { font-size: clamp(1.5rem, 3.5vw, 2.5rem); font-weight: 700; }
-h3 { font-size: clamp(1.15rem, 2.5vw, 1.6rem); font-weight: 700; }
-h4 { font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 600; }
-
-/* Minimum font size — no text should be invisible */
-p, li, span, label, td, th, button, a {
-  font-size: max(13px, 0.875rem);
+@layer base {
+  /* Ensure heading sizes are never too small */
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; }
+  h2 { font-size: clamp(1.5rem, 3.5vw, 2.5rem); font-weight: 700; }
+  h3 { font-size: clamp(1.15rem, 2.5vw, 1.6rem); font-weight: 700; }
+  h4 { font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 600; }
 }
-
-/* Small / helper text minimum */
-small, .text-xs { font-size: max(11px, 0.7rem); }
 
 /* =====================================================================
    DARK MODE GLOBAL OVERRIDES

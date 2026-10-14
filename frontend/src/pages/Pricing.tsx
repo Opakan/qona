@@ -244,7 +244,10 @@ export default function PricingPage() {
                 </p>
 
                 <div className="mt-8 flex items-baseline justify-center gap-1.5 py-2">
-                  <span className={`text-5xl sm:text-6xl font-black tracking-tight ${isPlanPopular ? 'text-white' : 'text-slate-950 dark:text-white'}`}>
+                  <span 
+                    style={{ color: isPlanPopular ? '#ffffff' : undefined }}
+                    className={`font-display text-5xl sm:text-6xl font-black tracking-tight ${isPlanPopular ? 'text-white' : 'text-slate-950 dark:text-white'}`}
+                  >
                     ${isMonthly ? plan.price : plan.yearlyPrice}
                   </span>
                   {plan.slug !== 'free' && (

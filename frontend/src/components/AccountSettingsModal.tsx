@@ -508,11 +508,20 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                           </span>
                         </div>
 
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {hasActiveSubscription
-                            ? `${planPrice} • ${renewalDateFormatted ? `Renews on ${renewalDateFormatted}` : 'Billed monthly'}`
-                            : 'Upgrade to export production-ready n8n automations.'}
-                        </p>
+                        {hasActiveSubscription ? (
+                          <div className="flex items-baseline gap-2 pt-0.5">
+                            <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                              {planPrice}
+                            </span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              • {renewalDateFormatted ? `Renews on ${renewalDateFormatted}` : 'Billed monthly'}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Upgrade to export production-ready n8n automations.
+                          </p>
+                        )}
                       </div>
 
                       {isStarter && (
