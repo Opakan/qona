@@ -236,6 +236,8 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     optionalParams: ['method', 'authentication', 'headers', 'body', 'queryParameters', 'responseFormat', 'options'],
     defaults: {
       method: 'GET',
+      authentication: 'none',
+      responseFormat: 'autodetect',
       options: {},
     },
     paramSchema: [
@@ -269,7 +271,7 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
       if (config.url) mapped.url = config.url;
-      if (config.method) mapped.method = config.method;
+      mapped.method = config.method || 'GET';
       if (config.authentication) {
         mapped.authentication = config.authentication === 'none' ? 'none' : 'genericCredentialType';
       }
@@ -290,11 +292,12 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     optionalParams: ['operation', 'columns', 'options', 'dataMode'],
     defaults: {
       operation: 'appendRow',
+      sheetName: 'Sheet1',
       options: {},
     },
     paramSchema: [
       { field: 'documentId', type: 'string', required: true },
-      { field: 'sheetName', type: 'string', required: true },
+      { field: 'sheetName', type: 'string', required: false, defaultValue: 'Sheet1' },
       {
         field: 'operation',
         type: 'options',
@@ -1131,8 +1134,8 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
-      if (config.events) mapped.events = config.events;
-      if (config.event) mapped.events = [config.event];
+      if (config.events) mapped.events = Array.isArray(config.events) ? config.events : [config.events];
+      else if (config.event) mapped.events = [config.event];
       return mapped;
     },
   },

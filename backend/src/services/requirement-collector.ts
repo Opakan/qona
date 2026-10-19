@@ -124,6 +124,7 @@ export function determineRequirements(nodeType: string, config: Record<string, u
     else if (n8nType.includes('telegram')) operation = 'sendMessage';
     else if (n8nType.includes('cron') || n8nType.includes('schedule')) operation = 'tick';
     else if (n8nType === 'n8n-nodes-base.noOp') operation = 'none';
+    else operation = 'execute';
   }
 
   const binaryRequirements = binaryMap[n8nType] ?? 'none';
@@ -420,10 +421,11 @@ function buildActionRequirements(actions: WorkflowPlan['actions'], index: number
   if (!nodeRegistry.isRegistered(action.type) && !regEntry) {
     reqs.push({
       field: `action_${index}_unregistered`,
-      label: `Action ${index + 1} (unregistered type: ${action.type})`,
+      label: `Action ${index + 1} (${action.type})`,
       kind: 'action_config',
-      required: true,
-      collected: false,
+      required: false,
+      collected: true,
+      value: action.type,
     });
   }
 

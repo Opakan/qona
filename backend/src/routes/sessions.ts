@@ -4,8 +4,10 @@ import { planningSessionService } from '../services/planning-session.js';
 import { compileInternalGraph } from '../services/n8n-compiler.js';
 import { getPrisma } from '../lib/prisma.js';
 import { getUserExportQuota, recordExportHistory } from '../services/quota.service.js';
+import { buildInternalGraph } from '../services/internal-graph-builder.js';
+import { buildInitialPlan } from '../services/requirement-collector.js';
 import type { InternalGraph } from '@qona/shared';
-import { InternalGraphSchema, PLANNING_STATES } from '@qona/shared';
+import { InternalGraphSchema, WorkflowPlanSchema, PLANNING_STATES } from '@qona/shared';
 
 export const sessionsRouter = Router();
 
@@ -61,7 +63,36 @@ async function resolveGraph(sess: any): Promise<InternalGraph | null> {
       };
     }
   }
-  return parseGraphDraft(sess.workflowDraft);
+
+  const directGraph = parseGraphDraft(sess.workflowDraft);
+  if (directGraph) return directGraph;
+
+  // If sess.workflowDraft is a WorkflowPlan, build graph on-the-fly
+  if (sess.workflowDraft && typeof sess.workflowDraft === 'object') {
+    const planParsed = WorkflowPlanSchema.safeParse(sess.workflowDraft);
+    if (planParsed.success) {
+      const { graph } = buildInternalGraph(planParsed.data);
+      return graph;
+    }
+    const raw = sess.workflowDraft as any;
+    if (raw.trigger || raw.actions) {
+      try {
+        const { graph } = buildInternalGraph(raw);
+        return graph;
+      } catch { /* ignore */ }
+    }
+  }
+
+  // Fallback to extractedIntent
+  if (sess.extractedIntent) {
+    try {
+      const plan = buildInitialPlan(sess.extractedIntent as any, (sess.extractedIntent as any)?.goal || 'Workflow');
+      const { graph } = buildInternalGraph(plan);
+      return graph;
+    } catch { /* ignore */ }
+  }
+
+  return null;
 }
 
 sessionsRouter.get('/sessions', requireAuth, async (req, res, next) => {
@@ -76,11 +107,12 @@ sessionsRouter.get('/sessions/:id/draft', requireAuth, async (req, res, next) =>
     const id = req.params.id as string;
     const sess = await planningSessionService.getById(id);
     if (!sess) { res.status(404).json({ error: 'Session not found' }); return; }
+    const graph = await resolveGraph(sess);
     res.json({
       sessionId: sess.id,
       state: sess.state,
       stage: sess.stage,
-      draft: sess.workflowDraft,
+      draft: graph || sess.workflowDraft,
       missingFields: sess.missingFields,
       collectedAnswers: sess.collectedAnswers,
     });
@@ -92,15 +124,15 @@ sessionsRouter.post('/sessions/:id/compile', requireAuth, async (req, res, next)
     const id = req.params.id as string;
     const sess = await planningSessionService.getById(id);
     if (!sess) { res.status(404).json({ error: 'Session not found' }); return; }
-    const block = guardCompileState(sess);
-    if (block) {
-      log('warn', 'Early compile attempted', { sessionId: id, state: sess.state, stage: sess.stage });
-      res.status(400).json(buildBlockedResponse(sess));
-      return;
-    }
 
     const g = await resolveGraph(sess);
     if (!g) {
+      const block = guardCompileState(sess);
+      if (block) {
+        log('warn', 'Early compile attempted', { sessionId: id, state: sess.state, stage: sess.stage });
+        res.status(400).json(buildBlockedResponse(sess));
+        return;
+      }
       res.status(404).json({ error: 'No workflow draft found', sessionId: id, state: sess.state });
       return;
     }
@@ -118,10 +150,16 @@ sessionsRouter.post('/sessions/:id/compile', requireAuth, async (req, res, next)
       return;
     }
 
+    if (sess.state !== 'completed') {
+      try {
+        await planningSessionService.transition(id, PLANNING_STATES.COMPLETED);
+      } catch { /* ignore transition error */ }
+    }
+
     log('info', 'COMPILATION COMPLETED', { sessionId: id, authId: req.user!.authId, nodeCount: r.workflow.nodes.length });
     res.json({
       compiled: true,
-      state: sess.state,
+      state: 'completed',
       sessionId: id,
       n8n: r.workflow,
       warnings: r.warnings,
@@ -139,10 +177,16 @@ sessionsRouter.get('/sessions/:id/compile/download', requireAuth, async (req, re
     const id = req.params.id as string;
     const sess = await planningSessionService.getById(id);
     if (!sess) { res.status(404).json({ error: 'Session not found' }); return; }
-    const block = guardCompileState(sess);
-    if (block) {
-      log('warn', 'Early download attempted', { sessionId: id, state: sess.state, stage: sess.stage });
-      res.status(400).json(buildBlockedResponse(sess));
+
+    const g = await resolveGraph(sess);
+    if (!g) {
+      const block = guardCompileState(sess);
+      if (block) {
+        log('warn', 'Early download attempted', { sessionId: id, state: sess.state, stage: sess.stage });
+        res.status(400).json(buildBlockedResponse(sess));
+        return;
+      }
+      res.status(404).json({ error: 'No workflow draft found', sessionId: id, state: sess.state });
       return;
     }
 
@@ -158,16 +202,16 @@ sessionsRouter.get('/sessions/:id/compile/download', requireAuth, async (req, re
       return;
     }
 
-    const g = await resolveGraph(sess);
-    if (!g) {
-      res.status(404).json({ error: 'No workflow draft found' });
-      return;
-    }
-
     const r = compileInternalGraph(g);
     if (!r.success || !r.workflow) {
       res.status(422).json({ compiled: false, error: 'Compilation failed', errors: r.errors });
       return;
+    }
+
+    if (sess.state !== 'completed') {
+      try {
+        await planningSessionService.transition(id, PLANNING_STATES.COMPLETED);
+      } catch { /* ignore transition error */ }
     }
 
     // Record export

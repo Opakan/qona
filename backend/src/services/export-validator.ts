@@ -138,7 +138,7 @@ export function validateExport(graph: InternalGraph): ExportValidationResult {
           errors.push({
             nodeId: node.id,
             field: reqParam,
-            message: `Node "${node.label}" is missing required parameter: "${reqParam}".`,
+            message: `Missing required parameter "${reqParam}" on node "${node.label || node.id}" (${n8nType}).`,
             severity: 'error',
           });
         }

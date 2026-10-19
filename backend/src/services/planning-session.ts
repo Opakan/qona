@@ -30,10 +30,13 @@ function isValidTransition(from: PlanningState, to: string): to is PlanningState
   return VALID_TRANSITIONS[from]?.includes(parsed.data) ?? true;
 }
 
+const sessionCache = new Map<string, { data: any; cachedAt: number }>();
+const SESSION_CACHE_TTL_MS = 10 * 1000; // 10 seconds
+
 export const planningSessionService = {
   async create(authId: string, conversationId?: string, email?: string, name?: string) {
     const prisma = getPrisma();
-    return prisma.workflowPlanningSession.create({
+    const session = await prisma.workflowPlanningSession.create({
       data: {
         userId: await resolveUserId(authId, email, name),
         conversationId,
@@ -43,14 +46,25 @@ export const planningSessionService = {
         stage: 0,
       },
     });
+    sessionCache.set(session.id, { data: session, cachedAt: Date.now() });
+    return session;
   },
 
   async getById(sessionId: string) {
+    const cached = sessionCache.get(sessionId);
+    if (cached && Date.now() - cached.cachedAt < SESSION_CACHE_TTL_MS) {
+      return cached.data;
+    }
+
     const prisma = getPrisma();
-    return prisma.workflowPlanningSession.findUnique({
+    const session = await prisma.workflowPlanningSession.findUnique({
       where: { id: sessionId },
       include: { graph: true },
     });
+    if (session) {
+      sessionCache.set(sessionId, { data: session, cachedAt: Date.now() });
+    }
+    return session;
   },
 
   async getByUserId(authId: string, options?: { state?: string }) {
@@ -62,15 +76,24 @@ export const planningSessionService = {
     });
   },
 
+  _lastScanAt: 0,
   async scanAndRecover() {
-    const prisma = getPrisma();
-    const stuck = await prisma.workflowPlanningSession.findMany({
-      where: { state: 'compiling' },
-      take: 10,
-    });
-    for (const s of stuck) {
-      console.log(LOG_PREFIX, { sessionId: s.id, recovery: 'auto→', internalGraphId: s.internalGraphId });
-      await this.recoverSession(s.id);
+    const now = Date.now();
+    if (now - this._lastScanAt < 60000) return;
+    this._lastScanAt = now;
+
+    try {
+      const prisma = getPrisma();
+      const stuck = await prisma.workflowPlanningSession.findMany({
+        where: { state: 'compiling' },
+        take: 10,
+      });
+      for (const s of stuck) {
+        console.log(LOG_PREFIX, { sessionId: s.id, recovery: 'auto→', internalGraphId: s.internalGraphId });
+        await this.recoverSession(s.id);
+      }
+    } catch (err) {
+      console.warn(LOG_PREFIX, 'scanAndRecover warning:', (err as Error).message);
     }
   },
 
@@ -112,6 +135,7 @@ export const planningSessionService = {
 
     const newStage = toState !== fromState ? session.stage + 1 : session.stage;
 
+    sessionCache.delete(sessionId);
     await prisma.workflowPlanningSession.update({
       where: { id: sessionId },
       data: { state: toState, stage: newStage },
@@ -119,6 +143,7 @@ export const planningSessionService = {
   },
 
   async addAnswer(sessionId: string, answer: PlanningCollectedAnswer): Promise<void> {
+    sessionCache.delete(sessionId);
     const prisma = getPrisma();
     const session = await prisma.workflowPlanningSession.findUnique({ where: { id: sessionId } });
     if (!session) throw new Error('Session not found');
@@ -146,6 +171,7 @@ export const planningSessionService = {
   },
 
   async setMissingFields(sessionId: string, fields: PlanningMissingField[]): Promise<void> {
+    sessionCache.delete(sessionId);
     const prisma = getPrisma();
     await prisma.workflowPlanningSession.update({
       where: { id: sessionId },
@@ -154,6 +180,7 @@ export const planningSessionService = {
   },
 
   async setExtractedIntent(sessionId: string, intent: unknown): Promise<void> {
+    sessionCache.delete(sessionId);
     const prisma = getPrisma();
     await prisma.workflowPlanningSession.update({
       where: { id: sessionId },
@@ -162,6 +189,7 @@ export const planningSessionService = {
   },
 
   async setWorkflowDraft(sessionId: string, draft: unknown): Promise<void> {
+    sessionCache.delete(sessionId);
     const prisma = getPrisma();
     await prisma.workflowPlanningSession.update({
       where: { id: sessionId },
@@ -170,6 +198,7 @@ export const planningSessionService = {
   },
 
   async linkGraph(sessionId: string, graphId: string): Promise<void> {
+    sessionCache.delete(sessionId);
     const prisma = getPrisma();
     await prisma.workflowPlanningSession.update({
       where: { id: sessionId },

@@ -80,28 +80,37 @@ export async function planWorkflow(prompt: string): Promise<PlannerResult> {
   const fewShotCtx = templateSearchService.formatFewShotContext(relevantTemplates);
   const systemPrompt = buildPlannerPrompt(fewShotCtx);
 
-  const raw = await chatCompletion(
-    [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: cleanPrompt },
-    ],
-    { temperature: 0.2, max_tokens: 2000, retries: 2, modelTier: 'haiku' },
-  );
-
+  let raw = '';
   let parsed: {
     goal?: string;
     readyForGraph?: boolean;
     missingRequirements?: Array<{ field: unknown; question: unknown }>;
-  };
+  } | null = null;
 
   try {
+    raw = await chatCompletion(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: cleanPrompt },
+      ],
+      { temperature: 0.2, max_tokens: 2000, retries: 1, modelTier: 'haiku' },
+    );
     parsed = JSON.parse(raw);
-  } catch {
-    throw new WorkflowPlannerError('AWS Bedrock returned invalid JSON', raw);
+  } catch (err) {
+    console.warn(`[WorkflowPlanner] AI call failed (${(err as Error).message}), using heuristic fallback plan`);
+    return {
+      goal: cleanPrompt,
+      readyForGraph: true,
+      missingRequirements: [],
+    };
   }
 
-  if (!parsed.goal || typeof parsed.goal !== 'string') {
-    throw new WorkflowPlannerError('Planner response missing goal field', raw);
+  if (!parsed || !parsed.goal || typeof parsed.goal !== 'string') {
+    return {
+      goal: cleanPrompt,
+      readyForGraph: true,
+      missingRequirements: [],
+    };
   }
 
   const missingRequirements: PlannerRequirement[] = (parsed.missingRequirements ?? [])

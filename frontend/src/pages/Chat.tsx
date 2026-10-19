@@ -264,17 +264,17 @@ export default function ChatPage() {
     }
   }, [location.state]);
 
-  // Live graph sync polling
+  // Fetch draft when session is initialized or changed (event-driven, no polling storm)
   useEffect(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     if (!sessionId) return;
-    pollRef.current = setInterval(async () => {
-      try {
-        const { data } = await apiClient.get(`/sessions/${sessionId}/draft`);
-        if (data.draft) setCurrentWorkflow(data.draft as InternalGraph);
-      } catch { /* ignore */ }
-    }, 2000);
-    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+    let isMounted = true;
+    apiClient.get(`/sessions/${sessionId}/draft`).then(({ data }) => {
+      if (isMounted && data?.draft && Array.isArray((data.draft as any).nodes)) {
+        setCurrentWorkflow(data.draft as InternalGraph);
+      }
+    }).catch(() => { /* ignore */ });
+
+    return () => { isMounted = false; };
   }, [sessionId]);
 
   const sendMessage = async (text: string) => {
@@ -820,6 +820,28 @@ export default function ChatPage() {
                               </div>
                               <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
                                 {String((msg.metadata as any)?.graph?.metadata?.name || 'Compiled Automation')}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Suggested Next Steps / Clarification Options */}
+                          {Boolean((msg.metadata as any)?.singleQuestion?.options?.length) && (
+                            <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/80">
+                              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                                <Sparkles className="h-3 w-3 text-indigo-500" />
+                                <span>Suggested Next Steps:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {((msg.metadata as any).singleQuestion.options as string[]).map((opt: string, i: number) => (
+                                  <button
+                                    key={i}
+                                    disabled={loading}
+                                    onClick={() => sendMessage(opt)}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 dark:hover:bg-indigo-600 dark:hover:text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                                  >
+                                    <span>{opt}</span>
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           )}

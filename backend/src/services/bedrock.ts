@@ -176,45 +176,95 @@ function isFatalAuthError(err: unknown): boolean {
   );
 }
 
+class ConcurrencyQueue {
+  private activeCount = 0;
+  private queue: Array<() => void> = [];
+  constructor(private maxConcurrent: number = 8) {}
+
+  async acquire(): Promise<void> {
+    if (this.activeCount < this.maxConcurrent) {
+      this.activeCount++;
+      return;
+    }
+    await new Promise<void>((resolve) => this.queue.push(resolve));
+    this.activeCount++;
+  }
+
+  release(): void {
+    this.activeCount = Math.max(0, this.activeCount - 1);
+    if (this.queue.length > 0) {
+      const next = this.queue.shift();
+      next?.();
+    }
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    await this.acquire();
+    try {
+      return await fn();
+    } finally {
+      this.release();
+    }
+  }
+}
+
+const aiConcurrencyQueue = new ConcurrencyQueue(8);
+
+function isRateLimitError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    msg.includes('429') ||
+    msg.includes('throttling') ||
+    msg.includes('rate limit') ||
+    msg.includes('too many requests')
+  );
+}
+
 /**
- * Invoke Anthropic Claude with retries
+ * Invoke Anthropic Claude with retries and concurrency queue
  */
 export async function chatCompletion(
   messages: ChatMessage[],
   options?: ChatCompletionOptions,
 ): Promise<string> {
-  const maxRetries = options?.retries ?? 2;
-  let lastError: Error | null = null;
+  return aiConcurrencyQueue.run(async () => {
+    const maxRetries = options?.retries ?? 2;
+    let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      if (config.ANTHROPIC_API_KEY) {
-        return await callAnthropicDirect(messages, options);
-      }
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (config.ANTHROPIC_API_KEY) {
+          return await callAnthropicDirect(messages, options);
+        }
 
-      if (config.AWS_ACCESS_KEY_ID && config.AWS_SECRET_ACCESS_KEY) {
+        if (config.AWS_ACCESS_KEY_ID && config.AWS_SECRET_ACCESS_KEY) {
+          return await callBedrock(messages, options);
+        }
+
+        // If neither key is configured, check if AWS default credential chain works
         return await callBedrock(messages, options);
-      }
+      } catch (err: unknown) {
+        lastError = err as Error;
+        console.error(`[Claude AI] Error on attempt ${attempt + 1}/${maxRetries + 1}:`, (err as Error).message);
 
-      // If neither key is configured, check if AWS default credential chain works
-      return await callBedrock(messages, options);
-    } catch (err: unknown) {
-      lastError = err as Error;
-      console.error(`[Claude AI] Error on attempt ${attempt + 1}/${maxRetries + 1}:`, (err as Error).message);
+        if (isFatalAuthError(err)) {
+          break;
+        }
 
-      if (isFatalAuthError(err)) {
-        break;
-      }
-
-      if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        if (attempt < maxRetries) {
+          const delay = isRateLimitError(err)
+            ? Math.min(5000, 1500 * (attempt + 1) + Math.random() * 500)
+            : 1000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, delay));
+        }
       }
     }
-  }
 
-  const errorMessage = lastError?.message || 'AI request failed';
-  throw new Error(
-    `AI service is currently unavailable (${errorMessage}). Please check your AI API credentials.`,
-  );
+    const errorMessage = lastError?.message || 'AI request failed';
+    throw new Error(
+      `AI service is currently unavailable (${errorMessage}). Please check your AI API credentials.`,
+    );
+  });
 }
 

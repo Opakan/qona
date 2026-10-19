@@ -4,6 +4,7 @@ import { conversationService } from './conversation.service.js';
 import { planningSessionService } from './planning-session.js';
 import { checkWorkflowCompleteness } from './workflow-safety.js';
 import { extractIntent, heuristicExtractIntent } from './intent-extractor.js';
+import { unifiedArchitect, heuristicUnifiedArchitect } from './unified-architect.js';
 import { buildInitialPlan, collectAnswer, generateAIQuestion, detectMissingRequirements } from './requirement-collector.js';
 import { buildInternalGraph, validatePlanForGraphBuild } from './internal-graph-builder.js';
 import { getPrisma } from '../lib/prisma.js';
@@ -393,91 +394,71 @@ export const conversationEngine = {
       };
     }
 
-    let intent;
-
+    let architectResult;
     try {
-      intent = await extractIntent(userMessage);
-      log('info', 'Intent extracted', { trigger: intent.trigger.type, actions: intent.actions.length, confidence: intent.confidence });
+      architectResult = await unifiedArchitect(userMessage);
+      log('info', 'Unified architect completed', { goal: architectResult.goal, actionCount: architectResult.actions.length });
     } catch (err) {
-      log('warn', 'Intent extraction threw error, falling back to heuristic intent extractor', { error: (err as Error).message });
-      intent = heuristicExtractIntent(userMessage);
+      log('warn', 'Unified architect failed, engaging heuristic fallback', { error: (err as Error).message });
+      architectResult = heuristicUnifiedArchitect(userMessage);
     }
 
-    await planningSessionService.setExtractedIntent(sessionId, intent);
-
-    // ── Build the WorkflowPlan from extracted intent ──
-    const plan = buildInitialPlan(intent, userMessage);
-
-    log('info', 'Plan built', {
-      trigger: plan.trigger?.type,
-      actionCount: plan.actions.length,
-      requirementCount: plan.requirements.length,
-      missingCount: detectMissingRequirements(plan.requirements).length,
-    });
+    const plan: WorkflowPlan = {
+      goal: architectResult.goal,
+      stage: architectResult.isReadyToBuild ? 'completed' : 'planning',
+      trigger: architectResult.trigger,
+      actions: architectResult.actions,
+      integrations: architectResult.integrations,
+      confidence: 0.95,
+      requirements: [],
+      questions: [],
+    };
 
     await writePlan(sessionId, plan);
-    await planningSessionService.transition(sessionId, PLANNING_STATES.CLARIFYING);
+    await planningSessionService.setExtractedIntent(sessionId, {
+      goal: architectResult.goal,
+      trigger: architectResult.trigger,
+      actions: architectResult.actions,
+      integrations: architectResult.integrations,
+      confidence: 0.95,
+      missingDetails: [],
+    });
 
-    // Build immediate visual graph
+    // Build visual graph immediately
     const { graph } = buildInternalGraph(plan);
 
-    // Dynamic smart options based on the workflow goal
-    const defaultOptions = [
-      'Build & Export n8n Workflow',
-      'Save to Google Drive & Notion',
-      'Add Slack / Email Alerts',
-      'Customize AI Prompt & Models',
-    ];
+    const nextState = architectResult.isReadyToBuild
+      ? PLANNING_STATES.GENERATING_GRAPH
+      : PLANNING_STATES.CLARIFYING;
 
-    // ── Check missing requirements ──
-    const missing = detectMissingRequirements(plan.requirements);
-    if (missing.length === 0) {
-      // All requirements are auto-filled → go straight to generating
-      await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
-      const explanation = await generateFriendlyWorkflowExplanation(userMessage, plan, "Everything is structured and ready on your canvas! Would you like to build and export the n8n JSON?");
-      await conversationService.addMessage(conversationId, {
-        role: 'assistant',
-        content: explanation,
-        metadata: { graph, sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
-      });
-      return {
-        type: 'workflow',
-        graph,
-        sessionId,
-        sessionState: PLANNING_STATES.GENERATING_GRAPH,
-        explanation,
-        singleQuestion: {
-          id: 'q_ready_to_build',
-          question: 'Ready to build this workflow?',
-          field: 'generate_confirmation',
-          options: defaultOptions,
-          required: false,
-        },
-      };
-    }
+    await planningSessionService.transition(sessionId, nextState);
 
-    const firstReq = missing[0];
-    const question = await generateAIQuestion(plan, firstReq);
-    const richExplanation = await generateFriendlyWorkflowExplanation(userMessage, plan, question.question);
-
-    const questionWithOptions = {
-      ...planQuestionToSingleQuestion(question),
-      options: question.options && question.options.length > 0 ? question.options : defaultOptions,
+    const singleQuestion = {
+      id: architectResult.singleQuestion.id || 'q_unified_action',
+      question: architectResult.singleQuestion.question,
+      field: architectResult.singleQuestion.field,
+      options: architectResult.singleQuestion.options,
+      required: false,
     };
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: richExplanation,
-      metadata: { question: questionWithOptions, graph, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
+      content: architectResult.explanation,
+      metadata: {
+        graph,
+        sessionId,
+        sessionState: nextState,
+        singleQuestion,
+      },
     });
 
     return {
-      type: 'question',
+      type: architectResult.isReadyToBuild ? 'workflow' : 'question',
       graph,
-      explanation: richExplanation,
-      singleQuestion: questionWithOptions,
+      explanation: architectResult.explanation,
+      singleQuestion,
       sessionId,
-      sessionState: PLANNING_STATES.CLARIFYING,
+      sessionState: nextState,
     };
   },
 
@@ -582,29 +563,34 @@ export const conversationEngine = {
       };
     }
 
-    // ── Ask next question ──
-    const nextReq = stillMissing[0];
-    const question = await generateAIQuestion(plan, nextReq);
-    const richExplanation = await generateFriendlyWorkflowExplanation(plan.goal, plan, question.question);
+    // ── Update plan and transition to generating ──
+    const explanation = `### 🚀 Updated Workflow: "${plan.goal}"
 
-    const questionWithOptions = {
-      ...planQuestionToSingleQuestion(question),
-      options: question.options && question.options.length > 0 ? question.options : ['Build & Export n8n Workflow', 'Customize Step', 'Use Default Settings'],
+I've updated your workflow on the canvas based on your input. Click **"Build & Export n8n Workflow"** below to export your complete n8n JSON, or ask for any additional customization!`;
+
+    const singleQuestion = {
+      id: 'q_ready_generate_next',
+      question: 'Ready to build this workflow?',
+      field: 'generate_confirmation',
+      options: ['Build & Export n8n Workflow', 'Customize Action Steps', 'Add Email / Slack Notification'],
+      required: false,
     };
+
+    await planningSessionService.transition(sessionId, PLANNING_STATES.GENERATING_GRAPH);
 
     await conversationService.addMessage(conversationId, {
       role: 'assistant',
-      content: richExplanation,
-      metadata: { question: questionWithOptions, graph, sessionId, sessionState: PLANNING_STATES.CLARIFYING },
+      content: explanation,
+      metadata: { question: singleQuestion, graph, sessionId, sessionState: PLANNING_STATES.GENERATING_GRAPH },
     });
 
     return {
       type: 'question',
       graph,
-      explanation: richExplanation,
-      singleQuestion: questionWithOptions,
+      explanation,
+      singleQuestion,
       sessionId,
-      sessionState: PLANNING_STATES.CLARIFYING,
+      sessionState: PLANNING_STATES.GENERATING_GRAPH,
     };
   },
 
