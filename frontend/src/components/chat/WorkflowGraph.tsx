@@ -9,7 +9,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Pencil } from 'lucide-react';
-import { NodeInspectorDrawer, type GraphNodeData } from './NodeInspectorDrawer';
+import { NodeInspectorModal, getNodeBrandInfo, type GraphNodeData } from './NodeInspectorModal';
 
 interface GraphEdgeData {
   id: string;
@@ -30,91 +30,6 @@ interface WorkflowGraphProps {
   onSelectNode?: (nodeId: string | null) => void;
   onUpdateNodeConfig?: (nodeId: string, newConfig: Record<string, unknown>, newLabel?: string) => void;
   onDeleteNode?: (nodeId: string) => void;
-}
-
-const TRIGGER_TYPES = ['webhook', 'schedule', 'cron', 'manual', 'form_submission', 'email_received', 'payment_received'];
-
-function getNodeStyle(nodeType: string): { border: string; bg: string; dot: string } {
-  const cleanType = nodeType.startsWith('n8n-nodes-base.') ? nodeType.replace('n8n-nodes-base.', '') : nodeType;
-  const lower = cleanType.toLowerCase();
-
-  const isTrigger = TRIGGER_TYPES.some((t) => lower.includes(t)) || lower.includes('trigger') || lower.includes('webhook') || lower.includes('cron') || lower.includes('schedule');
-
-  if (isTrigger) {
-    return {
-      border: 'border border-amber-300 ring-2 ring-amber-50/30 dark:border-amber-700/60 dark:ring-amber-950/30',
-      bg: 'bg-gradient-to-br from-amber-50/95 to-amber-100/50 dark:from-amber-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-amber-500',
-    };
-  }
-  if (lower.includes('email') || lower.includes('gmail')) {
-    return {
-      border: 'border border-sky-300 ring-2 ring-sky-50/30 dark:border-sky-700/60 dark:ring-sky-950/30',
-      bg: 'bg-gradient-to-br from-sky-50/95 to-sky-100/50 dark:from-sky-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-sky-500',
-    };
-  }
-  if (lower.includes('http') || lower.includes('request')) {
-    return {
-      border: 'border border-indigo-300 ring-2 ring-indigo-50/30 dark:border-indigo-700/60 dark:ring-indigo-950/30',
-      bg: 'bg-gradient-to-br from-indigo-50/95 to-indigo-100/50 dark:from-indigo-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-indigo-500',
-    };
-  }
-  if (lower.includes('filter') || lower.includes('if')) {
-    return {
-      border: 'border border-teal-300 ring-2 ring-teal-50/30 dark:border-teal-700/60 dark:ring-teal-950/30',
-      bg: 'bg-gradient-to-br from-teal-50/95 to-teal-100/50 dark:from-teal-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-teal-500',
-    };
-  }
-  if (lower.includes('transform') || lower.includes('set') || lower.includes('merge')) {
-    return {
-      border: 'border border-violet-300 ring-2 ring-violet-50/30 dark:border-violet-700/60 dark:ring-violet-950/30',
-      bg: 'bg-gradient-to-br from-violet-50/95 to-violet-100/50 dark:from-violet-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-violet-500',
-    };
-  }
-  if (lower.includes('delay') || lower.includes('wait')) {
-    return {
-      border: 'border border-gray-300 ring-2 ring-gray-50/30 dark:border-gray-700/60 dark:ring-gray-950/30',
-      bg: 'bg-gradient-to-br from-gray-50/95 to-gray-100/50 dark:from-gray-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-gray-400',
-    };
-  }
-  if (lower.includes('code') || lower.includes('js') || lower.includes('run')) {
-    return {
-      border: 'border border-fuchsia-300 ring-2 ring-fuchsia-50/30 dark:border-fuchsia-700/60 dark:ring-fuchsia-950/30',
-      bg: 'bg-gradient-to-br from-fuchsia-50/95 to-fuchsia-100/50 dark:from-fuchsia-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-fuchsia-500',
-    };
-  }
-  if (lower.includes('sheet') || lower.includes('google')) {
-    return {
-      border: 'border border-emerald-300 ring-2 ring-emerald-50/30 dark:border-emerald-700/60 dark:ring-emerald-950/30',
-      bg: 'bg-gradient-to-br from-emerald-50/95 to-emerald-100/50 dark:from-emerald-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-emerald-500',
-    };
-  }
-  if (lower.includes('slack') || lower.includes('telegram') || lower.includes('discord')) {
-    return {
-      border: 'border border-purple-300 ring-2 ring-purple-50/30 dark:border-purple-700/60 dark:ring-purple-950/30',
-      bg: 'bg-gradient-to-br from-purple-50/95 to-purple-100/50 dark:from-purple-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-purple-500',
-    };
-  }
-  if (lower.includes('supabase') || lower.includes('database') || lower.includes('postgres') || lower.includes('sql')) {
-    return {
-      border: 'border border-emerald-400 ring-2 ring-emerald-50/30 dark:border-emerald-700/60 dark:ring-emerald-950/30',
-      bg: 'bg-gradient-to-br from-emerald-50/95 to-emerald-100/50 dark:from-emerald-950/40 dark:to-slate-900 backdrop-blur-sm',
-      dot: 'bg-emerald-600',
-    };
-  }
-  return {
-    border: 'border border-blue-300 ring-2 ring-blue-50/30 dark:border-blue-700/60 dark:ring-blue-950/30',
-    bg: 'bg-gradient-to-br from-blue-50/95 to-blue-100/50 dark:from-blue-950/40 dark:to-slate-900 backdrop-blur-sm',
-    dot: 'bg-blue-500',
-  };
 }
 
 export default function WorkflowGraph({
@@ -148,12 +63,29 @@ export default function WorkflowGraph({
     const edgeList = graph.edges ?? [];
 
     for (const wfNode of nodeList) {
-      const style = getNodeStyle(wfNode.type);
-      const cleanType = wfNode.type.startsWith('n8n-nodes-base.')
-        ? wfNode.type.replace('n8n-nodes-base.', '')
-        : wfNode.type;
-
+      const brand = getNodeBrandInfo(wfNode.type);
       const isSelected = activeSelectedId === wfNode.id;
+      const isIf = (wfNode.type || '').toLowerCase().includes('if') || (wfNode.type || '').toLowerCase() === 'filter';
+
+      // Non-technical human summary for the node subtitle
+      let friendlySubtitle = wfNode.description || '';
+      if (!friendlySubtitle || friendlySubtitle === 'Action step') {
+        if (isIf) {
+          friendlySubtitle = wfNode.config?.value2 ? `Rule: Greater than ${wfNode.config.value2}` : 'Decision: If / Else';
+        } else if (brand.name === 'Slack') {
+          friendlySubtitle = wfNode.config?.channel ? `Posts to ${wfNode.config.channel}` : 'Sends Slack message';
+        } else if (brand.name.includes('Email')) {
+          friendlySubtitle = wfNode.config?.to ? `Email to ${wfNode.config.to}` : 'Sends email notification';
+        } else if (brand.name.includes('Sheets')) {
+          friendlySubtitle = wfNode.config?.sheetName ? `Appends to ${wfNode.config.sheetName}` : 'Logs row in Google Sheets';
+        } else if (brand.name === 'Stripe') {
+          friendlySubtitle = 'Trigger: When payment succeeds';
+        } else if (brand.name === 'Schedule') {
+          friendlySubtitle = 'Trigger: Scheduled timer';
+        } else {
+          friendlySubtitle = 'Automated step';
+        }
+      }
 
       rfNodes.push({
         id: wfNode.id,
@@ -164,60 +96,57 @@ export default function WorkflowGraph({
           background: 'transparent',
           padding: 0,
           fontSize: 12,
-          minWidth: 195,
+          minWidth: 230,
           boxShadow: 'none',
         },
         data: {
           label: (
             <div
-              className={`p-3.5 rounded-xl transition-all duration-200 cursor-pointer ${
+              className={`relative flex items-center gap-3 p-3.5 rounded-2xl transition-all duration-200 cursor-pointer select-none shadow-md ${
                 isSelected
-                  ? 'border-2 border-indigo-500 ring-4 ring-indigo-500/20 shadow-2xl scale-[1.04] bg-white dark:bg-slate-900'
-                  : `${style.border} ${style.bg} shadow-md hover:shadow-lg hover:scale-[1.02]`
+                  ? 'bg-white dark:bg-slate-900 border-2 border-[#ff6d5a] ring-4 ring-[#ff6d5a]/20 shadow-2xl scale-[1.03]'
+                  : 'bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.01]'
               }`}
             >
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className={`h-2 w-2 rounded-full ${style.dot} animate-pulse shrink-0`} />
-                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-wider uppercase truncate max-w-[110px]">
-                    {cleanType}
+              {/* Left n8n Branded App Icon Badge */}
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${brand.bg} text-white shadow-sm`}
+              >
+                <brand.icon className="h-5 w-5" />
+              </div>
+
+              {/* Center Info */}
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
+                    {brand.name}
                   </span>
+                  {isSelected ? (
+                    <span className="text-[9px] font-bold text-[#ff6d5a] bg-orange-50 dark:bg-orange-950/60 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                      <Pencil className="h-2 w-2" />
+                      Edit
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-mono text-slate-400 shrink-0">
+                      {wfNode.id}
+                    </span>
+                  )}
                 </div>
-                {isSelected ? (
-                  <span className="text-[9px] font-bold bg-indigo-600 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 shadow-sm">
-                    <Pencil className="h-2 w-2" />
-                    Edit
-                  </span>
-                ) : (
-                  <span className="text-[8px] font-mono text-gray-400 shrink-0">
-                    {wfNode.id}
-                  </span>
-                )}
+
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate mt-0.5">
+                  {wfNode.label}
+                </div>
+
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  {friendlySubtitle}
+                </div>
               </div>
-              <div className="mt-1 text-xs font-bold text-gray-900 dark:text-white truncate">
-                {wfNode.label}
-              </div>
-              {wfNode.config && Object.keys(wfNode.config).length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-200/50 dark:border-slate-800/60 space-y-1">
-                  {Object.entries(wfNode.config)
-                    .filter(
-                      ([, v]) =>
-                        v !== undefined &&
-                        v !== null &&
-                        v !== '' &&
-                        !(typeof v === 'object' && Object.keys(v).length === 0)
-                    )
-                    .slice(0, 3)
-                    .map(([k, v]) => (
-                      <div key={k} className="flex flex-col text-[10px] leading-tight text-gray-600 dark:text-gray-300">
-                        <span className="font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide text-[8px]">
-                          {k}
-                        </span>
-                        <span className="truncate font-medium mt-0.5 bg-white/70 dark:bg-slate-800/80 px-1 py-0.5 rounded border border-gray-100/60 dark:border-slate-700/50">
-                          {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                        </span>
-                      </div>
-                    ))}
+
+              {/* If Condition Port Indicators on Right */}
+              {isIf && (
+                <div className="absolute -right-1.5 top-0 bottom-0 flex flex-col justify-between py-2 pointer-events-none">
+                  <span className="h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 shadow-sm" title="True Branch" />
+                  <span className="h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 shadow-sm" title="False Branch" />
                 </div>
               )}
             </div>
@@ -238,7 +167,7 @@ export default function WorkflowGraph({
         type: 'smoothstep',
         animated: true,
         style: {
-          stroke: isTrueBranch ? '#10b981' : isFalseBranch ? '#f43f5e' : '#9ca3af',
+          stroke: isTrueBranch ? '#10b981' : isFalseBranch ? '#f43f5e' : '#94a3b8',
           strokeWidth: isTrueBranch || isFalseBranch ? 2.5 : 2,
         },
         label: isTrueBranch
@@ -294,8 +223,8 @@ export default function WorkflowGraph({
             />
           </ReactFlow>
 
-          {/* Interactive Slide-Out Node Parameter Inspector Drawer */}
-          <NodeInspectorDrawer
+          {/* n8n-Style Node Configuration Workbench Modal */}
+          <NodeInspectorModal
             node={selectedNodeObj}
             isOpen={Boolean(selectedNodeObj)}
             onClose={() => handleSelectNode(null)}
