@@ -26,6 +26,7 @@ const VALUE_TO_ACTION_TYPE: Record<string, string> = {
   telegram: 'telegram',
   code: 'run_code', 'google sheets': 'google_sheets', spreadsheet: 'google_sheets',
   supabase: 'supabase', database: 'supabase', db: 'supabase',
+  if: 'filter', condition: 'filter', 'if condition': 'filter', 'if/else': 'filter', conditional: 'filter',
 };
 
 function inferTriggerType(value: string): string {
@@ -37,6 +38,11 @@ function inferTriggerType(value: string): string {
 function inferActionType(value: string): string {
   if (value.startsWith('n8n-nodes-base.')) return value;
   return VALUE_TO_ACTION_TYPE[value.trim().toLowerCase()] ?? value;
+}
+
+export function isIfNode(type: string): boolean {
+  const t = type.toLowerCase().replace(/^n8n-nodes-base\./, '');
+  return t === 'if' || t === 'filter' || t.startsWith('if');
 }
 
 export function isSinkAction(type: string): boolean {
@@ -266,37 +272,112 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
   nodes.push(...actionNodes);
 
   // ── Build edges: Connect triggers to action nodes ──
-  // If actions are parallel sinks (like notification + logging) or explicitly configured with
-  // branch: 'parallel', fan them out directly from their parent source instead of a blocking sequential chain.
+  // Supports:
+  // 1. Multi-branch conditional routing (If/Else with true/false output labels)
+  // 2. Parallel fan-out branching for independent terminal sinks
+  // 3. Sequential processing chains
   if (actionNodes.length > 0) {
     const parentMap = new Map<string, string>(); // actionNode.id -> sourceNodeId
+    let activeIfNodeId: string | null = null;
+    let activeIfTrueTargetId: string | null = null;
+    let activeIfFalseTargetId: string | null = null;
 
     for (let i = 0; i < actionNodes.length; i++) {
       const currentAction = actionNodes[i];
       let sourceId = triggerNodes[0]?.id;
+      let edgeLabel = '';
+
+      const isCurrentIf = isIfNode(currentAction.type);
+      const isExplicitFalse =
+        currentAction.config?.branch === 'false' ||
+        currentAction.config?.branch === 'else' ||
+        currentAction.config?.condition === 'false' ||
+        currentAction.config?.condition === 'no' ||
+        currentAction.label.toLowerCase().includes('else') ||
+        currentAction.label.toLowerCase().includes('false branch') ||
+        Boolean(currentAction.description && currentAction.description.toLowerCase().includes('otherwise'));
+
+      const isExplicitTrue =
+        currentAction.config?.branch === 'true' ||
+        currentAction.config?.condition === 'true' ||
+        currentAction.config?.branch === 'yes' ||
+        currentAction.config?.condition === 'yes' ||
+        currentAction.label.toLowerCase().includes('true branch');
 
       if (i > 0) {
         const prevAction = actionNodes[i - 1];
-        const isExplicitParallel =
-          currentAction.config?.branch === 'parallel' ||
-          currentAction.config?.parallel === true;
-        const isExplicitSequential =
-          currentAction.config?.branch === 'sequential' ||
-          currentAction.config?.parallel === false ||
-          currentAction.config?.dependsOn !== undefined;
+        const isPrevIf = isIfNode(prevAction.type);
 
-        const isParallelSink =
-          !isExplicitSequential &&
-          isSinkAction(currentAction.type) &&
-          isSinkAction(prevAction.type);
-
-        if (isExplicitParallel || isParallelSink) {
-          // Connect to the same parent source as the previous action (parallel fan-out)
-          sourceId = parentMap.get(prevAction.id) ?? triggerNodes[0]?.id;
-        } else {
-          // Sequential chain: previous action feeds into current action
-          sourceId = prevAction.id;
+        if (isPrevIf) {
+          activeIfNodeId = prevAction.id;
         }
+
+        if (activeIfNodeId) {
+          if (isExplicitFalse) {
+            // Explicit False/Else branch directly from the active If node
+            sourceId = activeIfNodeId;
+            edgeLabel = 'false';
+            activeIfFalseTargetId = currentAction.id;
+            const ifNode = actionNodes.find((n) => n.id === activeIfNodeId);
+            if (ifNode) {
+              currentAction.position = { x: ifNode.position.x + COL_GAP, y: ifNode.position.y + 80 };
+            }
+          } else if (isPrevIf || isExplicitTrue) {
+            // Immediate True branch following the If node
+            sourceId = activeIfNodeId;
+            edgeLabel = 'true';
+            activeIfTrueTargetId = currentAction.id;
+            const ifNode = actionNodes.find((n) => n.id === activeIfNodeId);
+            if (ifNode) {
+              currentAction.position = { x: ifNode.position.x + COL_GAP, y: ifNode.position.y - 80 };
+            }
+          } else if (activeIfTrueTargetId && !activeIfFalseTargetId && !isCurrentIf) {
+            // If the True branch is already occupied and this node is an independent sink,
+            // route it to the False branch of the If node
+            const isExplicitSequential =
+              currentAction.config?.branch === 'sequential' ||
+              currentAction.config?.parallel === false ||
+              currentAction.config?.dependsOn !== undefined;
+
+            if (!isExplicitSequential && (isSinkAction(currentAction.type) || isExplicitFalse)) {
+              sourceId = activeIfNodeId;
+              edgeLabel = 'false';
+              activeIfFalseTargetId = currentAction.id;
+              const ifNode = actionNodes.find((n) => n.id === activeIfNodeId);
+              if (ifNode) {
+                currentAction.position = { x: ifNode.position.x + COL_GAP, y: ifNode.position.y + 80 };
+              }
+            } else {
+              sourceId = prevAction.id;
+            }
+          } else {
+            sourceId = prevAction.id;
+          }
+        } else {
+          // Normal parallel sink vs sequential chain handling
+          const isExplicitParallel =
+            currentAction.config?.branch === 'parallel' ||
+            currentAction.config?.parallel === true;
+          const isExplicitSequential =
+            currentAction.config?.branch === 'sequential' ||
+            currentAction.config?.parallel === false ||
+            currentAction.config?.dependsOn !== undefined;
+
+          const isParallelSink =
+            !isExplicitSequential &&
+            isSinkAction(currentAction.type) &&
+            isSinkAction(prevAction.type);
+
+          if (isExplicitParallel || isParallelSink) {
+            sourceId = parentMap.get(prevAction.id) ?? triggerNodes[0]?.id;
+          } else {
+            sourceId = prevAction.id;
+          }
+        }
+      }
+
+      if (isCurrentIf) {
+        activeIfNodeId = currentAction.id;
       }
 
       if (sourceId) {
@@ -311,7 +392,7 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
               source: triggerNode.id,
               target: currentAction.id,
               type: 'direct',
-              label: '',
+              label: edgeLabel,
               conditions: [],
             });
           }
@@ -321,7 +402,7 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
             source: sourceId,
             target: currentAction.id,
             type: 'direct',
-            label: '',
+            label: edgeLabel,
             conditions: [],
           });
         }

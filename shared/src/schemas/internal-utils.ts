@@ -96,6 +96,8 @@ export const INTERNAL_TO_N8N_TYPE_MAP: Record<string, string> = {
   http_request: 'n8n-nodes-base.httpRequest',
   transform_data: 'n8n-nodes-base.set',
   filter: 'n8n-nodes-base.if',
+  if: 'n8n-nodes-base.if',
+  condition: 'n8n-nodes-base.if',
   delay: 'n8n-nodes-base.wait',
   create_record: 'n8n-nodes-base.spreadsheetFile',
   update_record: 'n8n-nodes-base.spreadsheetFile',

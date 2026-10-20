@@ -109,21 +109,53 @@ export function enrichDynamicConfig(
   const isForm = lowerTrigger.includes('form') || /\b(form|typeform|jotform|submission)\b/.test(lowerPrompt);
   const isGitHub = lowerTrigger.includes('github') || /\b(github|pull request|issue|repo)\b/.test(lowerPrompt);
 
+  const hasIfNode = actions.some((a) => a.type.toLowerCase().includes('if') || a.type.toLowerCase() === 'filter');
   const sinkCount = actions.filter((a) => isSinkAction(a.type)).length;
+
+  let passedIfNode = false;
+  let trueBranchAssigned = false;
 
   for (let idx = 0; idx < actions.length; idx++) {
     const action = actions[idx];
     const t = action.type.toLowerCase();
+    const isCurrentIf = t.includes('if') || t === 'filter';
     const config = action.config ? { ...action.config } : {};
 
-    // 1. Parallel Fan-Out: Connect multiple terminal sinks in parallel so failures never block
-    if (sinkCount > 1 && isSinkAction(action.type)) {
+    // 1. Conditional Routing configuration
+    if (isCurrentIf) {
+      passedIfNode = true;
+      if (!config.conditions && !config.expression && !config.field) {
+        if (isStripe) {
+          config.expression = '={{ Number($json.data?.object?.amount || $json.amount || 0) / 100 }}';
+          config.operation = 'larger';
+          config.value2 = 500;
+        } else {
+          config.expression = '={{ $json.status || $json.data?.status || "success" }}';
+          config.operation = 'equal';
+          config.value2 = 'success';
+        }
+      }
+    } else if (passedIfNode) {
+      if (!trueBranchAssigned) {
+        if (config.branch === undefined && config.condition === undefined) {
+          config.branch = 'true';
+        }
+        trueBranchAssigned = true;
+      } else {
+        if (config.branch === undefined && config.condition === undefined) {
+          config.branch = 'false';
+        }
+      }
+    }
+
+    // 2. Parallel Fan-Out: Connect multiple independent sinks in parallel (only if no active If condition routing)
+    if (!hasIfNode && sinkCount > 1 && isSinkAction(action.type)) {
       if (config.branch === undefined && config.parallel === undefined) {
         config.branch = 'parallel';
       }
     }
 
-    // 2. Error Resilience: Add continueOnFail to notification and alert actions
+    // 3. Error Resilience: Add continueOnFail to notification and alert actions
     const isNotificationType =
       t.includes('slack') ||
       t.includes('telegram') ||
@@ -256,7 +288,11 @@ export function heuristicUnifiedArchitect(userPrompt: string): UnifiedArchitectR
   const triggerType = normalizeNodeType(plan.trigger?.type || 'webhook', true);
   const triggerLabel = plan.trigger?.label || plan.trigger?.type?.replace(/^n8n-nodes-base\./, '') || 'Trigger Node';
 
-  const actions = plan.actions.map((a, idx) => ({
+  const isConditionalPrompt =
+    /\b(if|when)\b/i.test(userPrompt) &&
+    /\b(else|otherwise|greater|less|larger|above|below|succeed|failed|vip|approved|rejected)\b/i.test(userPrompt);
+
+  let actions = plan.actions.map((a, idx) => ({
     type: normalizeNodeType(a.type, false),
     label: a.label || `Action ${idx + 1}`,
     description: a.description || 'Action step',
@@ -264,22 +300,63 @@ export function heuristicUnifiedArchitect(userPrompt: string): UnifiedArchitectR
     config: a.config || {},
   }));
 
+  if (isConditionalPrompt && !actions.some((a) => a.type.toLowerCase().includes('if') || a.type.toLowerCase() === 'filter')) {
+    const isStripe = triggerType.toLowerCase().includes('stripe') || /\b(stripe|payment)\b/i.test(userPrompt);
+    const ifNode = {
+      type: 'n8n-nodes-base.if',
+      label: 'Check Condition (If / Else)',
+      description: isStripe ? 'Checks if payment amount exceeds $500 threshold' : 'Evaluates condition rules against incoming payload',
+      order: 1,
+      config: isStripe
+        ? { expression: '={{ Number($json.data?.object?.amount || $json.amount || 0) / 100 }}', operation: 'larger', value2: 500 }
+        : { expression: '={{ $json.status || "success" }}', operation: 'equal', value2: 'success' },
+    };
+
+    const remainingActions = actions.map((a, i) => ({
+      ...a,
+      order: i + 2,
+      config: {
+        ...a.config,
+        branch: i === 0 ? 'true' : 'false',
+      },
+    }));
+
+    actions = [ifNode, ...remainingActions];
+  }
+
   // Enrich with dynamic n8n expressions, error resilience, and parallel branching
   enrichDynamicConfig(triggerType, actions, userPrompt);
 
-  const isParallel = actions.filter((a) => a.config?.branch === 'parallel').length > 1;
-  const asciiFlow = isParallel
-    ? [
-        `[⚡ ${triggerLabel}]`,
-        ...actions.map(
-          (a, i) =>
-            `   ${i === actions.length - 1 ? '└' : '├'}─► [⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}] (Parallel)`,
-        ),
-      ].join('\n')
-    : [
-        `[⚡ ${triggerLabel}]`,
-        ...actions.map((a) => `       ↓\n[⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}]`),
-      ].join('\n');
+  const hasIf = actions.some((a) => a.type.toLowerCase().includes('if') || a.type.toLowerCase() === 'filter');
+  const isParallel = !hasIf && actions.filter((a) => a.config?.branch === 'parallel').length > 1;
+
+  let asciiFlow = '';
+  if (hasIf) {
+    const ifNode = actions.find((a) => a.type.toLowerCase().includes('if') || a.type.toLowerCase() === 'filter')!;
+    const trueAction = actions.find((a) => a.config?.branch === 'true');
+    const falseAction = actions.find((a) => a.config?.branch === 'false');
+
+    asciiFlow = [
+      `[⚡ ${triggerLabel}]`,
+      `       ↓`,
+      `[🔀 ${ifNode.label}]`,
+      trueAction ? `   ├─► (✓ True)  ──► [⚙️ ${trueAction.label}]` : '',
+      falseAction ? `   └─► (✗ False) ──► [⚙️ ${falseAction.label}]` : '',
+    ].filter(Boolean).join('\n');
+  } else if (isParallel) {
+    asciiFlow = [
+      `[⚡ ${triggerLabel}]`,
+      ...actions.map(
+        (a, i) =>
+          `   ${i === actions.length - 1 ? '└' : '├'}─► [⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}] (Parallel)`,
+      ),
+    ].join('\n');
+  } else {
+    asciiFlow = [
+      `[⚡ ${triggerLabel}]`,
+      ...actions.map((a) => `       ↓\n[⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}]`),
+    ].join('\n');
+  }
 
   const integrationsList = plan.integrations.map((i) => i.name).join(', ') || 'Custom API';
 
@@ -295,7 +372,10 @@ ${asciiFlow}
 - **${triggerLabel}**: ${plan.trigger?.description || 'Kicks off the automation flow as soon as an incoming event is detected.'}
 
 **⚙️ 2. The Actions (Automated steps...)**
-${actions.map((a, i) => `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Executes the automated operation and passes payload to next step.'}${a.config?.branch === 'parallel' ? ' *(Runs in parallel from trigger)*' : ''}`).join('\n')}
+${actions.map((a, i) => {
+  const branchTag = a.config?.branch === 'true' ? ' *(True Branch)*' : a.config?.branch === 'false' ? ' *(False / Else Branch)*' : a.config?.branch === 'parallel' ? ' *(Runs in parallel from trigger)*' : '';
+  return `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Executes the automated operation and passes payload to next step.'}${branchTag}`;
+}).join('\n')}
 
 ---
 **🔑 3rd-Party Setup & Requirements Guide**:
@@ -389,9 +469,13 @@ Rules:
    - For notifications and emails: write dynamic messages like "=New event received: {{ $json.name || $json.data?.title }}" or "=Received at {{ $now.toFormat('HH:mm') }}"
    - For databases, spreadsheets, Airtable, and Notion: define structured field mappings with dynamic values like "columns": { "Date": "={{ $now.toISO() }}", "User": "={{ $json.email || 'Guest' }}" }
 3. PARALLEL FAN-OUT BRANCHING: When a workflow has multiple independent actions (such as sending notifications AND logging to a database/spreadsheet/CRM), set "branch": "parallel" in their config. This connects them directly in parallel from the trigger so one action failing never blocks the other.
-4. ERROR RESILIENCE: Set "continueOnFail": true on notification and alert actions so transient delivery errors never stop database writing.
-5. The explanation MUST contain an ASCII diagram, clear numbered sections, and exact click paths for obtaining any required 3rd-party API keys or Webhook URLs.
-6. The singleQuestion options MUST always include "Build & Export n8n Workflow" as an option.`;
+4. MULTI-BRANCH CONDITIONAL ROUTING: When the workflow involves condition evaluation (e.g. "if amount > $500", "if status is success else error", "approved vs rejected"):
+   - Insert an "n8n-nodes-base.if" node with comparison rules in "config" (e.g. { "expression": "={{ Number($json.data.object.amount) / 100 }}", "operation": "larger", "value2": 500 }).
+   - Mark the primary/success branch action with "branch": "true" in its config.
+   - Mark the alternative/else branch action with "branch": "false" in its config.
+5. ERROR RESILIENCE: Set "continueOnFail": true on notification and alert actions so transient delivery errors never stop database writing.
+6. The explanation MUST contain an ASCII diagram, clear numbered sections, and exact click paths for obtaining any required 3rd-party API keys or Webhook URLs.
+7. The singleQuestion options MUST always include "Build & Export n8n Workflow" as an option.`;
 
   try {
     const raw = await chatCompletion(

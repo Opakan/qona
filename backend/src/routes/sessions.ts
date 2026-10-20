@@ -119,13 +119,43 @@ sessionsRouter.get('/sessions/:id/draft', requireAuth, async (req, res, next) =>
   } catch (err) { next(err); }
 });
 
+sessionsRouter.put('/sessions/:id/graph', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const sess = await planningSessionService.getById(id);
+    if (!sess) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const graph = parseGraphDraft(req.body?.graph);
+    if (!graph) {
+      res.status(400).json({ error: 'Invalid internal graph schema' });
+      return;
+    }
+
+    await planningSessionService.setWorkflowDraft(id, graph);
+    log('info', 'GRAPH DRAFT UPDATED', { sessionId: id, nodeCount: graph.nodes.length });
+    res.json({ success: true, sessionId: id, nodeCount: graph.nodes.length });
+  } catch (err) { next(err); }
+});
+
 sessionsRouter.post('/sessions/:id/compile', requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const sess = await planningSessionService.getById(id);
     if (!sess) { res.status(404).json({ error: 'Session not found' }); return; }
 
-    const g = await resolveGraph(sess);
+    let g: InternalGraph | null = null;
+    if (req.body?.graph) {
+      g = parseGraphDraft(req.body.graph);
+      if (g) {
+        try {
+          await planningSessionService.setWorkflowDraft(id, g);
+        } catch { /* ignore */ }
+      }
+    }
+    if (!g) {
+      g = await resolveGraph(sess);
+    }
+
     if (!g) {
       const block = guardCompileState(sess);
       if (block) {

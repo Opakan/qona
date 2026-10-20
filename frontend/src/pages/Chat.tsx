@@ -51,6 +51,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [typing, setTyping] = useState(false);
   const [currentWorkflow, setCurrentWorkflow] = useState<InternalGraph | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   
   // Interactive & Resizable Layout State (Mobile responsive defaults)
@@ -131,10 +132,46 @@ export default function ChatPage() {
     }
   };
 
+  const handleUpdateNodeConfig = useCallback(
+    (nodeId: string, newConfig: Record<string, unknown>, newLabel?: string) => {
+      setCurrentWorkflow((prev) => {
+        if (!prev) return null;
+        const updatedNodes = prev.nodes.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              label: newLabel !== undefined && newLabel.trim().length > 0 ? newLabel : n.label,
+              config: {
+                ...n.config,
+                ...newConfig,
+              },
+            };
+          }
+          return n;
+        });
+
+        const updatedGraph: InternalGraph = {
+          ...prev,
+          nodes: updatedNodes,
+        };
+
+        // If a planning session is active, persist updated graph to session backend
+        if (sessionId) {
+          apiClient.put(`/sessions/${sessionId}/graph`, { graph: updatedGraph }).catch((err) => {
+            console.warn('Failed to sync node edit to backend session:', err);
+          });
+        }
+
+        return updatedGraph;
+      });
+    },
+    [sessionId],
+  );
+
   const handleCopyForN8n = async () => {
     if (!sessionId || exporting) return;
     try {
-      const { data } = await apiClient.post(`/sessions/${sessionId}/compile`);
+      const { data } = await apiClient.post(`/sessions/${sessionId}/compile`, { graph: currentWorkflow });
       if (data.compiled && data.n8n) {
         await navigator.clipboard.writeText(JSON.stringify(data.n8n, null, 2));
         setCopied(true);
@@ -151,7 +188,7 @@ export default function ChatPage() {
     if (!sessionId || exporting) return;
     setExporting(true);
     try {
-      const { data } = await apiClient.post(`/sessions/${sessionId}/compile`);
+      const { data } = await apiClient.post(`/sessions/${sessionId}/compile`, { graph: currentWorkflow });
       if (data.compiled && data.n8n) {
         const blob = new Blob([JSON.stringify(data.n8n, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1024,7 +1061,13 @@ export default function ChatPage() {
         {/* Graph Canvas Container */}
         <div className="flex-1 relative bg-slate-100 dark:bg-slate-950">
           {currentWorkflow ? (
-            <WorkflowGraph graph={currentWorkflow} className="h-full" />
+            <WorkflowGraph
+              graph={currentWorkflow}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+              onUpdateNodeConfig={handleUpdateNodeConfig}
+              className="h-full"
+            />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-200/80 dark:bg-slate-850 text-slate-400 dark:text-slate-500">

@@ -93,4 +93,28 @@ describe('unifiedArchitect heuristic fallback', () => {
     expect(String(telegram.config.message)).toMatch(/^=/);
     expect(telegram.config.message).toContain('{{');
   });
+
+  it('generates multi-branch conditional routing (If / Else) when prompt specifies conditions', () => {
+    const result = heuristicUnifiedArchitect(
+      'When a new Stripe payment comes in, if amount is greater than 500 notify VIP Slack otherwise send standard email',
+    );
+    expect(result.trigger.type).toBe('n8n-nodes-base.stripeTrigger');
+    
+    // Actions should include an If node, followed by True and False branches
+    const ifAction = result.actions.find((a) => a.type === 'n8n-nodes-base.if');
+    expect(ifAction).toBeDefined();
+    expect(ifAction?.config.operation).toBe('larger');
+    expect(ifAction?.config.value2).toBe(500);
+
+    const trueAction = result.actions.find((a) => a.config?.branch === 'true');
+    const falseAction = result.actions.find((a) => a.config?.branch === 'false');
+
+    expect(trueAction).toBeDefined();
+    expect(falseAction).toBeDefined();
+
+    // ASCII flow should contain condition branching
+    expect(result.explanation).toContain('Check Condition');
+    expect(result.explanation).toContain('(✓ True)');
+    expect(result.explanation).toContain('(✗ False)');
+  });
 });

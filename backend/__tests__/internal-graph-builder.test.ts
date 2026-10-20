@@ -171,6 +171,57 @@ describe('buildInternalGraph', () => {
     expect(edge2).toBeDefined();
   });
 
+  it('routes multi-branch conditional actions (If / Else) to true and false outputs', () => {
+    const plan: WorkflowPlan = {
+      ...basePlan,
+      trigger: { type: 'stripe_trigger', label: 'Stripe Trigger', config: {} },
+      actions: [
+        {
+          type: 'filter',
+          label: 'If Amount > $500',
+          order: 1,
+          config: { expression: '={{ Number($json.data.object.amount) / 100 }}', operation: 'larger', value2: 500 },
+        },
+        {
+          type: 'slack',
+          label: 'Notify VIP Slack',
+          order: 2,
+          config: { branch: 'true', channel: '#vip-sales' },
+        },
+        {
+          type: 'gmail',
+          label: 'Send Standard Receipt',
+          order: 3,
+          config: { branch: 'false', to: 'customer@example.com' },
+        },
+      ],
+      requirements: [],
+    };
+    const { graph } = buildInternalGraph(plan);
+
+    const ifNode = graph.nodes.find((n) => n.label === 'If Amount > $500')!;
+    const vipNode = graph.nodes.find((n) => n.label === 'Notify VIP Slack')!;
+    const stdNode = graph.nodes.find((n) => n.label === 'Send Standard Receipt')!;
+
+    expect(ifNode).toBeDefined();
+    expect(vipNode).toBeDefined();
+    expect(stdNode).toBeDefined();
+
+    // Check true edge
+    const trueEdge = graph.edges.find((e) => e.source === ifNode.id && e.target === vipNode.id);
+    expect(trueEdge).toBeDefined();
+    expect(trueEdge?.label).toBe('true');
+
+    // Check false edge
+    const falseEdge = graph.edges.find((e) => e.source === ifNode.id && e.target === stdNode.id);
+    expect(falseEdge).toBeDefined();
+    expect(falseEdge?.label).toBe('false');
+
+    // Check visual symmetry in positions
+    expect(vipNode.position.y).toBeLessThan(ifNode.position.y);
+    expect(stdNode.position.y).toBeGreaterThan(ifNode.position.y);
+  });
+
   it('infers trigger types from values', () => {
     const plan: WorkflowPlan = {
       ...basePlan,

@@ -628,13 +628,66 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
     ],
     mapConfig: (config) => {
       const mapped: Record<string, unknown> = {};
-      if (config.conditions) mapped.conditions = config.conditions;
-      if (config.expression) {
+      if (config.conditions && typeof config.conditions === 'object') {
+        mapped.conditions = config.conditions;
+        return mapped;
+      }
+
+      const rawOp = String(config.operation || config.operator || '').trim().toLowerCase();
+      let normalizedOp = 'larger';
+      if (rawOp === '>' || rawOp === 'larger' || rawOp === 'greater' || rawOp === 'gt') normalizedOp = 'larger';
+      else if (rawOp === '>=' || rawOp === 'largerequal' || rawOp === 'gte') normalizedOp = 'largerEqual';
+      else if (rawOp === '<' || rawOp === 'smaller' || rawOp === 'less' || rawOp === 'lt') normalizedOp = 'smaller';
+      else if (rawOp === '<=' || rawOp === 'smallerequal' || rawOp === 'lte') normalizedOp = 'smallerEqual';
+      else if (rawOp === '==' || rawOp === '===' || rawOp === 'equal' || rawOp === 'equals' || rawOp === 'eq') normalizedOp = 'equal';
+      else if (rawOp === '!=' || rawOp === '!==' || rawOp === 'notequal' || rawOp === 'neq') normalizedOp = 'notEqual';
+      else if (rawOp === 'contains') normalizedOp = 'contains';
+      else if (rawOp === 'notempty') normalizedOp = 'notEmpty';
+
+      const value1 = (config.value1 as string) || (config.expression as string) || (config.field ? `={{ $json.${config.field} }}` : '={{ Number($json.data?.object?.amount || $json.amount || 0) / 100 }}');
+      const rawVal2 = config.value2 !== undefined ? config.value2 : config.threshold;
+
+      const isNumeric =
+        rawOp === 'larger' || rawOp === 'smaller' || rawOp === 'largerequal' || rawOp === 'smallerequal' ||
+        rawOp === '>' || rawOp === '<' || rawOp === '>=' || rawOp === '<=' ||
+        typeof rawVal2 === 'number' || (rawVal2 !== undefined && !isNaN(Number(rawVal2)));
+
+      if (isNumeric) {
+        mapped.conditions = {
+          number: [
+            {
+              value1,
+              operation: normalizedOp,
+              value2: rawVal2 !== undefined ? Number(rawVal2) : 500,
+            },
+          ],
+        };
+      } else if (rawVal2 !== undefined || normalizedOp === 'equal' || normalizedOp === 'notEqual' || normalizedOp === 'contains') {
         mapped.conditions = {
           string: [
             {
-              value1: config.expression,
+              value1,
+              operation: normalizedOp,
+              value2: rawVal2 !== undefined ? String(rawVal2) : '',
+            },
+          ],
+        };
+      } else if (config.expression) {
+        mapped.conditions = {
+          string: [
+            {
+              value1: String(config.expression),
               operation: 'notEmpty',
+            },
+          ],
+        };
+      } else {
+        mapped.conditions = {
+          number: [
+            {
+              value1: '={{ Number($json.data?.object?.amount || $json.amount || 0) / 100 }}',
+              operation: 'larger',
+              value2: 500,
             },
           ],
         };
