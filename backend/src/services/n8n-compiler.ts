@@ -303,10 +303,17 @@ export function resolveNodeParameters(
     'n8n-nodes-base.discord',
     'n8n-nodes-base.emailSend',
     'n8n-nodes-base.gmail',
+    'n8n-nodes-base.microsoftTeams',
+    'n8n-nodes-base.mattermost',
+    'n8n-nodes-base.twilio',
+    'n8n-nodes-base.whatsapp',
+    'n8n-nodes-base.pushbullet',
+    'n8n-nodes-base.pushover',
   ];
+  const isNotificationSink = notificationOrSinkTypes.some((t) => n8nType.toLowerCase().includes(t.toLowerCase().replace('n8n-nodes-base.', '')));
   if (
     node.config?.continueOnFail === true ||
-    (node.config?.continueOnFail !== false && notificationOrSinkTypes.includes(n8nType))
+    (node.config?.continueOnFail !== false && isNotificationSink)
   ) {
     compiled.continueOnFail = true;
   }

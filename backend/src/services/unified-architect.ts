@@ -2,6 +2,7 @@ import { chatCompletion } from './bedrock.js';
 import { templateSearchService } from './template-search.service.js';
 import { heuristicExtractIntent } from './intent-extractor.js';
 import { buildInitialPlan } from './requirement-collector.js';
+import { isSinkAction } from './internal-graph-builder.js';
 import type { WorkflowPlan } from '@qona/shared';
 
 type IntegrationType = 'email' | 'database' | 'slack' | 'custom' | 'api' | 'crm' | 'sheets' | 'payment' | 'storage';
@@ -105,20 +106,10 @@ export function enrichDynamicConfig(
   const isSchedule = lowerTrigger.includes('schedule') || lowerTrigger.includes('cron') || /\b(schedule|daily|cron|every day)\b/.test(lowerPrompt);
   const isEmail = lowerTrigger.includes('gmail') || lowerTrigger.includes('email') || /\b(email received|incoming email)\b/.test(lowerPrompt);
   const isShopify = lowerTrigger.includes('shopify') || /\b(shopify|order|refund)\b/.test(lowerPrompt);
+  const isForm = lowerTrigger.includes('form') || /\b(form|typeform|jotform|submission)\b/.test(lowerPrompt);
+  const isGitHub = lowerTrigger.includes('github') || /\b(github|pull request|issue|repo)\b/.test(lowerPrompt);
 
-  const sinkCount = actions.filter((a) => {
-    const t = a.type.toLowerCase();
-    return (
-      t.includes('slack') ||
-      t.includes('telegram') ||
-      t.includes('discord') ||
-      t.includes('email') ||
-      t.includes('gmail') ||
-      t.includes('sheet') ||
-      t.includes('airtable') ||
-      t.includes('notion')
-    );
-  }).length;
+  const sinkCount = actions.filter((a) => isSinkAction(a.type)).length;
 
   for (let idx = 0; idx < actions.length; idx++) {
     const action = actions[idx];
@@ -126,52 +117,58 @@ export function enrichDynamicConfig(
     const config = action.config ? { ...action.config } : {};
 
     // 1. Parallel Fan-Out: Connect multiple terminal sinks in parallel so failures never block
-    if (sinkCount > 1) {
-      const isSink =
-        t.includes('slack') ||
-        t.includes('telegram') ||
-        t.includes('discord') ||
-        t.includes('email') ||
-        t.includes('gmail') ||
-        t.includes('sheet') ||
-        t.includes('airtable') ||
-        t.includes('notion');
-      if (isSink && config.branch === undefined && config.parallel === undefined) {
+    if (sinkCount > 1 && isSinkAction(action.type)) {
+      if (config.branch === undefined && config.parallel === undefined) {
         config.branch = 'parallel';
       }
     }
 
     // 2. Error Resilience: Add continueOnFail to notification and alert actions
+    const isNotificationType =
+      t.includes('slack') ||
+      t.includes('telegram') ||
+      t.includes('discord') ||
+      t.includes('teams') ||
+      t.includes('whatsapp') ||
+      t.includes('twilio') ||
+      t.includes('email') ||
+      t.includes('gmail') ||
+      t.includes('notification');
+
+    if (isNotificationType && config.continueOnFail === undefined) {
+      config.continueOnFail = true;
+    }
+
+    // 3. Dynamic n8n Expressions (starting with =)
     if (
       t.includes('slack') ||
       t.includes('telegram') ||
       t.includes('discord') ||
-      t.includes('email') ||
-      t.includes('gmail')
+      t.includes('teams') ||
+      t.includes('whatsapp')
     ) {
-      if (config.continueOnFail === undefined) {
-        config.continueOnFail = true;
-      }
-    }
-
-    // 3. Dynamic n8n Expressions (starting with =)
-    if (t.includes('slack') || t.includes('telegram') || t.includes('discord')) {
       if (!config.message && !config.text) {
         if (isStripe) {
           config.message =
             '=🎉 *New Stripe Payment Received!*\n• *Amount:* ${{ Number($json.data.object.amount) / 100 }} {{ ($json.data.object.currency || \'usd\').toUpperCase() }}\n• *Customer:* {{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.email || \'Guest\' }}\n• *Payment ID:* `{{ $json.data.object.id }}`';
-        } else if (isWebhook) {
+        } else if (isForm) {
           config.message =
-            '=🔔 *New Webhook Received* (at {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }})\n• *Payload:* {{ JSON.stringify($json) }}';
-        } else if (isSchedule) {
+            '=📋 *New Form Submission*\n• *Name:* {{ $json.name || $json.answers?.name || \'Respondent\' }}\n• *Email:* {{ $json.email || $json.answers?.email || \'N/A\' }}\n• *Time:* {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}';
+        } else if (isGitHub) {
           config.message =
-            '=⏱️ *Scheduled Workflow Triggered*\n• *Run Time:* {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}';
-        } else if (isEmail) {
-          config.message =
-            '=📧 *New Email Received*\n• *From:* {{ $json.from || \'Unknown\' }}\n• *Subject:* {{ $json.subject || \'No Subject\' }}';
+            '=🐙 *New GitHub Activity*\n• *Title:* {{ $json.issue?.title || $json.pull_request?.title || \'GitHub Event\' }}\n• *User:* {{ $json.sender?.login || \'User\' }}\n• *Action:* {{ $json.action || \'updated\' }}';
         } else if (isShopify) {
           config.message =
             '=🛍️ *New Shopify Order Received!*\n• *Order:* #{{ $json.order_number || $json.name || \'Order\' }}\n• *Total:* ${{ $json.total_price }} {{ $json.currency }}';
+        } else if (isEmail) {
+          config.message =
+            '=📧 *New Email Received*\n• *From:* {{ $json.from || \'Unknown\' }}\n• *Subject:* {{ $json.subject || \'No Subject\' }}';
+        } else if (isSchedule) {
+          config.message =
+            '=⏱️ *Scheduled Workflow Triggered*\n• *Run Time:* {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}';
+        } else if (isWebhook) {
+          config.message =
+            '=🔔 *New Webhook Received* (at {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }})\n• *Payload:* {{ JSON.stringify($json) }}';
         } else {
           config.message =
             '=🔔 *Automated Notification*\n• Event time: {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}\n• Data: {{ JSON.stringify($json) }}';
@@ -180,8 +177,8 @@ export function enrichDynamicConfig(
       if (!config.channel && !config.channelId) {
         config.channel = '#general';
       }
-    } else if (t.includes('sheet')) {
-      if (!config.columns) {
+    } else if (t.includes('sheet') || t.includes('airtable') || t.includes('notion') || t.includes('supabase') || t.includes('database')) {
+      if (!config.columns && !config.fields && !config.properties) {
         if (isStripe) {
           config.columns = {
             Date: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
@@ -191,10 +188,17 @@ export function enrichDynamicConfig(
             Currency: "={{ ($json.data.object.currency || 'usd').toUpperCase() }}",
             Status: "={{ $json.data.object.status || 'succeeded' }}",
           };
-        } else if (isWebhook) {
+        } else if (isForm) {
           config.columns = {
             Timestamp: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
-            Payload: "={{ JSON.stringify($json) }}",
+            Name: "={{ $json.name || $json.answers?.name || 'Respondent' }}",
+            Email: "={{ $json.email || $json.answers?.email || 'N/A' }}",
+          };
+        } else if (isGitHub) {
+          config.columns = {
+            Date: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            Title: "={{ $json.issue?.title || $json.pull_request?.title || 'Event' }}",
+            User: "={{ $json.sender?.login || 'User' }}",
           };
         } else if (isEmail) {
           config.columns = {
@@ -209,13 +213,17 @@ export function enrichDynamicConfig(
           };
         }
       }
-      if (!config.operation) config.operation = 'appendRow';
-      if (!config.sheetName) config.sheetName = 'Sheet1';
-      if (!config.dataMode) config.dataMode = 'defineBelow';
-    } else if (t.includes('gmail') || t.includes('emailsend')) {
+      if (t.includes('sheet')) {
+        if (!config.operation) config.operation = 'appendRow';
+        if (!config.sheetName) config.sheetName = 'Sheet1';
+        if (!config.dataMode) config.dataMode = 'defineBelow';
+      }
+    } else if (t.includes('gmail') || t.includes('emailsend') || t.includes('email')) {
       if (!config.subject) {
         if (isStripe) {
           config.subject = '=Payment Confirmation: ${{ Number($json.data.object.amount) / 100 }}';
+        } else if (isForm) {
+          config.subject = '=New Form Submission Received: {{ $now.toFormat(\'yyyy-MM-dd\') }}';
         } else {
           config.subject = '=Automated Notification: {{ $now.toFormat(\'yyyy-MM-dd\') }}';
         }
@@ -224,6 +232,9 @@ export function enrichDynamicConfig(
         if (isStripe) {
           config.body =
             '=Hello,\n\nA new payment of ${{ Number($json.data.object.amount) / 100 }} was received from {{ $json.data.object.customer_details?.email || \'Customer\' }}.\nPayment ID: {{ $json.data.object.id }}';
+        } else if (isForm) {
+          config.body =
+            '=New submission received at {{ $now.toFormat(\'HH:mm:ss\') }}.\n\nDetails:\n{{ JSON.stringify($json, null, 2) }}';
         } else {
           config.body =
             '=Automated workflow completed at {{ $now.toFormat(\'HH:mm:ss\') }}.\n\nPayload:\n{{ JSON.stringify($json, null, 2) }}';
@@ -374,13 +385,11 @@ You must respond with a STRICT, VALID JSON OBJECT (no markdown outside the JSON,
 
 Rules:
 1. Always use valid n8n node types (e.g. n8n-nodes-base.webhook, n8n-nodes-base.httpRequest, n8n-nodes-base.slack, n8n-nodes-base.googleSheets, n8n-nodes-base.gmail, n8n-nodes-base.scheduleTrigger).
-2. DYNAMIC N8N EXPRESSIONS: In action "config", ALWAYS write dynamic expressions starting with '=' using n8n expressions like $json and $now instead of static text or empty configs:
-   - For Slack / Telegram / Discord notifications:
-     "message": "=🎉 *New Stripe Payment Received!*\\n• *Amount:* {{ Number($json.data.object.amount) / 100 }} {{ ($json.data.object.currency || 'usd').toUpperCase() }}\\n• *Customer:* {{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.email || 'Guest' }}\\n• *Payment ID:* \`{{ $json.data.object.id }}\`"
-   - For Google Sheets: define structured columns with dynamic values:
-     "columns": { "Date": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}", "Customer": "={{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.name || 'Customer' }}", "Amount": "={{ Number($json.data.object.amount) / 100 }}", "Currency": "={{ ($json.data.object.currency || 'usd').toUpperCase() }}", "Status": "={{ $json.data.object.status || 'succeeded' }}" }
-3. PARALLEL FAN-OUT BRANCHING: When a workflow has multiple independent actions (such as sending a Slack notification AND logging the event to Google Sheets), set "branch": "parallel" in their config so both actions execute in parallel directly from the trigger and failure in one never blocks the other.
-4. ERROR RESILIENCE: Set "continueOnFail": true on notification and alert actions.
+2. DYNAMIC N8N EXPRESSIONS: In action "config" for ANY integration (Slack, Discord, Telegram, Email, Google Sheets, Airtable, Notion, Supabase, CRM, etc.), ALWAYS write context-aware dynamic expressions starting with '=' using $json and $now instead of static text or empty objects:
+   - For notifications and emails: write dynamic messages like "=New event received: {{ $json.name || $json.data?.title }}" or "=Received at {{ $now.toFormat('HH:mm') }}"
+   - For databases, spreadsheets, Airtable, and Notion: define structured field mappings with dynamic values like "columns": { "Date": "={{ $now.toISO() }}", "User": "={{ $json.email || 'Guest' }}" }
+3. PARALLEL FAN-OUT BRANCHING: When a workflow has multiple independent actions (such as sending notifications AND logging to a database/spreadsheet/CRM), set "branch": "parallel" in their config. This connects them directly in parallel from the trigger so one action failing never blocks the other.
+4. ERROR RESILIENCE: Set "continueOnFail": true on notification and alert actions so transient delivery errors never stop database writing.
 5. The explanation MUST contain an ASCII diagram, clear numbered sections, and exact click paths for obtaining any required 3rd-party API keys or Webhook URLs.
 6. The singleQuestion options MUST always include "Build & Export n8n Workflow" as an option.`;
 

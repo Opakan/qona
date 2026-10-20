@@ -45,11 +45,24 @@ export function isSinkAction(type: string): boolean {
     t.includes('slack') ||
     t.includes('telegram') ||
     t.includes('discord') ||
+    t.includes('whatsapp') ||
+    t.includes('twilio') ||
+    t.includes('sms') ||
+    t.includes('mattermost') ||
+    t.includes('teams') ||
     t.includes('email') ||
     t.includes('gmail') ||
     t.includes('sheet') ||
     t.includes('airtable') ||
     t.includes('notion') ||
+    t.includes('supabase') ||
+    t.includes('postgres') ||
+    t.includes('mysql') ||
+    t.includes('database') ||
+    t.includes('hubspot') ||
+    t.includes('salesforce') ||
+    t.includes('pipedrive') ||
+    t.includes('zendesk') ||
     t.includes('notification')
   );
 }

@@ -384,6 +384,46 @@ export function heuristicExtractIntent(
     });
   }
 
+  if (/\b(airtable)\b/i.test(lower)) {
+    actions.push({
+      type: 'n8n-nodes-base.airtable',
+      label: 'Save to Airtable',
+      description: 'Creates or updates record in Airtable',
+      order: order++,
+      config: {},
+    });
+  }
+
+  if (/\b(supabase|postgres|mysql|database)\b/i.test(lower)) {
+    actions.push({
+      type: 'n8n-nodes-base.supabase',
+      label: 'Save to Database',
+      description: 'Inserts row into database',
+      order: order++,
+      config: {},
+    });
+  }
+
+  if (/\b(telegram)\b/i.test(lower)) {
+    actions.push({
+      type: 'n8n-nodes-base.telegram',
+      label: 'Send Telegram Message',
+      description: 'Delivers message to Telegram chat',
+      order: order++,
+      config: {},
+    });
+  }
+
+  if (/\b(discord)\b/i.test(lower)) {
+    actions.push({
+      type: 'n8n-nodes-base.discord',
+      label: 'Send Discord Message',
+      description: 'Sends notification to Discord channel',
+      order: order++,
+      config: {},
+    });
+  }
+
   if (/\b(code|javascript|transform|format)\b/i.test(lower) && actions.length > 0) {
     actions.push({
       type: 'n8n-nodes-base.code',

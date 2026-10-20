@@ -70,4 +70,27 @@ describe('unifiedArchitect heuristic fallback', () => {
     // Explanation shows parallel fan-out ASCII tree
     expect(result.explanation).toContain('Parallel');
   });
+
+  it('generates dynamic expressions and parallel branching for webhook form submission with Telegram and Airtable', () => {
+    const result = heuristicUnifiedArchitect(
+      'When a form submission webhook arrives, send a message to telegram and save to airtable',
+    );
+    expect(result.trigger.type).toMatch(/(form|webhook)/);
+    expect(result.actions).toHaveLength(2);
+
+    const telegram = result.actions.find((a) => a.type.includes('telegram'))!;
+    const airtable = result.actions.find((a) => a.type.includes('airtable'))!;
+
+    expect(telegram).toBeDefined();
+    expect(airtable).toBeDefined();
+
+    // Universal parallel fan-out and resilience
+    expect(telegram.config.branch).toBe('parallel');
+    expect(airtable.config.branch).toBe('parallel');
+    expect(telegram.config.continueOnFail).toBe(true);
+
+    // Dynamic expressions
+    expect(String(telegram.config.message)).toMatch(/^=/);
+    expect(telegram.config.message).toContain('{{');
+  });
 });
