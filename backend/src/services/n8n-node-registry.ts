@@ -325,7 +325,12 @@ export const n8nRegistry: Record<string, N8nRegistryEntry> = {
         else if (op === 'clear') mapped.operation = 'clear';
         else mapped.operation = config.operation;
       }
+      if (config.columns) {
+        mapped.columns = config.columns;
+        if (!config.dataMode) mapped.dataMode = 'defineBelow';
+      }
       if (config.dataMode) mapped.dataMode = config.dataMode;
+      if (config.options) mapped.options = config.options;
       return mapped;
     },
   },

@@ -83,19 +83,192 @@ function normalizeNodeType(rawType: string, isTrigger = false): string {
 }
 
 /**
+ * Enriches workflow actions with dynamic n8n expressions, error resilience,
+ * and parallel fan-out flags.
+ */
+export function enrichDynamicConfig(
+  triggerType: string,
+  actions: Array<{
+    type: string;
+    label: string;
+    description: string;
+    order: number;
+    config: Record<string, unknown>;
+  }>,
+  userPrompt: string,
+): void {
+  const lowerPrompt = userPrompt.toLowerCase();
+  const lowerTrigger = triggerType.toLowerCase();
+
+  const isStripe = lowerTrigger.includes('stripe') || /\b(stripe|payment|invoice)\b/.test(lowerPrompt);
+  const isWebhook = lowerTrigger.includes('webhook') || /\b(webhook)\b/.test(lowerPrompt);
+  const isSchedule = lowerTrigger.includes('schedule') || lowerTrigger.includes('cron') || /\b(schedule|daily|cron|every day)\b/.test(lowerPrompt);
+  const isEmail = lowerTrigger.includes('gmail') || lowerTrigger.includes('email') || /\b(email received|incoming email)\b/.test(lowerPrompt);
+  const isShopify = lowerTrigger.includes('shopify') || /\b(shopify|order|refund)\b/.test(lowerPrompt);
+
+  const sinkCount = actions.filter((a) => {
+    const t = a.type.toLowerCase();
+    return (
+      t.includes('slack') ||
+      t.includes('telegram') ||
+      t.includes('discord') ||
+      t.includes('email') ||
+      t.includes('gmail') ||
+      t.includes('sheet') ||
+      t.includes('airtable') ||
+      t.includes('notion')
+    );
+  }).length;
+
+  for (let idx = 0; idx < actions.length; idx++) {
+    const action = actions[idx];
+    const t = action.type.toLowerCase();
+    const config = action.config ? { ...action.config } : {};
+
+    // 1. Parallel Fan-Out: Connect multiple terminal sinks in parallel so failures never block
+    if (sinkCount > 1) {
+      const isSink =
+        t.includes('slack') ||
+        t.includes('telegram') ||
+        t.includes('discord') ||
+        t.includes('email') ||
+        t.includes('gmail') ||
+        t.includes('sheet') ||
+        t.includes('airtable') ||
+        t.includes('notion');
+      if (isSink && config.branch === undefined && config.parallel === undefined) {
+        config.branch = 'parallel';
+      }
+    }
+
+    // 2. Error Resilience: Add continueOnFail to notification and alert actions
+    if (
+      t.includes('slack') ||
+      t.includes('telegram') ||
+      t.includes('discord') ||
+      t.includes('email') ||
+      t.includes('gmail')
+    ) {
+      if (config.continueOnFail === undefined) {
+        config.continueOnFail = true;
+      }
+    }
+
+    // 3. Dynamic n8n Expressions (starting with =)
+    if (t.includes('slack') || t.includes('telegram') || t.includes('discord')) {
+      if (!config.message && !config.text) {
+        if (isStripe) {
+          config.message =
+            '=🎉 *New Stripe Payment Received!*\n• *Amount:* ${{ Number($json.data.object.amount) / 100 }} {{ ($json.data.object.currency || \'usd\').toUpperCase() }}\n• *Customer:* {{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.email || \'Guest\' }}\n• *Payment ID:* `{{ $json.data.object.id }}`';
+        } else if (isWebhook) {
+          config.message =
+            '=🔔 *New Webhook Received* (at {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }})\n• *Payload:* {{ JSON.stringify($json) }}';
+        } else if (isSchedule) {
+          config.message =
+            '=⏱️ *Scheduled Workflow Triggered*\n• *Run Time:* {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}';
+        } else if (isEmail) {
+          config.message =
+            '=📧 *New Email Received*\n• *From:* {{ $json.from || \'Unknown\' }}\n• *Subject:* {{ $json.subject || \'No Subject\' }}';
+        } else if (isShopify) {
+          config.message =
+            '=🛍️ *New Shopify Order Received!*\n• *Order:* #{{ $json.order_number || $json.name || \'Order\' }}\n• *Total:* ${{ $json.total_price }} {{ $json.currency }}';
+        } else {
+          config.message =
+            '=🔔 *Automated Notification*\n• Event time: {{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}\n• Data: {{ JSON.stringify($json) }}';
+        }
+      }
+      if (!config.channel && !config.channelId) {
+        config.channel = '#general';
+      }
+    } else if (t.includes('sheet')) {
+      if (!config.columns) {
+        if (isStripe) {
+          config.columns = {
+            Date: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            Customer:
+              "={{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.name || 'Customer' }}",
+            Amount: "={{ Number($json.data.object.amount) / 100 }}",
+            Currency: "={{ ($json.data.object.currency || 'usd').toUpperCase() }}",
+            Status: "={{ $json.data.object.status || 'succeeded' }}",
+          };
+        } else if (isWebhook) {
+          config.columns = {
+            Timestamp: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            Payload: "={{ JSON.stringify($json) }}",
+          };
+        } else if (isEmail) {
+          config.columns = {
+            Date: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            From: "={{ $json.from || 'Unknown' }}",
+            Subject: "={{ $json.subject || 'No Subject' }}",
+          };
+        } else {
+          config.columns = {
+            Timestamp: "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            Record: "={{ JSON.stringify($json) }}",
+          };
+        }
+      }
+      if (!config.operation) config.operation = 'appendRow';
+      if (!config.sheetName) config.sheetName = 'Sheet1';
+      if (!config.dataMode) config.dataMode = 'defineBelow';
+    } else if (t.includes('gmail') || t.includes('emailsend')) {
+      if (!config.subject) {
+        if (isStripe) {
+          config.subject = '=Payment Confirmation: ${{ Number($json.data.object.amount) / 100 }}';
+        } else {
+          config.subject = '=Automated Notification: {{ $now.toFormat(\'yyyy-MM-dd\') }}';
+        }
+      }
+      if (!config.body && !config.html) {
+        if (isStripe) {
+          config.body =
+            '=Hello,\n\nA new payment of ${{ Number($json.data.object.amount) / 100 }} was received from {{ $json.data.object.customer_details?.email || \'Customer\' }}.\nPayment ID: {{ $json.data.object.id }}';
+        } else {
+          config.body =
+            '=Automated workflow completed at {{ $now.toFormat(\'HH:mm:ss\') }}.\n\nPayload:\n{{ JSON.stringify($json, null, 2) }}';
+        }
+      }
+    }
+
+    action.config = config;
+  }
+}
+
+/**
  * Heuristic Instant Fallback (< 5ms execution, zero external network calls)
  */
 export function heuristicUnifiedArchitect(userPrompt: string): UnifiedArchitectResult {
   const intent = heuristicExtractIntent(userPrompt);
   const plan = buildInitialPlan(intent, userPrompt);
 
+  const triggerType = normalizeNodeType(plan.trigger?.type || 'webhook', true);
   const triggerLabel = plan.trigger?.label || plan.trigger?.type?.replace(/^n8n-nodes-base\./, '') || 'Trigger Node';
-  const actionLabels = plan.actions.map((a, i) => `Step ${i + 1}: ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}`);
 
-  const asciiFlow = [
-    `[⚡ ${triggerLabel}]`,
-    ...plan.actions.map((a) => `       ↓\n[⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}]`),
-  ].join('\n');
+  const actions = plan.actions.map((a, idx) => ({
+    type: normalizeNodeType(a.type, false),
+    label: a.label || `Action ${idx + 1}`,
+    description: a.description || 'Action step',
+    order: a.order ?? idx + 1,
+    config: a.config || {},
+  }));
+
+  // Enrich with dynamic n8n expressions, error resilience, and parallel branching
+  enrichDynamicConfig(triggerType, actions, userPrompt);
+
+  const isParallel = actions.filter((a) => a.config?.branch === 'parallel').length > 1;
+  const asciiFlow = isParallel
+    ? [
+        `[⚡ ${triggerLabel}]`,
+        ...actions.map(
+          (a, i) =>
+            `   ${i === actions.length - 1 ? '└' : '├'}─► [⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}] (Parallel)`,
+        ),
+      ].join('\n')
+    : [
+        `[⚡ ${triggerLabel}]`,
+        ...actions.map((a) => `       ↓\n[⚙️ ${a.label || a.type.replace(/^n8n-nodes-base\./, '')}]`),
+      ].join('\n');
 
   const integrationsList = plan.integrations.map((i) => i.name).join(', ') || 'Custom API';
 
@@ -111,7 +284,7 @@ ${asciiFlow}
 - **${triggerLabel}**: ${plan.trigger?.description || 'Kicks off the automation flow as soon as an incoming event is detected.'}
 
 **⚙️ 2. The Actions (Automated steps...)**
-${plan.actions.map((a, i) => `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Executes the automated operation and passes payload to next step.'}`).join('\n')}
+${actions.map((a, i) => `- **Step ${i + 1} (${a.label || a.type})**: ${a.description || 'Executes the automated operation and passes payload to next step.'}${a.config?.branch === 'parallel' ? ' *(Runs in parallel from trigger)*' : ''}`).join('\n')}
 
 ---
 **🔑 3rd-Party Setup & Requirements Guide**:
@@ -124,18 +297,12 @@ Everything is structured and ready on your canvas! Would you like to build and e
   return {
     goal: plan.goal,
     trigger: {
-      type: normalizeNodeType(plan.trigger?.type || 'webhook', true),
+      type: triggerType,
       label: plan.trigger?.label || 'Trigger',
       description: plan.trigger?.description || 'Trigger step',
       config: plan.trigger?.config || {},
     },
-    actions: plan.actions.map((a, idx) => ({
-      type: normalizeNodeType(a.type, false),
-      label: a.label || `Action ${idx + 1}`,
-      description: a.description || 'Action step',
-      order: a.order ?? idx + 1,
-      config: a.config || {},
-    })),
+    actions,
     integrations: plan.integrations.map((i) => ({
       name: i.name,
       type: normalizeIntegrationType(i.type),
@@ -207,8 +374,15 @@ You must respond with a STRICT, VALID JSON OBJECT (no markdown outside the JSON,
 
 Rules:
 1. Always use valid n8n node types (e.g. n8n-nodes-base.webhook, n8n-nodes-base.httpRequest, n8n-nodes-base.slack, n8n-nodes-base.googleSheets, n8n-nodes-base.gmail, n8n-nodes-base.scheduleTrigger).
-2. The explanation MUST contain an ASCII diagram (e.g. [Trigger] ↓ [Action 1] ↓ [Action 2]), clear numbered sections, and exact click paths for obtaining any required 3rd-party API keys or Webhook URLs.
-3. The singleQuestion options MUST always include "Build & Export n8n Workflow" as an option.`;
+2. DYNAMIC N8N EXPRESSIONS: In action "config", ALWAYS write dynamic expressions starting with '=' using n8n expressions like $json and $now instead of static text or empty configs:
+   - For Slack / Telegram / Discord notifications:
+     "message": "=🎉 *New Stripe Payment Received!*\\n• *Amount:* {{ Number($json.data.object.amount) / 100 }} {{ ($json.data.object.currency || 'usd').toUpperCase() }}\\n• *Customer:* {{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.email || 'Guest' }}\\n• *Payment ID:* \`{{ $json.data.object.id }}\`"
+   - For Google Sheets: define structured columns with dynamic values:
+     "columns": { "Date": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}", "Customer": "={{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.name || 'Customer' }}", "Amount": "={{ Number($json.data.object.amount) / 100 }}", "Currency": "={{ ($json.data.object.currency || 'usd').toUpperCase() }}", "Status": "={{ $json.data.object.status || 'succeeded' }}" }
+3. PARALLEL FAN-OUT BRANCHING: When a workflow has multiple independent actions (such as sending a Slack notification AND logging the event to Google Sheets), set "branch": "parallel" in their config so both actions execute in parallel directly from the trigger and failure in one never blocks the other.
+4. ERROR RESILIENCE: Set "continueOnFail": true on notification and alert actions.
+5. The explanation MUST contain an ASCII diagram, clear numbered sections, and exact click paths for obtaining any required 3rd-party API keys or Webhook URLs.
+6. The singleQuestion options MUST always include "Build & Export n8n Workflow" as an option.`;
 
   try {
     const raw = await chatCompletion(
@@ -256,6 +430,9 @@ Rules:
         config: {},
       });
     }
+
+    // Enrich dynamic expressions and parallel branching as safety guard
+    enrichDynamicConfig(triggerType, actions, cleanPrompt);
 
     const options = Array.isArray(parsed.singleQuestion?.options) && parsed.singleQuestion.options.length > 0
       ? parsed.singleQuestion.options

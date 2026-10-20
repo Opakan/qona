@@ -1131,4 +1131,80 @@ describe('Schema Validation & Import Readiness', () => {
     expect(wf.connections['Log to Air'].main[0][0].node).toBe('Notify');
     expect(wf.connections['Notify'].main[0][0].node).toBe('Email Receipt');
   });
+
+  it('11.8 — parallel fan-out, dynamic expressions, continueOnFail end-to-end compilation', () => {
+    const graph: InternalGraph = {
+      metadata: { name: 'Stripe Parallel Fan-Out Automation' },
+      nodes: [
+        {
+          id: 'n1',
+          type: 'stripe_trigger',
+          label: 'Stripe Trigger',
+          position: { x: 200, y: 200 },
+          config: { events: ['payment_intent.succeeded'] },
+        },
+        {
+          id: 'n2',
+          type: 'slack',
+          label: 'Send Slack Notification',
+          position: { x: 500, y: 200 },
+          config: {
+            channel: '#general',
+            branch: 'parallel',
+            continueOnFail: true,
+            message:
+              '=🎉 *New Stripe Payment Received!*\n• *Amount:* ${{ Number($json.data.object.amount) / 100 }} {{ ($json.data.object.currency || \'usd\').toUpperCase() }}\n• *Customer:* {{ $json.data.object.customer_details?.email || $json.data.object.billing_details?.email || \'Guest\' }}\n• *Payment ID:* `{{ $json.data.object.id }}`',
+          },
+        },
+        {
+          id: 'n3',
+          type: 'google_sheets',
+          label: 'Update Google Sheet',
+          position: { x: 500, y: 320 },
+          config: {
+            spreadsheetId: 'sheet-xyz123',
+            sheetName: 'Sheet1',
+            operation: 'append',
+            branch: 'parallel',
+            columns: {
+              Date: '={{ $now.toFormat(\'yyyy-MM-dd HH:mm:ss\') }}',
+              Customer: '={{ $json.data.object.customer_details?.email || \'Customer\' }}',
+              Amount: '={{ Number($json.data.object.amount) / 100 }}',
+              Status: '={{ $json.data.object.status || \'succeeded\' }}',
+            },
+          },
+        },
+      ],
+      // Parallel fan-out edges from Stripe Trigger
+      edges: [
+        { id: 'e1', source: 'n1', target: 'n2' },
+        { id: 'e2', source: 'n1', target: 'n3' },
+      ],
+    };
+
+    const { wf } = assertImportReady(graph);
+    expect(wf.nodes).toHaveLength(3);
+
+    // 1. Stripe trigger fans out to both Slack and Google Sheets in parallel
+    const triggerConnections = wf.connections['Stripe Trigger'].main[0];
+    expect(triggerConnections).toHaveLength(2);
+    const targetNames = triggerConnections.map((c) => c.node);
+    expect(targetNames).toContain('Send Slack Notification');
+    expect(targetNames).toContain('Update Google Sheet');
+
+    // Neither node connects to the other
+    expect(wf.connections['Send Slack Notification'].main[0]).toHaveLength(0);
+    expect(wf.connections['Update Google Sheet'].main[0]).toHaveLength(0);
+
+    // 2. Slack node has continueOnFail: true and dynamic expression
+    const slackNode = wf.nodes.find((n) => n.name === 'Send Slack Notification')!;
+    expect(slackNode.continueOnFail).toBe(true);
+    expect(String(slackNode.parameters.message)).toMatch(/^=/);
+    expect(slackNode.parameters.message).toContain('{{ Number($json.data.object.amount)');
+
+    // 3. Google Sheets node has columns with dynamic expressions
+    const sheetsNode = wf.nodes.find((n) => n.name === 'Update Google Sheet')!;
+    expect(sheetsNode.parameters.columns).toBeDefined();
+    expect(sheetsNode.parameters.dataMode).toBe('defineBelow');
+  });
 });

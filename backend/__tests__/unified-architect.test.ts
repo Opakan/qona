@@ -29,4 +29,45 @@ describe('unifiedArchitect heuristic fallback', () => {
       expect(act.type).toMatch(/n8n-nodes-base\./);
     }
   });
+
+  it('generates dynamic n8n expressions and continueOnFail for Stripe payments', () => {
+    const result = heuristicUnifiedArchitect('When a new Stripe payment comes in, notify our team on Slack');
+    expect(result.trigger.type).toBe('n8n-nodes-base.stripeTrigger');
+    const slackAction = result.actions.find((a) => a.type === 'n8n-nodes-base.slack')!;
+    expect(slackAction).toBeDefined();
+    expect(String(slackAction.config.message)).toMatch(/^=/);
+    expect(slackAction.config.message).toContain('{{ Number($json.data.object.amount)');
+    expect(slackAction.config.message).toContain('$json.data.object.customer_details');
+    expect(slackAction.config.continueOnFail).toBe(true);
+  });
+
+  it('generates parallel fan-out, dynamic expressions, and continueOnFail for Stripe -> Slack + Sheets', () => {
+    const result = heuristicUnifiedArchitect(
+      'When a new Stripe payment comes in, notify our team on Slack and log to Google Sheets',
+    );
+    expect(result.trigger.type).toBe('n8n-nodes-base.stripeTrigger');
+    expect(result.actions).toHaveLength(2);
+
+    const slack = result.actions.find((a) => a.type === 'n8n-nodes-base.slack')!;
+    const sheets = result.actions.find((a) => a.type === 'n8n-nodes-base.googleSheets')!;
+
+    // 1. Parallel fan-out flag on independent sinks
+    expect(slack.config.branch).toBe('parallel');
+    expect(sheets.config.branch).toBe('parallel');
+
+    // 2. Error resilience on notifications
+    expect(slack.config.continueOnFail).toBe(true);
+
+    // 3. Dynamic expressions on both nodes
+    expect(String(slack.config.message)).toMatch(/^=/);
+    expect(slack.config.message).toContain('{{ Number($json.data.object.amount)');
+    expect(sheets.config.columns).toBeDefined();
+    const cols = sheets.config.columns as Record<string, string>;
+    expect(cols.Date).toContain('{{ $now.toFormat');
+    expect(cols.Customer).toContain('{{ $json.data.object');
+    expect(cols.Amount).toContain('{{ Number($json.data.object.amount)');
+
+    // Explanation shows parallel fan-out ASCII tree
+    expect(result.explanation).toContain('Parallel');
+  });
 });

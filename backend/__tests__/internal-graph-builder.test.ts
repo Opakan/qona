@@ -120,6 +120,57 @@ describe('buildInternalGraph', () => {
     expect(chainEdge).toBeDefined();
   });
 
+  it('fans out independent sink actions (like Slack + Google Sheets) in parallel from the trigger', () => {
+    const plan: WorkflowPlan = {
+      ...basePlan,
+      trigger: { type: 'stripe_trigger', label: 'Stripe Events', config: { events: ['payment_intent.succeeded'] } },
+      actions: [
+        { type: 'slack', label: 'Notify Slack', order: 1, config: {} },
+        { type: 'google_sheets', label: 'Log to Sheets', order: 2, config: {} },
+      ],
+      requirements: [],
+    };
+    const { graph } = buildInternalGraph(plan);
+
+    const triggerNode = graph.nodes.find((n) => n.type === 'stripe_trigger')!;
+    const slackNode = graph.nodes.find((n) => n.type === 'slack')!;
+    const sheetsNode = graph.nodes.find((n) => n.type === 'google_sheets')!;
+
+    // Both actions should connect directly to trigger in parallel
+    const slackEdge = graph.edges.find((e) => e.source === triggerNode.id && e.target === slackNode.id);
+    const sheetsEdge = graph.edges.find((e) => e.source === triggerNode.id && e.target === sheetsNode.id);
+
+    expect(slackEdge).toBeDefined();
+    expect(sheetsEdge).toBeDefined();
+
+    // They should NOT chain sequentially
+    const blockingEdge = graph.edges.find((e) => e.source === slackNode.id && e.target === sheetsNode.id);
+    expect(blockingEdge).toBeUndefined();
+  });
+
+  it('fans out actions when explicitly configured with branch: parallel', () => {
+    const plan: WorkflowPlan = {
+      ...basePlan,
+      trigger: { type: 'webhook', label: 'Webhook', config: {} },
+      actions: [
+        { type: 'http_request', label: 'Call CRM', order: 1, config: {} },
+        { type: 'http_request', label: 'Call ERP', order: 2, config: { branch: 'parallel' } },
+      ],
+      requirements: [],
+    };
+    const { graph } = buildInternalGraph(plan);
+
+    const triggerNode = graph.nodes.find((n) => n.type === 'webhook')!;
+    const action1 = graph.nodes.find((n) => n.label === 'Call CRM')!;
+    const action2 = graph.nodes.find((n) => n.label === 'Call ERP')!;
+
+    const edge1 = graph.edges.find((e) => e.source === triggerNode.id && e.target === action1.id);
+    const edge2 = graph.edges.find((e) => e.source === triggerNode.id && e.target === action2.id);
+
+    expect(edge1).toBeDefined();
+    expect(edge2).toBeDefined();
+  });
+
   it('infers trigger types from values', () => {
     const plan: WorkflowPlan = {
       ...basePlan,

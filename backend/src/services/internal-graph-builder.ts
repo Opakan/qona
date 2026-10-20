@@ -14,6 +14,7 @@ const VALUE_TO_TRIGGER_TYPE: Record<string, string> = {
   webhook: 'webhook', schedule: 'schedule', cron: 'cron',
   manual: 'manual', form: 'form_submission', email: 'email_received',
   payment: 'payment_received',
+  stripe: 'stripe_trigger', stripe_trigger: 'stripe_trigger',
 };
 
 const VALUE_TO_ACTION_TYPE: Record<string, string> = {
@@ -29,12 +30,28 @@ const VALUE_TO_ACTION_TYPE: Record<string, string> = {
 
 function inferTriggerType(value: string): string {
   if (value.startsWith('n8n-nodes-base.')) return value;
-  return VALUE_TO_TRIGGER_TYPE[value.trim().toLowerCase()] ?? 'webhook';
+  const lower = value.trim().toLowerCase();
+  return VALUE_TO_TRIGGER_TYPE[lower] ?? (lower.includes('stripe') ? 'stripe_trigger' : 'webhook');
 }
 
 function inferActionType(value: string): string {
   if (value.startsWith('n8n-nodes-base.')) return value;
   return VALUE_TO_ACTION_TYPE[value.trim().toLowerCase()] ?? value;
+}
+
+export function isSinkAction(type: string): boolean {
+  const t = type.toLowerCase().replace(/^n8n-nodes-base\./, '');
+  return (
+    t.includes('slack') ||
+    t.includes('telegram') ||
+    t.includes('discord') ||
+    t.includes('email') ||
+    t.includes('gmail') ||
+    t.includes('sheet') ||
+    t.includes('airtable') ||
+    t.includes('notion') ||
+    t.includes('notification')
+  );
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -235,30 +252,68 @@ export function buildInternalGraph(plan: WorkflowPlan): GraphBuildResult {
 
   nodes.push(...actionNodes);
 
-  // ── Build edges: Connect triggers to the first action node only ──
+  // ── Build edges: Connect triggers to action nodes ──
+  // If actions are parallel sinks (like notification + logging) or explicitly configured with
+  // branch: 'parallel', fan them out directly from their parent source instead of a blocking sequential chain.
   if (actionNodes.length > 0) {
-    for (const triggerNode of triggerNodes) {
-      edges.push({
-        id: `e-${triggerNode.id}-${actionNodes[0].id}`,
-        source: triggerNode.id,
-        target: actionNodes[0].id,
-        type: 'direct',
-        label: '',
-        conditions: [],
-      });
-    }
-  }
+    const parentMap = new Map<string, string>(); // actionNode.id -> sourceNodeId
 
-  // ── Chain action nodes sequentially ──
-  for (let i = 0; i < actionNodes.length - 1; i++) {
-    edges.push({
-      id: `e-${actionNodes[i].id}-${actionNodes[i + 1].id}`,
-      source: actionNodes[i].id,
-      target: actionNodes[i + 1].id,
-      type: 'direct',
-      label: '',
-      conditions: [],
-    });
+    for (let i = 0; i < actionNodes.length; i++) {
+      const currentAction = actionNodes[i];
+      let sourceId = triggerNodes[0]?.id;
+
+      if (i > 0) {
+        const prevAction = actionNodes[i - 1];
+        const isExplicitParallel =
+          currentAction.config?.branch === 'parallel' ||
+          currentAction.config?.parallel === true;
+        const isExplicitSequential =
+          currentAction.config?.branch === 'sequential' ||
+          currentAction.config?.parallel === false ||
+          currentAction.config?.dependsOn !== undefined;
+
+        const isParallelSink =
+          !isExplicitSequential &&
+          isSinkAction(currentAction.type) &&
+          isSinkAction(prevAction.type);
+
+        if (isExplicitParallel || isParallelSink) {
+          // Connect to the same parent source as the previous action (parallel fan-out)
+          sourceId = parentMap.get(prevAction.id) ?? triggerNodes[0]?.id;
+        } else {
+          // Sequential chain: previous action feeds into current action
+          sourceId = prevAction.id;
+        }
+      }
+
+      if (sourceId) {
+        parentMap.set(currentAction.id, sourceId);
+
+        // If sourceId is a trigger, connect to all trigger nodes (if multiple exist)
+        const isTriggerSource = triggerNodes.some((t) => t.id === sourceId);
+        if (isTriggerSource) {
+          for (const triggerNode of triggerNodes) {
+            edges.push({
+              id: `e-${triggerNode.id}-${currentAction.id}`,
+              source: triggerNode.id,
+              target: currentAction.id,
+              type: 'direct',
+              label: '',
+              conditions: [],
+            });
+          }
+        } else {
+          edges.push({
+            id: `e-${sourceId}-${currentAction.id}`,
+            source: sourceId,
+            target: currentAction.id,
+            type: 'direct',
+            label: '',
+            conditions: [],
+          });
+        }
+      }
+    }
   }
 
   // ── Add integration notes ──

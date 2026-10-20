@@ -20,6 +20,7 @@ export interface N8nNode {
   credentials?: Record<string, { id: string; name: string }>;
   webhookId?: string;
   disabled?: boolean;
+  continueOnFail?: boolean;
 }
 
 export interface N8nConnectionMap {
@@ -294,6 +295,21 @@ export function resolveNodeParameters(
 
   if (credentials) compiled.credentials = credentials;
   if (webhookId) compiled.webhookId = webhookId;
+
+  // 6. Error resilience: add continueOnFail for notification/messaging sinks or when explicitly requested
+  const notificationOrSinkTypes = [
+    'n8n-nodes-base.slack',
+    'n8n-nodes-base.telegram',
+    'n8n-nodes-base.discord',
+    'n8n-nodes-base.emailSend',
+    'n8n-nodes-base.gmail',
+  ];
+  if (
+    node.config?.continueOnFail === true ||
+    (node.config?.continueOnFail !== false && notificationOrSinkTypes.includes(n8nType))
+  ) {
+    compiled.continueOnFail = true;
+  }
 
   return compiled;
 }
